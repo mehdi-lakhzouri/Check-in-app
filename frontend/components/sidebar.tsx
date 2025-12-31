@@ -1,0 +1,200 @@
+'use client';
+
+import React, { useState } from 'react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import {
+  LayoutDashboard,
+  Users,
+  Calendar,
+  ClipboardCheck,
+  UserCheck,
+  Settings,
+  ChevronLeft,
+  ChevronRight,
+  Shield,
+} from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+
+interface NavItem {
+  title: string;
+  href: string;
+  icon: React.ComponentType<{ className?: string }>;
+  badge?: string | number;
+  badgeVariant?: 'default' | 'secondary' | 'destructive' | 'outline';
+}
+
+const navItems: NavItem[] = [
+  {
+    title: 'Dashboard',
+    href: '/',
+    icon: LayoutDashboard,
+  },
+  {
+    title: 'Admin',
+    href: '/admin',
+    icon: Shield,
+  },
+  {
+    title: 'Sessions',
+    href: '/sessions',
+    icon: Calendar,
+  },
+  {
+    title: 'Participants',
+    href: '/participants',
+    icon: Users,
+  },
+  {
+    title: 'Check-ins',
+    href: '/checkins',
+    icon: UserCheck,
+  },
+  {
+    title: 'Registrations',
+    href: '/registrations',
+    icon: ClipboardCheck,
+  },
+];
+
+const bottomNavItems: NavItem[] = [
+  {
+    title: 'Settings',
+    href: '/settings',
+    icon: Settings,
+  },
+];
+
+interface SidebarProps {
+  className?: string;
+}
+
+export function Sidebar({ className }: SidebarProps) {
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const pathname = usePathname();
+
+  const toggleSidebar = () => {
+    setIsCollapsed(!isCollapsed);
+  };
+
+  const NavItemComponent = ({ item }: { item: NavItem }) => {
+    const isActive = pathname === item.href;
+    const Icon = item.icon;
+
+    const content = (
+      <Link
+        href={item.href}
+        className={cn(
+          'flex items-center gap-3 rounded-lg px-3 py-2 transition-all hover:bg-accent',
+          isActive && 'bg-accent text-accent-foreground',
+          isCollapsed && 'justify-center px-2'
+        )}
+      >
+        <Icon className={cn('h-5 w-5 shrink-0', isActive && 'text-primary')} />
+        {!isCollapsed && (
+          <>
+            <span className="flex-1 text-sm font-medium">{item.title}</span>
+            {item.badge && (
+              <Badge variant={item.badgeVariant || 'secondary'} className="ml-auto">
+                {item.badge}
+              </Badge>
+            )}
+          </>
+        )}
+      </Link>
+    );
+
+    if (isCollapsed) {
+      return (
+        <Tooltip>
+          <TooltipTrigger asChild>{content}</TooltipTrigger>
+          <TooltipContent side="right" className="flex items-center gap-2">
+            {item.title}
+            {item.badge && (
+              <Badge variant={item.badgeVariant || 'secondary'}>{item.badge}</Badge>
+            )}
+          </TooltipContent>
+        </Tooltip>
+      );
+    }
+
+    return content;
+  };
+
+  return (
+    <TooltipProvider delayDuration={0}>
+      <div
+        className={cn(
+          'relative flex h-screen flex-col border-r bg-background transition-all duration-300',
+          isCollapsed ? 'w-16' : 'w-64',
+          className
+        )}
+      >
+        {/* Header */}
+        <div className="flex h-16 items-center border-b px-4">
+          {!isCollapsed && (
+            <div className="flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+                <Calendar className="h-4 w-4" />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-sm font-semibold">IASTAM</span>
+                <span className="text-xs text-muted-foreground">Check-in Admin</span>
+              </div>
+            </div>
+          )}
+          {isCollapsed && (
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+              <Calendar className="h-4 w-4" />
+            </div>
+          )}
+        </div>
+
+        {/* Navigation */}
+        <ScrollArea className="flex-1 px-3 py-4">
+          <nav className="flex flex-col gap-1">
+            {navItems.map((item) => (
+              <NavItemComponent key={item.href} item={item} />
+            ))}
+          </nav>
+        </ScrollArea>
+
+        {/* Bottom Section */}
+        <div className="border-t px-3 py-4">
+          <nav className="flex flex-col gap-1">
+            {bottomNavItems.map((item) => (
+              <NavItemComponent key={item.href} item={item} />
+            ))}
+          </nav>
+        </div>
+
+        {/* Toggle Button */}
+        <div className="absolute -right-3 top-20 z-50">
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-6 w-6 rounded-full border-2 bg-background shadow-md"
+            onClick={toggleSidebar}
+            aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          >
+            {isCollapsed ? (
+              <ChevronRight className="h-3 w-3" />
+            ) : (
+              <ChevronLeft className="h-3 w-3" />
+            )}
+          </Button>
+        </div>
+      </div>
+    </TooltipProvider>
+  );
+}
