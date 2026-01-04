@@ -8,7 +8,8 @@ import { ApiError as ApiErrorType } from '@/lib/schemas';
 // Configuration
 // ============================================================================
 
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+// NOTE: Backend runs on port 3000, configured via NEXT_PUBLIC_API_URL in .env.local
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api/v1';
 
 export const DEFAULT_HEADERS: HeadersInit = {
   'Content-Type': 'application/json',

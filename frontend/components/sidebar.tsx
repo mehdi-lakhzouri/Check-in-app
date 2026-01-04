@@ -3,6 +3,8 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { motion, AnimatePresence } from 'framer-motion';
+import { sidebarVariants, navItemVariants, TIMING, EASING } from '@/lib/animations';
 import {
   LayoutDashboard,
   Users,
@@ -12,7 +14,10 @@ import {
   Settings,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   Shield,
+  Award,
+  Plane,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -25,6 +30,11 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
 
 interface NavItem {
   title: string;
@@ -32,6 +42,7 @@ interface NavItem {
   icon: React.ComponentType<{ className?: string }>;
   badge?: string | number;
   badgeVariant?: 'default' | 'secondary' | 'destructive' | 'outline';
+  children?: NavItem[];
 }
 
 const navItems: NavItem[] = [
@@ -54,6 +65,23 @@ const navItems: NavItem[] = [
     title: 'Participants',
     href: '/participants',
     icon: Users,
+    children: [
+      {
+        title: 'All Participants',
+        href: '/participants',
+        icon: Users,
+      },
+      {
+        title: 'Ambassadors',
+        href: '/participants/ambassador',
+        icon: Award,
+      },
+      {
+        title: 'Travel Grants',
+        href: '/participants/travel-grants',
+        icon: Plane,
+      },
+    ],
   },
   {
     title: 'Check-ins',
@@ -81,29 +109,83 @@ interface SidebarProps {
 
 export function Sidebar({ className }: SidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({ '/participants': true });
   const pathname = usePathname();
 
   const toggleSidebar = () => {
     setIsCollapsed(!isCollapsed);
   };
 
-  const NavItemComponent = ({ item }: { item: NavItem }) => {
+  const toggleMenu = (href: string) => {
+    setOpenMenus(prev => ({ ...prev, [href]: !prev[href] }));
+  };
+
+  const isPathActive = (href: string, children?: NavItem[]) => {
+    if (children) {
+      return children.some(child => pathname === child.href || pathname.startsWith(child.href + '/'));
+    }
+    return pathname === href;
+  };
+
+  const NavItemComponent = ({ item, isChild = false }: { item: NavItem; isChild?: boolean }) => {
     const isActive = pathname === item.href;
+    const hasChildren = item.children && item.children.length > 0;
+    const isMenuOpen = openMenus[item.href];
+    const isParentActive = hasChildren && isPathActive(item.href, item.children);
     const Icon = item.icon;
+
+    // If has children and not collapsed, render collapsible
+    if (hasChildren && !isCollapsed) {
+      return (
+        <Collapsible open={isMenuOpen} onOpenChange={() => toggleMenu(item.href)}>
+          <CollapsibleTrigger asChild>
+            <button
+              className={cn(
+                'flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left',
+                'text-muted-foreground transition-all duration-200 ease-in-out',
+                'hover:bg-[#F0F2FD] hover:text-[#2D3282]',
+                'active:bg-[#D0D6F2] active:scale-[0.98]',
+                isParentActive && 'bg-[#E0E4F7] text-[#2D3282] font-semibold'
+              )}
+            >
+              <Icon className={cn('h-5 w-5 shrink-0', isParentActive && 'text-[#2D3282]')} />
+              <span className="flex-1 text-sm font-medium">{item.title}</span>
+              <ChevronDown 
+                className={cn(
+                  'h-4 w-4 transition-transform duration-200',
+                  isMenuOpen && 'rotate-180'
+                )} 
+              />
+            </button>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="pl-4 pt-1">
+            <div className="flex flex-col gap-1 border-l border-border pl-2">
+              {item.children!.map((child) => (
+                <NavItemComponent key={child.href} item={child} isChild />
+              ))}
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
+      );
+    }
 
     const content = (
       <Link
         href={item.href}
         className={cn(
-          'flex items-center gap-3 rounded-lg px-3 py-2 transition-all hover:bg-accent',
-          isActive && 'bg-accent text-accent-foreground',
-          isCollapsed && 'justify-center px-2'
+          'flex items-center gap-3 rounded-xl px-3 py-2.5',
+          'text-muted-foreground transition-all duration-200 ease-in-out',
+          'hover:bg-[#F0F2FD] hover:text-[#2D3282]',
+          'active:bg-[#D0D6F2] active:scale-[0.98]',
+          isActive && 'bg-[#E0E4F7] text-[#2D3282] font-semibold',
+          isCollapsed && 'justify-center px-2',
+          isChild && 'py-2 text-sm rounded-lg'
         )}
       >
-        <Icon className={cn('h-5 w-5 shrink-0', isActive && 'text-primary')} />
+        <Icon className={cn('h-5 w-5 shrink-0', isActive && 'text-[#2D3282]', isChild && 'h-4 w-4')} />
         {!isCollapsed && (
           <>
-            <span className="flex-1 text-sm font-medium">{item.title}</span>
+            <span className={cn('flex-1 text-sm font-medium', isChild && 'text-xs')}>{item.title}</span>
             {item.badge && (
               <Badge variant={item.badgeVariant || 'secondary'} className="ml-auto">
                 {item.badge}

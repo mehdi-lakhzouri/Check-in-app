@@ -2,6 +2,17 @@
 
 import { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  staggerContainer, 
+  cardVariants, 
+  tableRowVariants, 
+  pageTransition, 
+  TIMING, 
+  EASING 
+} from '@/lib/animations';
+
+// Aliases for backwards compatibility
+const containerVariants = staggerContainer;
 import {
   Users,
   Award,
@@ -87,28 +98,10 @@ import type {
   TravelGrantApplication,
 } from '@/lib/api/services/admin';
 
-// ============================================================================
-// Animation Variants
-// ============================================================================
+// Animation variants imported from @/lib/animations
+// Using: staggerContainer, cardVariants, tableRowVariants, pageTransition
 
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: { staggerChildren: 0.1 },
-  },
-};
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0 },
-};
-
-const cardVariants = {
-  hidden: { opacity: 0, scale: 0.95 },
-  visible: { opacity: 1, scale: 1 },
-  exit: { opacity: 0, scale: 0.95 },
-};
+const itemVariants = cardVariants; // alias for backwards compatibility
 
 // ============================================================================
 // Stats Overview Component

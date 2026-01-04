@@ -9,6 +9,14 @@ export enum CheckInMethod {
   MANUAL = 'manual',
 }
 
+/**
+ * Badge indicating check-in status for dashboard display
+ */
+export enum CheckInBadge {
+  ACCEPTED = 'accepted',                       // Standard check-in (registered participant)
+  ACCEPTED_UNREGISTERED = 'accepted_unregistered',  // Override check-in (not registered)
+}
+
 @Schema({ timestamps: true, collection: 'checkins' })
 export class CheckIn {
   @ApiProperty({ example: '507f1f77bcf86cd799439011' })
@@ -51,6 +59,23 @@ export class CheckIn {
   @Prop({ type: Boolean, default: false, index: true })
   isLate: boolean;
 
+  @ApiProperty({ 
+    example: 'accepted', 
+    enum: CheckInBadge,
+    description: 'Badge indicating check-in status (for dashboard display)' 
+  })
+  @Prop({ 
+    type: String, 
+    enum: CheckInBadge, 
+    default: CheckInBadge.ACCEPTED,
+    index: true 
+  })
+  badge: CheckInBadge;
+
+  @ApiProperty({ example: true, description: 'Whether participant was registered at time of check-in' })
+  @Prop({ type: Boolean, default: true })
+  wasRegistered: boolean;
+
   @ApiProperty({ example: '2024-01-01T00:00:00.000Z' })
   createdAt: Date;
 
@@ -63,3 +88,15 @@ export const CheckInSchema = SchemaFactory.createForClass(CheckIn);
 // Compound index for unique participant-session check-in
 CheckInSchema.index({ participantId: 1, sessionId: 1 }, { unique: true });
 CheckInSchema.index({ sessionId: 1, checkInTime: -1 });
+
+// Covering index for check-in verification (high-frequency query)
+CheckInSchema.index(
+  { participantId: 1, sessionId: 1, checkInTime: -1 },
+  { name: 'checkin_verification_idx' }
+);
+
+// Index for recent check-ins query (descending by time)
+CheckInSchema.index({ checkInTime: -1 }, { name: 'recent_checkins_idx' });
+
+// Index for participant check-in history
+CheckInSchema.index({ participantId: 1, checkInTime: -1 }, { name: 'participant_checkin_history_idx' });

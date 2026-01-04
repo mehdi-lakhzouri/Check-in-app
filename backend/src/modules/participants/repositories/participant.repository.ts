@@ -164,4 +164,171 @@ export class ParticipantRepository extends BaseRepository<ParticipantDocument> {
       .find({ _id: { $in: ids.map((id) => new Types.ObjectId(id)) } })
       .exec();
   }
+
+  async findByOrganization(organization: string): Promise<ParticipantDocument[]> {
+    return this.participantModel
+      .find({ organization: { $regex: `^${organization}$`, $options: 'i' } })
+      .sort({ name: 1 })
+      .exec();
+  }
+
+  async searchAmbassadors(
+    search?: string,
+    sortBy: string = 'ambassadorPoints',
+    sortOrder: 'asc' | 'desc' = 'desc',
+    page: number = 1,
+    limit: number = 10,
+  ): Promise<PaginatedResult<ParticipantDocument>> {
+    const filter: QueryFilter<ParticipantDocument> = {
+      status: ParticipantStatus.AMBASSADOR,
+    };
+
+    if (search) {
+      filter.$or = [
+        { name: { $regex: search, $options: 'i' } },
+        { email: { $regex: search, $options: 'i' } },
+        { organization: { $regex: search, $options: 'i' } },
+      ];
+    }
+
+    const skip = (page - 1) * limit;
+    const sortDirection = sortOrder === 'asc' ? 1 : -1;
+
+    const [data, total] = await Promise.all([
+      this.participantModel
+        .find(filter)
+        .sort({ [sortBy]: sortDirection })
+        .skip(skip)
+        .limit(limit)
+        .exec(),
+      this.participantModel.countDocuments(filter).exec(),
+    ]);
+
+    return {
+      data,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+        hasNextPage: page < Math.ceil(total / limit),
+        hasPrevPage: page > 1,
+      },
+    };
+  }
+
+  async searchTravelGrants(
+    search?: string,
+    status?: 'pending' | 'approved' | 'rejected',
+    sortBy: string = 'travelGrantAppliedAt',
+    sortOrder: 'asc' | 'desc' = 'desc',
+    page: number = 1,
+    limit: number = 10,
+  ): Promise<PaginatedResult<ParticipantDocument>> {
+    const filter: QueryFilter<ParticipantDocument> = {
+      status: ParticipantStatus.TRAVEL_GRANT,
+    };
+
+    if (search) {
+      filter.$or = [
+        { name: { $regex: search, $options: 'i' } },
+        { email: { $regex: search, $options: 'i' } },
+        { organization: { $regex: search, $options: 'i' } },
+      ];
+    }
+
+    if (status === 'pending') {
+      filter.travelGrantApplied = true;
+      filter.travelGrantApproved = null;
+    } else if (status === 'approved') {
+      filter.travelGrantApproved = true;
+    } else if (status === 'rejected') {
+      filter.travelGrantApproved = false;
+    }
+
+    const skip = (page - 1) * limit;
+    const sortDirection = sortOrder === 'asc' ? 1 : -1;
+
+    const [data, total] = await Promise.all([
+      this.participantModel
+        .find(filter)
+        .sort({ [sortBy]: sortDirection })
+        .skip(skip)
+        .limit(limit)
+        .exec(),
+      this.participantModel.countDocuments(filter).exec(),
+    ]);
+
+    return {
+      data,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+        hasNextPage: page < Math.ceil(total / limit),
+        hasPrevPage: page > 1,
+      },
+    };
+  }
+
+  async findByStatus(status: ParticipantStatus): Promise<ParticipantDocument[]> {
+    return this.participantModel.find({ status }).sort({ name: 1 }).exec();
+  }
+
+  async findAllTravelGrantApplicants(): Promise<ParticipantDocument[]> {
+    return this.participantModel
+      .find({ status: ParticipantStatus.TRAVEL_GRANT })
+      .sort({ createdAt: -1 })
+      .exec();
+  }
+
+  /**
+   * Find all participants with the same organization (excluding the ambassador)
+   * Used for automatic referral calculation
+   */
+  async findOrganizationMembers(
+    organization: string,
+    excludeId: string,
+  ): Promise<ParticipantDocument[]> {
+    return this.participantModel
+      .find({
+        organization: { $regex: `^${organization}$`, $options: 'i' },
+        _id: { $ne: new Types.ObjectId(excludeId) },
+        status: { $ne: ParticipantStatus.AMBASSADOR }, // Exclude other ambassadors
+      })
+      .exec();
+  }
+
+  /**
+   * Remove a participant from all ambassador referral lists
+   * Used when deleting a participant
+   */
+  async removeParticipantFromAllReferrals(participantId: string): Promise<void> {
+    await this.participantModel
+      .updateMany(
+        { referredParticipantIds: new Types.ObjectId(participantId) },
+        { $pull: { referredParticipantIds: new Types.ObjectId(participantId) } },
+      )
+      .exec();
+  }
+
+  /**
+   * Set referral list for an ambassador (replace entire list)
+   * Used for auto-sync based on organization
+   */
+  async setReferredParticipants(
+    ambassadorId: string,
+    participantIds: string[],
+  ): Promise<ParticipantDocument | null> {
+    return this.participantModel
+      .findByIdAndUpdate(
+        ambassadorId,
+        { 
+          referredParticipantIds: participantIds.map(id => new Types.ObjectId(id)),
+        },
+        { new: true },
+      )
+      .exec();
+  }
 }

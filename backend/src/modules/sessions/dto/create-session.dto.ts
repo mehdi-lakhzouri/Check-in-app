@@ -68,11 +68,40 @@ export class CreateSessionDto {
 
   @ApiPropertyOptional({
     example: 100,
-    description: 'Maximum capacity for the session',
+    description: 'Maximum capacity for the session (0 = unlimited)',
     minimum: 0,
   })
   @IsOptional()
   @IsInt()
   @Min(0)
   capacity?: number;
+
+  @ApiPropertyOptional({
+    example: true,
+    description: 'Whether capacity is strictly enforced (false allows overflow)',
+    default: true,
+  })
+  @IsOptional()
+  @IsBoolean()
+  capacityEnforced?: boolean;
+
+  @ApiPropertyOptional({
+    example: false,
+    description: 'Whether registration is required to check-in (for closed/invite-only sessions)',
+    default: false,
+  })
+  @IsOptional()
+  @IsBoolean()
+  requiresRegistration?: boolean;
+
+  @ApiPropertyOptional({
+    example: 1,
+    description: 'Day number of the congress (1, 2, 3, etc.)',
+    minimum: 1,
+    default: 1,
+  })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  day?: number;
 }

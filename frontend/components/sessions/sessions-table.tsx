@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   CalendarDays,
@@ -93,6 +93,15 @@ export function SessionsTable({
   const [sessionToDelete, setSessionToDelete] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
+  
+  // Force re-render every 30 seconds to update time-based statuses (Upcoming/In Progress/Ended)
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTick(t => t + 1);
+    }, 30000); // Every 30 seconds
+    return () => clearInterval(interval);
+  }, []);
 
   const deleteMutation = useDeleteSession({
     onSuccess: () => {

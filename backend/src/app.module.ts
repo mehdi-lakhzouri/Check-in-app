@@ -1,10 +1,22 @@
-import { Module } from '@nestjs/common';
+import { Module, MiddlewareConsumer, NestModule } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { BullModule } from '@nestjs/bull';
+import { ScheduleModule } from '@nestjs/schedule';
 import { APP_GUARD, APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
+import { PinoLoggerService } from './common/logger';
+
+const logger = new PinoLoggerService();
+logger.setContext('AppModule');
 
 // Config
-import { appConfig, databaseConfig, throttleConfig, uploadConfig } from './config';
+import {
+  appConfig,
+  databaseConfig,
+  throttleConfig,
+  uploadConfig,
+  redisConfig,
+} from './config';
 
 // Database
 import { DatabaseModule } from './database';
@@ -14,9 +26,15 @@ import {
   AllExceptionsFilter,
   MongoExceptionFilter,
   TransformInterceptor,
-  LoggingInterceptor,
   TimeoutInterceptor,
 } from './common';
+import { RedisModule } from './common/redis';
+import { 
+  LoggerModule, 
+  CorrelationIdMiddleware, 
+  HttpLoggingMiddleware,
+  RequestContextMiddleware,
+} from './common/logger';
 
 // Feature Modules
 import { SessionsModule } from './modules/sessions';
@@ -26,14 +44,73 @@ import { CheckInsModule } from './modules/checkins';
 import { ReportsModule } from './modules/reports';
 import { BulkModule } from './modules/bulk';
 import { HealthModule } from './modules/health';
+import { RealtimeModule } from './modules/realtime';
 
 @Module({
   imports: [
     // Configuration
     ConfigModule.forRoot({
       isGlobal: true,
-      load: [appConfig, databaseConfig, throttleConfig, uploadConfig],
+      load: [appConfig, databaseConfig, throttleConfig, uploadConfig, redisConfig],
       envFilePath: ['.env.local', '.env'],
+    }),
+
+    // Production Logger (Global)
+    LoggerModule,
+
+    // Redis (Global caching and raw client)
+    RedisModule,
+
+    // Schedule Module for cron jobs (capacity sync, etc.)
+    ScheduleModule.forRoot(),
+
+    // Bull Queue (Redis-backed job queue) with graceful fallback
+    BullModule.forRootAsync({
+      imports: [ConfigModule],
+      useFactory: async (configService: ConfigService) => {
+        const host = configService.get<string>('REDIS_HOST', 'localhost');
+        const port = configService.get<number>('REDIS_PORT', 6379);
+        const password = configService.get<string>('REDIS_PASSWORD');
+
+        // Log Bull queue configuration
+        logger.log(`Bull Queue connecting to Redis at ${host}:${port}`);
+
+        return {
+          redis: {
+            host,
+            port,
+            ...(password ? { password } : {}),
+            // Add connection options for resilience
+            maxRetriesPerRequest: 3,
+            retryStrategy: (times: number) => {
+              if (times > 10) {
+                logger.error('Bull Queue: Max retries reached for Redis connection');
+                // Return null to stop retrying (Bull will work in degraded mode)
+                return null;
+              }
+              const delay = Math.min(times * 100, 3000);
+              logger.warn(`Bull Queue: Redis reconnecting in ${delay}ms (attempt ${times})`);
+              return delay;
+            },
+            enableReadyCheck: false, // Don't block if Redis is slow
+            connectTimeout: 5000,
+          },
+          defaultJobOptions: {
+            removeOnComplete: 100,
+            removeOnFail: 50,
+            attempts: 3, // Retry failed jobs 3 times
+            backoff: {
+              type: 'exponential',
+              delay: 1000,
+            },
+          },
+          settings: {
+            stalledInterval: 30000, // Check for stalled jobs every 30s
+            maxStalledCount: 3, // Max times a job can be stalled before failing
+          },
+        };
+      },
+      inject: [ConfigService],
     }),
 
     // Rate Limiting
@@ -61,6 +138,7 @@ import { HealthModule } from './modules/health';
     ReportsModule,
     BulkModule,
     HealthModule,
+    RealtimeModule,
   ],
   providers: [
     // Global Guards
@@ -86,12 +164,20 @@ import { HealthModule } from './modules/health';
     },
     {
       provide: APP_INTERCEPTOR,
-      useClass: LoggingInterceptor,
-    },
-    {
-      provide: APP_INTERCEPTOR,
       useClass: TimeoutInterceptor,
     },
   ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer): void {
+    // Apply logging middleware to all routes
+    // Order matters: CorrelationId → Context → HTTP Logging
+    consumer
+      .apply(
+        CorrelationIdMiddleware,
+        RequestContextMiddleware,
+        HttpLoggingMiddleware,
+      )
+      .forRoutes('*');
+  }
+}

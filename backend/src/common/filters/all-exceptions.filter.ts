@@ -4,22 +4,34 @@ import {
   ArgumentsHost,
   HttpException,
   HttpStatus,
-  Logger,
+  Inject,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
+import { PinoLoggerService, PINO_LOGGER, getCurrentRequestId } from '../logger';
+
+interface RequestWithId extends Request {
+  id?: string;
+}
 
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
-  private readonly logger = new Logger(AllExceptionsFilter.name);
+  private readonly logger: PinoLoggerService;
+
+  constructor(@Inject(PINO_LOGGER) logger?: PinoLoggerService) {
+    this.logger = logger || new PinoLoggerService();
+    this.logger.setContext('ExceptionFilter');
+  }
 
   catch(exception: unknown, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
-    const request = ctx.getRequest<Request>();
+    const request = ctx.getRequest<RequestWithId>();
+    const reqId = request.id || getCurrentRequestId() || 'unknown';
 
     let status = HttpStatus.INTERNAL_SERVER_ERROR;
     let message = 'Internal server error';
     let errors: Array<{ field: string; message: string }> | undefined;
+    let errorCode: string | undefined;
 
     if (exception instanceof HttpException) {
       status = exception.getStatus();
@@ -30,6 +42,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
       } else if (typeof exceptionResponse === 'object') {
         const responseObj = exceptionResponse as Record<string, unknown>;
         message = (responseObj.message as string) || message;
+        errorCode = responseObj.error as string;
         
         // Handle validation errors from class-validator
         if (Array.isArray(responseObj.message)) {
@@ -39,10 +52,6 @@ export class AllExceptionsFilter implements ExceptionFilter {
       }
     } else if (exception instanceof Error) {
       message = exception.message;
-      this.logger.error(
-        `Unhandled exception: ${exception.message}`,
-        exception.stack,
-      );
     }
 
     const errorResponse = {
@@ -55,14 +64,25 @@ export class AllExceptionsFilter implements ExceptionFilter {
       method: request.method,
     };
 
-    // Log error details in development
-    if (process.env.NODE_ENV === 'development') {
-      this.logger.error(`[${request.method}] ${request.url}`, {
-        statusCode: status,
-        message,
-        errors,
-        stack: exception instanceof Error ? exception.stack : undefined,
-      });
+    // Structured error logging for all environments
+    const logPayload = {
+      reqId,
+      method: request.method,
+      url: request.url,
+      statusCode: status,
+      errorCode,
+      message,
+      errors,
+      ip: request.ip,
+      userAgent: request.get('user-agent'),
+      stack: exception instanceof Error ? exception.stack : undefined,
+    };
+
+    // Log based on severity
+    if (status >= 500) {
+      this.logger.error('Unhandled exception', exception instanceof Error ? exception.stack : undefined, logPayload);
+    } else if (status >= 400) {
+      this.logger.warn('Client error', logPayload);
     }
 
     response.status(status).json(errorResponse);

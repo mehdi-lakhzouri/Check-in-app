@@ -18,8 +18,16 @@ import {
 } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { CheckInsService } from '../services';
-import { CreateCheckInDto, QrCheckInDto, CheckInFilterDto } from '../dto';
-import { CheckIn } from '../schemas';
+import { 
+  CreateCheckInDto, 
+  QrCheckInDto, 
+  CheckInFilterDto,
+  VerifyQrDto,
+  AcceptCheckInDto,
+  DeclineCheckInDto,
+  CheckInAttemptFilterDto,
+} from '../dto';
+import { CheckIn, CheckInAttempt } from '../schemas';
 import { ParseMongoIdPipe } from '../../../common/pipes';
 import { ApiPaginatedResponse, ApiStandardResponse } from '../../../common/decorators';
 
@@ -29,18 +37,102 @@ import { ApiPaginatedResponse, ApiStandardResponse } from '../../../common/decor
 export class CheckInsController {
   constructor(private readonly checkInsService: CheckInsService) {}
 
+  // ============================================================================
+  // VERIFICATION & WORKFLOW ENDPOINTS
+  // ============================================================================
+
+  @Post('verify-qr')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Verify participant registration status via QR code' })
+  @ApiResponse({ status: 200, description: 'Verification result with registration status and actions' })
+  @ApiResponse({ status: 404, description: 'Participant or session not found' })
+  async verifyQr(@Body() verifyDto: VerifyQrDto) {
+    const result = await this.checkInsService.verifyQr(verifyDto);
+    return {
+      status: 'success',
+      message: 'Participant verification complete',
+      data: result,
+    };
+  }
+
+  @Post('accept')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Accept and create check-in after verification' })
+  @ApiStandardResponse(CheckIn, 'Check-in accepted successfully')
+  @ApiResponse({ status: 400, description: 'Session not open or at capacity' })
+  @ApiResponse({ status: 409, description: 'Already checked in' })
+  async acceptCheckIn(@Body() acceptDto: AcceptCheckInDto) {
+    const result = await this.checkInsService.acceptCheckIn(acceptDto);
+    return {
+      status: 'success',
+      message: result.wasRegistered 
+        ? 'Check-in accepted successfully' 
+        : 'Check-in accepted (participant was not registered)',
+      data: result.checkIn,
+      capacityInfo: result.capacityInfo,
+      wasRegistered: result.wasRegistered,
+    };
+  }
+
+  @Post('decline')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Decline check-in and log the attempt' })
+  @ApiStandardResponse(CheckInAttempt, 'Check-in declined and logged')
+  @ApiResponse({ status: 404, description: 'Participant or session not found' })
+  async declineCheckIn(@Body() declineDto: DeclineCheckInDto) {
+    const result = await this.checkInsService.declineCheckIn(declineDto);
+    return {
+      status: 'success',
+      message: 'Check-in declined and logged',
+      data: result.attempt,
+      participant: result.participant,
+      session: result.session,
+    };
+  }
+
+  @Get('attempts')
+  @ApiOperation({ summary: 'Get check-in attempts (declined/failed) for audit' })
+  @ApiPaginatedResponse(CheckInAttempt, 'Check-in attempts retrieved')
+  async getAttempts(@Query() filterDto: CheckInAttemptFilterDto) {
+    const result = await this.checkInsService.getAttempts(filterDto);
+    return {
+      status: 'success',
+      message: 'Check-in attempts retrieved',
+      data: result.data,
+      meta: result.meta,
+    };
+  }
+
+  @Get('attempts/stats')
+  @ApiOperation({ summary: 'Get check-in attempt statistics' })
+  @ApiQuery({ name: 'sessionId', required: false, type: String })
+  @ApiResponse({ status: 200, description: 'Attempt statistics retrieved' })
+  async getAttemptStats(@Query('sessionId') sessionId?: string) {
+    const stats = await this.checkInsService.getAttemptStats(sessionId);
+    return {
+      status: 'success',
+      message: 'Attempt statistics retrieved',
+      data: stats,
+    };
+  }
+
+  // ============================================================================
+  // STANDARD CHECK-IN ENDPOINTS
+  // ============================================================================
+
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Manual check-in a participant to a session' })
   @ApiStandardResponse(CheckIn, 'Check-in created successfully')
-  @ApiResponse({ status: 400, description: 'Validation error or session not open' })
+  @ApiResponse({ status: 400, description: 'Validation error, session not open, or at capacity' })
   @ApiResponse({ status: 409, description: 'Already checked in' })
   async create(@Body() createCheckInDto: CreateCheckInDto) {
-    const checkIn = await this.checkInsService.create(createCheckInDto);
+    const result = await this.checkInsService.create(createCheckInDto);
     return {
       status: 'success',
       message: 'Check-in created successfully',
-      data: checkIn,
+      data: result.checkIn,
+      capacityInfo: result.capacityInfo,
     };
   }
 
@@ -48,15 +140,16 @@ export class CheckInsController {
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Check-in participant using QR code' })
   @ApiStandardResponse(CheckIn, 'QR check-in successful')
-  @ApiResponse({ status: 400, description: 'Validation error or session not open' })
+  @ApiResponse({ status: 400, description: 'Validation error, session not open, or at capacity' })
   @ApiResponse({ status: 404, description: 'Participant not found' })
   @ApiResponse({ status: 409, description: 'Already checked in' })
   async checkInByQr(@Body() qrCheckInDto: QrCheckInDto) {
-    const checkIn = await this.checkInsService.checkInByQr(qrCheckInDto);
+    const result = await this.checkInsService.checkInByQr(qrCheckInDto);
     return {
       status: 'success',
       message: 'QR check-in successful',
-      data: checkIn,
+      data: result.checkIn,
+      capacityInfo: result.capacityInfo,
     };
   }
 

@@ -1,14 +1,20 @@
 'use client';
 
 import { useState, useMemo, useCallback } from 'react';
-import { CalendarDays, Plus } from 'lucide-react';
+import { CalendarDays, Plus, Wifi, WifiOff } from 'lucide-react';
+import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { TableSkeleton } from '@/components/ui/skeleton';
 import { ErrorState } from '@/components/ui/error-state';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
-import { useSessions } from '@/lib/hooks/use-sessions';
+import { useSessions, useSessionStatusRealtime } from '@/lib/hooks';
 import type { Session } from '@/lib/schemas';
 
 import {
@@ -42,6 +48,23 @@ export function SessionsContent() {
     error,
     refetch,
   } = useSessions();
+
+  // Real-time session status updates (auto-invalidates query cache)
+  const { isConnected: isRealtimeConnected } = useSessionStatusRealtime({
+    enabled: true,
+    onStatusChange: (update) => {
+      const statusMessages: Record<string, string> = {
+        open: `🟢 "${update.sessionName}" is now open for check-ins`,
+        ended: `🔴 "${update.sessionName}" has ended`,
+        closed: `⛔ "${update.sessionName}" has been closed`,
+        scheduled: `📅 "${update.sessionName}" status updated`,
+        cancelled: `❌ "${update.sessionName}" has been cancelled`,
+      };
+      const reasonSuffix = update.reason === 'auto_open' ? ' (auto)' : 
+                          update.reason === 'auto_end' ? ' (auto)' : '';
+      toast.info(statusMessages[update.newStatus] + reasonSuffix);
+    },
+  });
 
   // Sorting function
   const sortSessions = useCallback((data: Session[], config: SortConfig) => {
@@ -177,6 +200,28 @@ export function SessionsContent() {
               <CalendarDays className="h-6 w-6 text-primary" />
             </div>
             Sessions
+            {/* Real-time connection indicator */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className={`flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium ${
+                  isRealtimeConnected 
+                    ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' 
+                    : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
+                }`}>
+                  {isRealtimeConnected ? (
+                    <Wifi className="h-3 w-3" />
+                  ) : (
+                    <WifiOff className="h-3 w-3" />
+                  )}
+                  <span>{isRealtimeConnected ? 'Live' : 'Offline'}</span>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent>
+                {isRealtimeConnected 
+                  ? 'Real-time updates active - status changes will appear automatically' 
+                  : 'Real-time connection lost - refresh to see latest changes'}
+              </TooltipContent>
+            </Tooltip>
           </h2>
           <p className="text-muted-foreground">
             Manage conference sessions

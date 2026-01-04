@@ -81,8 +81,11 @@ export const queryKeys = {
     // Travel Grant queries
     travelGrants: {
       all: () => [...queryKeys.admin.all, 'travel-grants'] as const,
+      search: (filters?: { search?: string; status?: string; sortBy?: string; sortOrder?: string; page?: number; limit?: number }) =>
+        [...queryKeys.admin.travelGrants.all(), 'search', filters] as const,
       applications: (filters?: { status?: boolean; organization?: string }) => 
         [...queryKeys.admin.travelGrants.all(), 'applications', filters] as const,
+      detail: (id: string) => [...queryKeys.admin.travelGrants.all(), 'detail', id] as const,
       stats: () => [...queryKeys.admin.travelGrants.all(), 'stats'] as const,
       qualification: (id: string) => [...queryKeys.admin.travelGrants.all(), 'qualification', id] as const,
     },

@@ -1,5 +1,6 @@
 // API configuration and client
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api/v1';
+// NOTE: Backend runs on port 3000, configured via NEXT_PUBLIC_API_URL in .env.local
 
 export class ApiError extends Error {
   constructor(public status: number, message: string) {
@@ -277,3 +278,62 @@ export interface CreateRegistrationDto {
   sessionId: string;
   status?: 'confirmed' | 'pending' | 'cancelled';
 }
+
+// Ambassador API
+export const ambassadorsApi = {
+  getActivity: async (id: string) => {
+    const res = await fetchApi<{ 
+      status: string; 
+      data: {
+        participant: Participant;
+        referredParticipants: Participant[];
+        totalPoints: number;
+      };
+    }>(`/participants/${id}/ambassador/activity`);
+    return res.data;
+  },
+  calculatePoints: async (id: string) => {
+    const res = await fetchApi<{ status: string; data: Participant }>(`/participants/${id}/ambassador/calculate-points`, {
+      method: 'POST',
+    });
+    return { participant: res.data };
+  },
+  addReferral: async (ambassadorId: string, participantId: string) => {
+    const res = await fetchApi<{ status: string; data: Participant }>(`/participants/${ambassadorId}/ambassador/add-referred`, {
+      method: 'POST',
+      body: JSON.stringify({ participantId }),
+    });
+    return { participant: res.data };
+  },
+  removeReferral: async (ambassadorId: string, participantId: string) => {
+    const res = await fetchApi<{ status: string; data: Participant }>(`/participants/${ambassadorId}/ambassador/remove-referred/${participantId}`, {
+      method: 'DELETE',
+    });
+    return { participant: res.data };
+  },
+  syncReferrals: async (ambassadorId: string) => {
+    const res = await fetchApi<{ 
+      status: string; 
+      data: {
+        ambassador: Participant;
+        addedCount: number;
+        totalReferrals: number;
+      };
+    }>(`/participants/${ambassadorId}/ambassador/sync-referrals`, {
+      method: 'POST',
+    });
+    return res.data;
+  },
+  syncAllReferrals: async () => {
+    const res = await fetchApi<{ 
+      status: string; 
+      data: {
+        processed: number;
+        totalAdded: number;
+      };
+    }>('/participants/ambassadors/sync-all-referrals', {
+      method: 'POST',
+    });
+    return res.data;
+  },
+};

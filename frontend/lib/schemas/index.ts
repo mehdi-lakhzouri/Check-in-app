@@ -20,6 +20,23 @@ export const timestampsSchema = z.object({
 // Session Schemas
 // ============================================================================
 
+/**
+ * Session Status Enum - Tracks the lifecycle state of a session
+ * 
+ * Status Flow:
+ * SCHEDULED -> OPEN (manual or auto-open) -> ENDED (auto after endTime) or CLOSED (manual)
+ */
+export const sessionStatusEnumSchema = z.enum([
+  'scheduled',
+  'open',
+  'ended',
+  'closed',
+  'cancelled',
+]);
+
+export type SessionStatusEnum = z.infer<typeof sessionStatusEnumSchema>;
+
+// Keep backward compatibility - isOpen boolean
 export const sessionStatusSchema = z.boolean();
 
 export const sessionSchema = z.object({
@@ -30,8 +47,12 @@ export const sessionSchema = z.object({
   endTime: z.string().datetime(),
   location: z.string().max(200).optional(),
   isOpen: sessionStatusSchema,
+  status: sessionStatusEnumSchema.optional().default('scheduled'),
   capacity: z.number().int().nonnegative().optional(),
   checkInsCount: z.number().int().nonnegative().optional(),
+  capacityEnforced: z.boolean().optional().default(true),
+  requiresRegistration: z.boolean().optional().default(false),
+  day: z.number().int().min(1).max(10).optional().default(1),
 }).merge(timestampsSchema);
 
 export const createSessionSchema = z.object({
@@ -42,6 +63,9 @@ export const createSessionSchema = z.object({
   location: z.string().max(200).optional(),
   isOpen: sessionStatusSchema.default(false),
   capacity: z.number().int().nonnegative().optional(),
+  capacityEnforced: z.boolean().optional().default(true),
+  requiresRegistration: z.boolean().optional().default(false),
+  day: z.number().int().min(1).max(10).optional().default(1),
 }).refine(
   (data) => new Date(data.endTime) > new Date(data.startTime),
   { message: 'End time must be after start time', path: ['endTime'] }
@@ -55,10 +79,13 @@ export const updateSessionSchema = z.object({
   location: z.string().max(200).optional(),
   isOpen: sessionStatusSchema.optional(),
   capacity: z.number().int().nonnegative().optional(),
+  capacityEnforced: z.boolean().optional(),
+  requiresRegistration: z.boolean().optional(),
+  day: z.number().int().min(1).max(10).optional(),
 });
 
 export type Session = z.infer<typeof sessionSchema>;
-export type CreateSessionDto = z.infer<typeof createSessionSchema>;
+export type CreateSessionDto = z.input<typeof createSessionSchema>;
 export type UpdateSessionDto = z.infer<typeof updateSessionSchema>;
 
 // ============================================================================
@@ -66,6 +93,7 @@ export type UpdateSessionDto = z.infer<typeof updateSessionSchema>;
 // ============================================================================
 
 export const participantStatusSchema = z.enum(['regular', 'ambassador', 'travel_grant']);
+export const travelGrantStatusSchema = z.enum(['pending', 'approved', 'rejected']);
 
 export const participantSchema = z.object({
   _id: mongoIdSchema,
@@ -78,7 +106,10 @@ export const participantSchema = z.object({
   ambassadorPoints: z.number().int().nonnegative(),
   referredParticipantIds: z.array(mongoIdSchema),
   travelGrantApplied: z.boolean(),
-  travelGrantApproved: z.boolean(),
+  travelGrantApproved: z.boolean().nullable().optional(),
+  travelGrantStatus: travelGrantStatusSchema.optional(),
+  travelGrantAppliedAt: z.string().datetime().optional(),
+  checkInCount: z.number().int().nonnegative().optional(),
 }).merge(timestampsSchema);
 
 export const createParticipantSchema = z.object({
