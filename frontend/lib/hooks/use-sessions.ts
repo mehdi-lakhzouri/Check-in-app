@@ -7,9 +7,12 @@ import {
   useQuery,
   useMutation,
   useQueryClient,
+  useSuspenseQuery,
   type UseQueryOptions,
   type UseMutationOptions,
+  type UseSuspenseQueryOptions,
 } from '@tanstack/react-query';
+import { useCallback } from 'react';
 import { queryKeys } from '@/lib/api/query-keys';
 import { sessionsService, type BulkCreateResult, type BulkCreateSessionsDto } from '@/lib/api/services/sessions';
 import type {
@@ -68,6 +71,92 @@ export function useSessionCheckIns(
 }
 
 // ============================================================================
+// Suspense Query Hooks
+// ============================================================================
+
+/**
+ * Suspense-enabled hook to fetch all sessions
+ * Use with React Suspense for cleaner loading states
+ */
+export function useSessionsSuspense(
+  options?: Omit<UseSuspenseQueryOptions<Session[], ApiError>, 'queryKey' | 'queryFn'>
+) {
+  return useSuspenseQuery({
+    queryKey: queryKeys.sessions.lists(),
+    queryFn: () => sessionsService.getAll(),
+    ...options,
+  });
+}
+
+/**
+ * Suspense-enabled hook to fetch a single session by ID
+ */
+export function useSessionSuspense(
+  id: string,
+  options?: Omit<UseSuspenseQueryOptions<Session, ApiError>, 'queryKey' | 'queryFn'>
+) {
+  return useSuspenseQuery({
+    queryKey: queryKeys.sessions.detail(id),
+    queryFn: () => sessionsService.getById(id),
+    ...options,
+  });
+}
+
+// ============================================================================
+// Prefetch Hooks
+// ============================================================================
+
+/**
+ * Prefetch a single session by ID
+ * Use on hover/focus for instant navigation
+ */
+export function usePrefetchSession() {
+  const queryClient = useQueryClient();
+  return useCallback(
+    (id: string) => {
+      queryClient.prefetchQuery({
+        queryKey: queryKeys.sessions.detail(id),
+        queryFn: () => sessionsService.getById(id),
+        staleTime: 60 * 1000, // Consider fresh for 1 minute
+      });
+    },
+    [queryClient]
+  );
+}
+
+/**
+ * Prefetch all sessions
+ * Useful for dashboard preloading
+ */
+export function usePrefetchSessions() {
+  const queryClient = useQueryClient();
+  return useCallback(() => {
+    queryClient.prefetchQuery({
+      queryKey: queryKeys.sessions.lists(),
+      queryFn: () => sessionsService.getAll(),
+      staleTime: 30 * 1000,
+    });
+  }, [queryClient]);
+}
+
+/**
+ * Prefetch session check-ins
+ */
+export function usePrefetchSessionCheckIns() {
+  const queryClient = useQueryClient();
+  return useCallback(
+    (sessionId: string) => {
+      queryClient.prefetchQuery({
+        queryKey: queryKeys.sessions.checkIns(sessionId),
+        queryFn: () => sessionsService.getCheckIns(sessionId),
+        staleTime: 30 * 1000,
+      });
+    },
+    [queryClient]
+  );
+}
+
+// ============================================================================
 // Mutation Hooks
 // ============================================================================
 
@@ -102,6 +191,9 @@ export function useCreateSession(
           isOpen: newSession.isOpen ?? false,
           capacity: newSession.capacity,
           checkInsCount: 0,
+          capacityEnforced: newSession.capacityEnforced ?? true,
+          requiresRegistration: newSession.requiresRegistration ?? false,
+          day: newSession.day ?? 1,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         };

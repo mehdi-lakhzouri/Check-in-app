@@ -1,13 +1,37 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, VersioningType } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { ConfigService } from '@nestjs/config';
 import { AppModule } from './app.module';
+import { RedisIoAdapter } from './common/adapters';
+import { PinoLoggerService } from './common/logger';
 import helmet from 'helmet';
 
 async function bootstrap() {
+  // Create Pino logger instance for bootstrap
+  const logger = new PinoLoggerService();
+  logger.setContext('Bootstrap');
+
   const app = await NestFactory.create(AppModule, {
-    logger: ['error', 'warn', 'log', 'debug', 'verbose'],
+    // Use Pino logger for NestJS internal logging
+    logger: process.env.NODE_ENV === 'production' 
+      ? logger 
+      : ['error', 'warn', 'log', 'debug', 'verbose'],
+    bufferLogs: true,
   });
+
+  // Use Pino as the app logger
+  if (process.env.NODE_ENV === 'production') {
+    app.useLogger(logger);
+  }
+
+  // Get ConfigService for Redis adapter
+  const configService = app.get(ConfigService);
+
+  // Configure Redis adapter for Socket.IO (horizontal scaling)
+  const redisIoAdapter = new RedisIoAdapter(app, configService);
+  await redisIoAdapter.connectToRedis();
+  app.useWebSocketAdapter(redisIoAdapter);
 
   // Security middleware
   app.use(helmet());
@@ -64,8 +88,19 @@ async function bootstrap() {
   const port = process.env.PORT || 3000;
   await app.listen(port);
   
-  console.log(`🚀 Application is running on: http://localhost:${port}`);
-  console.log(`📚 Swagger documentation: http://localhost:${port}/api/docs`);
-  console.log(`🔗 API Base URL: http://localhost:${port}/api/v1`);
+  // Use structured logging for startup messages
+  logger.log('Application started successfully', {
+    port,
+    environment: process.env.NODE_ENV || 'development',
+    swagger: `http://localhost:${port}/api/docs`,
+    apiBase: `http://localhost:${port}/api/v1`,
+  });
+
+  // Keep pretty console output for development
+  if (process.env.NODE_ENV !== 'production') {
+    console.log(`\n🚀 Application is running on: http://localhost:${port}`);
+    console.log(`📚 Swagger documentation: http://localhost:${port}/api/docs`);
+    console.log(`🔗 API Base URL: http://localhost:${port}/api/v1\n`);
+  }
 }
 bootstrap();

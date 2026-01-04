@@ -6,9 +6,12 @@ import {
   useQuery,
   useMutation,
   useQueryClient,
+  useSuspenseQuery,
   type UseQueryOptions,
   type UseMutationOptions,
+  type UseSuspenseQueryOptions,
 } from '@tanstack/react-query';
+import { useCallback } from 'react';
 import { queryKeys } from '@/lib/api/query-keys';
 import { checkInsService, type CheckInResponse, type CheckInStats } from '@/lib/api/services/checkins';
 import type { CheckIn, CheckInQrDto, CheckInManualDto } from '@/lib/schemas';
@@ -44,6 +47,46 @@ export function useCheckInStats(
     queryFn: () => checkInsService.getStats(sessionId),
     ...options,
   });
+}
+
+// ============================================================================
+// Suspense Query Hooks
+// ============================================================================
+
+/**
+ * Suspense-enabled hook to fetch all check-ins
+ * Use with React Suspense for cleaner loading states
+ */
+export function useCheckInsSuspense(
+  filters?: { sessionId?: string; participantId?: string },
+  options?: Omit<UseSuspenseQueryOptions<CheckIn[], ApiError>, 'queryKey' | 'queryFn'>
+) {
+  return useSuspenseQuery({
+    queryKey: queryKeys.checkIns.list(filters),
+    queryFn: () => checkInsService.getAll(filters),
+    ...options,
+  });
+}
+
+// ============================================================================
+// Prefetch Hooks
+// ============================================================================
+
+/**
+ * Prefetch check-ins with optional filters
+ */
+export function usePrefetchCheckIns() {
+  const queryClient = useQueryClient();
+  return useCallback(
+    (filters?: { sessionId?: string; participantId?: string }) => {
+      queryClient.prefetchQuery({
+        queryKey: queryKeys.checkIns.list(filters),
+        queryFn: () => checkInsService.getAll(filters),
+        staleTime: 30 * 1000,
+      });
+    },
+    [queryClient]
+  );
 }
 
 // ============================================================================

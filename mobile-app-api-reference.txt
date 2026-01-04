@@ -1,0 +1,528 @@
+================================================================================
+IASTAM CHECK-IN MOBILE APPLICATION - API REFERENCE
+================================================================================
+Last Updated: January 2, 2026
+Backend: NestJS with MongoDB
+================================================================================
+
+================================================================================
+1. BASE CONFIGURATION
+================================================================================
+
+Base URL Format: http://{SERVER_IP}:{PORT}/api/v1
+Default Port: 3000
+Example: http://192.168.1.100:3000/api/v1
+
+WebSocket URL: http://{SERVER_IP}:{PORT}/realtime
+WebSocket Transports: ['websocket', 'polling']
+
+Authentication: None (Public API - no tokens required)
+
+Response Format (Standard):
+{
+  "status": "success" | "error",
+  "message": "Description message",
+  "data": { ... },           // Present on success
+  "meta": { ... },           // Present for paginated responses
+  "capacityInfo": { ... }    // Present for check-in responses
+}
+
+Error Response Format:
+{
+  "status": "error",
+  "message": "Error description",
+  "statusCode": 400 | 404 | 409 | 429 | 500
+}
+
+================================================================================
+2. CORE APIs FOR OFFICER CHECK-IN APP
+================================================================================
+
+--------------------------------------------------------------------------------
+2.1 SESSIONS API (/sessions)
+--------------------------------------------------------------------------------
+
+GET /api/v1/sessions
+Description: Get all sessions with pagination
+Query Params:
+  - page?: number (default: 1)
+  - limit?: number (default: 20)
+  - search?: string (search by name)
+  - isOpen?: boolean (filter by open status)
+  - day?: number (filter by day number)
+Response:
+{
+  "status": "success",
+  "message": "Sessions retrieved successfully",
+  "data": [Session],
+  "meta": {
+    "total": number,
+    "page": number,
+    "limit": number,
+    "pages": number
+  }
+}
+
+GET /api/v1/sessions/upcoming?limit=5
+Description: Get upcoming sessions (ordered by startTime)
+Response:
+{
+  "status": "success",
+  "data": [Session]
+}
+
+GET /api/v1/sessions/stats
+Description: Get session statistics
+Response:
+{
+  "status": "success",
+  "data": {
+    "total": number,
+    "open": number,
+    "scheduled": number,
+    "ended": number,
+    "todayCheckIns": number
+  }
+}
+
+GET /api/v1/sessions/:id
+Description: Get single session by ID
+Response:
+{
+  "status": "success",
+  "data": Session
+}
+
+GET /api/v1/sessions/:id/checkins
+Description: Get all check-ins for a session (with participant details)
+Response:
+{
+  "status": "success",
+  "data": [CheckInWithParticipant]
+}
+
+GET /api/v1/sessions/:id/participants
+Description: Get all registered participants for a session
+Response:
+{
+  "status": "success",
+  "data": [Participant]
+}
+
+--------------------------------------------------------------------------------
+2.2 CHECK-IN API (/checkin) - MOST IMPORTANT FOR MOBILE
+--------------------------------------------------------------------------------
+
+POST /api/v1/checkin/qr
+Description: Check in participant using QR code scan
+Request Body:
+{
+  "qrCode": "QR-ABC123XYZ",          // Required - scanned QR code
+  "sessionId": "507f1f77bcf86cd799439011",  // Required - session MongoDB ID
+  "checkedInBy": "Officer Name"      // Optional - who performed check-in
+}
+Success Response:
+{
+  "status": "success",
+  "message": "QR check-in successful",
+  "data": CheckIn,
+  "capacityInfo": {
+    "current": number,
+    "capacity": number,
+    "percentFull": number,
+    "isAtCapacity": boolean,
+    "remaining": number | null
+  }
+}
+Error Responses:
+  - 400: "Session is not open for check-in"
+  - 400: "Session is at capacity"
+  - 400: "Participant is not registered for this session" (if requiresRegistration=true)
+  - 404: "Participant not found"
+  - 409: "Participant already checked in to this session"
+
+POST /api/v1/checkin
+Description: Manual check-in by participant ID
+Request Body:
+{
+  "participantId": "507f1f77bcf86cd799439011",  // Required
+  "sessionId": "507f1f77bcf86cd799439011",      // Required
+  "method": "manual",                            // Optional (default: "manual")
+  "checkedInBy": "Officer Name",                // Optional
+  "notes": "Late arrival"                       // Optional
+}
+Response: Same as QR check-in
+
+GET /api/v1/checkin/verify/:participantId/:sessionId
+Description: Verify if participant is already checked in
+Response:
+{
+  "status": "success",
+  "data": { "isCheckedIn": boolean }
+}
+
+GET /api/v1/checkin/stats?sessionId=xxx
+Description: Get check-in statistics (optionally filtered by session)
+Response:
+{
+  "status": "success",
+  "data": {
+    "total": number,
+    "today": number,
+    "byMethod": { "qr": number, "manual": number },
+    "lateCheckIns": number
+  }
+}
+
+GET /api/v1/checkin/recent?limit=10&sessionId=xxx
+Description: Get recent check-ins
+Response:
+{
+  "status": "success",
+  "data": [CheckInWithParticipant]
+}
+
+DELETE /api/v1/checkin/:id
+Description: Undo/delete a check-in
+Response:
+{
+  "status": "success",
+  "message": "Check-in deleted successfully",
+  "data": CheckIn
+}
+
+--------------------------------------------------------------------------------
+2.3 PARTICIPANTS API (/participants) - For Manual Search
+--------------------------------------------------------------------------------
+
+GET /api/v1/participants?search=john
+Description: Search participants by name/email
+Query Params:
+  - search?: string
+  - page?: number
+  - limit?: number
+  - status?: 'regular' | 'ambassador' | 'travel_grant'
+  - isActive?: boolean
+Response:
+{
+  "status": "success",
+  "data": [Participant],
+  "meta": { total, page, limit, pages }
+}
+
+GET /api/v1/participants/qr/:qrCode
+Description: Find participant by QR code (before check-in)
+Params: qrCode (e.g., "QR-ABC123XYZ")
+Response:
+{
+  "status": "success",
+  "data": Participant
+}
+Error: 404 if not found
+
+GET /api/v1/participants/:id
+Description: Get participant by ID
+Response:
+{
+  "status": "success",
+  "data": Participant
+}
+
+GET /api/v1/participants/:id/details
+Description: Get detailed participant info with QR code data URL
+Response:
+{
+  "status": "success",
+  "data": {
+    ...Participant,
+    "qrDataUrl": "data:image/png;base64,..."  // Base64 QR image
+  }
+}
+
+--------------------------------------------------------------------------------
+2.4 HEALTH CHECK API (/health)
+--------------------------------------------------------------------------------
+
+GET /api/v1/health
+Description: Full health check
+Response:
+{
+  "status": "ok",
+  "timestamp": "2026-01-02T10:00:00.000Z",
+  "uptime": 3600,
+  "database": { "status": "connected", "name": "iastam-checkin" },
+  "memory": { "heapUsed": "50.00 MB", "heapTotal": "100.00 MB", "rss": "120.00 MB" }
+}
+
+GET /api/v1/health/live
+Description: Liveness probe (lightweight)
+Response: { "status": "ok" }
+
+GET /api/v1/health/ready
+Description: Readiness probe (checks DB)
+Response: { "status": "ok", "database": "connected" }
+
+================================================================================
+3. DATA MODELS
+================================================================================
+
+--------------------------------------------------------------------------------
+3.1 Session Model
+--------------------------------------------------------------------------------
+{
+  "_id": "507f1f77bcf86cd799439011",  // MongoDB ObjectId as string
+  "name": "Opening Ceremony",
+  "description": "Welcome session",
+  "startTime": "2026-01-02T09:00:00.000Z",  // ISO 8601
+  "endTime": "2026-01-02T10:00:00.000Z",
+  "location": "Main Hall",
+  "isOpen": true,                            // Check-in availability
+  "status": "scheduled" | "open" | "ended" | "closed" | "cancelled",
+  "capacity": 100,                           // 0 = unlimited
+  "capacityEnforced": true,
+  "requiresRegistration": false,             // If true, only registered can check-in
+  "checkInsCount": 45,
+  "day": 1,
+  "createdAt": "2026-01-01T00:00:00.000Z",
+  "updatedAt": "2026-01-02T08:00:00.000Z"
+}
+
+Session Status Flow:
+  SCHEDULED -> OPEN (manual or auto 10min before startTime)
+           -> ENDED (auto after endTime) or CLOSED (manual)
+           -> CANCELLED (manual)
+
+--------------------------------------------------------------------------------
+3.2 Participant Model
+--------------------------------------------------------------------------------
+{
+  "_id": "507f1f77bcf86cd799439011",
+  "name": "John Doe",
+  "email": "john.doe@example.com",
+  "organization": "ACME Corp",
+  "phone": "+1234567890",
+  "qrCode": "QR-ABC123XYZ",           // Unique QR code string
+  "isActive": true,
+  "status": "regular" | "ambassador" | "travel_grant",
+  "ambassadorPoints": 0,
+  "referredParticipantIds": [],
+  "travelGrantApplied": false,
+  "travelGrantApproved": null,
+  "notes": "VIP guest",
+  "createdAt": "2026-01-01T00:00:00.000Z",
+  "updatedAt": "2026-01-01T00:00:00.000Z"
+}
+
+Participant Status:
+  - regular: Standard attendee
+  - ambassador: Referral program participant
+  - travel_grant: Applied for travel grant
+
+--------------------------------------------------------------------------------
+3.3 CheckIn Model
+--------------------------------------------------------------------------------
+{
+  "_id": "507f1f77bcf86cd799439011",
+  "participantId": "507f1f77bcf86cd799439011" | { Participant },  // Populated when fetched
+  "sessionId": "507f1f77bcf86cd799439011" | { Session },          // Populated when fetched
+  "checkInTime": "2026-01-02T09:30:00.000Z",
+  "method": "qr" | "manual",
+  "checkedInBy": "Officer Name",
+  "notes": "Late arrival",
+  "isLate": false,                    // True if after threshold (10min from start)
+  "createdAt": "2026-01-02T09:30:00.000Z",
+  "updatedAt": "2026-01-02T09:30:00.000Z"
+}
+
+CheckIn Method:
+  - qr: Scanned QR code
+  - manual: Selected from list
+
+--------------------------------------------------------------------------------
+3.4 Registration Model (For sessions with requiresRegistration=true)
+--------------------------------------------------------------------------------
+{
+  "_id": "507f1f77bcf86cd799439011",
+  "participantId": "507f1f77bcf86cd799439011",
+  "sessionId": "507f1f77bcf86cd799439011",
+  "registrationDate": "2026-01-01T00:00:00.000Z",
+  "status": "confirmed" | "pending" | "cancelled",
+  "notes": "Dietary requirements",
+  "createdAt": "2026-01-01T00:00:00.000Z",
+  "updatedAt": "2026-01-01T00:00:00.000Z"
+}
+
+================================================================================
+4. WEBSOCKET REAL-TIME EVENTS
+================================================================================
+
+Connection: socket.io-client to http://{SERVER_IP}:{PORT}/realtime
+
+--------------------------------------------------------------------------------
+4.1 Connection Events
+--------------------------------------------------------------------------------
+
+Event: 'connected'
+Payload:
+{
+  "message": "Connected to IASTAM real-time server",
+  "clientId": "socket-id-xxx",
+  "timestamp": "2026-01-02T10:00:00.000Z"
+}
+
+--------------------------------------------------------------------------------
+4.2 Session Subscriptions
+--------------------------------------------------------------------------------
+
+To Subscribe: socket.emit('subscribe:sessions')
+
+Event: 'sessions:data' (Initial data after subscribe)
+Payload:
+{
+  "type": "initial",
+  "data": [Session],
+  "timestamp": "2026-01-02T10:00:00.000Z"
+}
+
+Event: 'sessions:status-update' (Real-time status changes)
+Payload:
+{
+  "type": "status-update",
+  "data": {
+    "sessionId": "xxx",
+    "sessionName": "Opening Ceremony",
+    "previousStatus": "scheduled",
+    "newStatus": "open",
+    "previousIsOpen": false,
+    "newIsOpen": true,
+    "reason": "auto_open" | "auto_end" | "manual",
+    "timestamp": "2026-01-02T08:50:00.000Z"
+  },
+  "timestamp": "2026-01-02T08:50:00.000Z"
+}
+
+Event: 'sessions:checkin' (New check-in occurred)
+Payload:
+{
+  "type": "checkin",
+  "data": {
+    "sessionId": "xxx",
+    "participantId": "xxx",
+    "participantName": "John Doe",
+    "sessionName": "Opening Ceremony",
+    "timestamp": "2026-01-02T09:30:00.000Z",
+    "isLate": false
+  },
+  "timestamp": "2026-01-02T09:30:00.000Z"
+}
+
+Event: 'sessions:capacity-update' (Capacity changed)
+Payload:
+{
+  "type": "capacity-update",
+  "data": {
+    "sessionId": "xxx",
+    "sessionName": "Opening Ceremony",
+    "checkInsCount": 45,
+    "capacity": 100,
+    "percentFull": 45,
+    "isNearCapacity": false,
+    "isAtCapacity": false
+  },
+  "timestamp": "2026-01-02T09:30:00.000Z"
+}
+
+Event: 'sessionStatusUpdated' (Global event - not room-specific)
+Payload:
+{
+  "sessionId": "xxx",
+  "sessionName": "Opening Ceremony",
+  "previousStatus": "scheduled",
+  "newStatus": "open",
+  "isOpen": true,
+  "reason": "manual",
+  "timestamp": "2026-01-02T08:50:00.000Z"
+}
+
+--------------------------------------------------------------------------------
+4.3 Unsubscribe
+--------------------------------------------------------------------------------
+
+To Unsubscribe: socket.emit('unsubscribe', { channel: 'sessions' })
+
+================================================================================
+5. ERROR CODES REFERENCE
+================================================================================
+
+HTTP Status Codes:
+  200 - OK (Success for GET, PATCH, DELETE)
+  201 - Created (Success for POST)
+  400 - Bad Request (Validation error, business rule violation)
+  404 - Not Found (Resource doesn't exist)
+  409 - Conflict (Duplicate entry)
+  429 - Too Many Requests (Rate limit exceeded)
+  500 - Internal Server Error
+
+Common Error Messages for Check-in:
+  - "Session is not open for check-in"
+  - "Session is at capacity"
+  - "Participant is not registered for this session"
+  - "Participant not found"
+  - "Participant already checked in to this session"
+  - "Session not found"
+  - "Invalid participant ID format"
+  - "Invalid session ID format"
+
+================================================================================
+6. QR CODE FORMAT
+================================================================================
+
+Format: QR-{ALPHANUMERIC}
+Pattern: /^QR-[A-Z0-9-]+$/i
+Example: QR-ABC123XYZ, QR-5F3A1B2C, QR-CONF2026-001
+
+The QR code encodes a plain text string (not a URL).
+Mobile app should:
+  1. Scan QR code -> Extract string (e.g., "QR-ABC123XYZ")
+  2. POST to /api/v1/checkin/qr with { qrCode: "QR-ABC123XYZ", sessionId: "..." }
+
+================================================================================
+7. RATE LIMITING
+================================================================================
+
+Default: 100 requests per 60 seconds per IP
+Configured via: THROTTLE_LIMIT=100, THROTTLE_TTL=60000
+
+Response when exceeded:
+{
+  "statusCode": 429,
+  "message": "ThrottlerException: Too Many Requests"
+}
+
+================================================================================
+8. ADDITIONAL APIs (Lower Priority for Officer App)
+================================================================================
+
+--------------------------------------------------------------------------------
+8.1 Registrations API (/registrations)
+--------------------------------------------------------------------------------
+
+GET /api/v1/registrations - List all registrations
+POST /api/v1/registrations - Create registration
+GET /api/v1/registrations/:id - Get registration
+PATCH /api/v1/registrations/:id - Update registration
+DELETE /api/v1/registrations/:id - Delete registration
+GET /api/v1/registrations/stats/overview - Get stats
+
+--------------------------------------------------------------------------------
+8.2 Reports API (/reports)
+--------------------------------------------------------------------------------
+
+GET /api/v1/reports/attendance - Generate attendance report
+GET /api/v1/reports/session/:sessionId - Session-specific report
+GET /api/v1/reports/statistics - Overall statistics
+GET /api/v1/reports/sessions-sheets - Sessions overview
+
+================================================================================
+END OF API REFERENCE
+================================================================================

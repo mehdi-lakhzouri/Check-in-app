@@ -7,9 +7,12 @@ import {
   useQuery,
   useMutation,
   useQueryClient,
+  useSuspenseQuery,
   type UseQueryOptions,
   type UseMutationOptions,
+  type UseSuspenseQueryOptions,
 } from '@tanstack/react-query';
+import { useCallback } from 'react';
 import { queryKeys } from '@/lib/api/query-keys';
 import { participantsService, type QRCodeData, type BulkUploadResult } from '@/lib/api/services/participants';
 import type {
@@ -97,6 +100,110 @@ export function useGenerateQRCode(
     gcTime: 0, // Don't cache QR codes
     ...options,
   });
+}
+
+// ============================================================================
+// Suspense Query Hooks
+// ============================================================================
+
+/**
+ * Suspense-enabled hook to fetch all participants
+ * Use with React Suspense for cleaner loading states
+ */
+export function useParticipantsSuspense(
+  filters?: { search?: string; status?: string },
+  options?: Omit<UseSuspenseQueryOptions<Participant[], ApiError>, 'queryKey' | 'queryFn'>
+) {
+  return useSuspenseQuery({
+    queryKey: queryKeys.participants.list(filters),
+    queryFn: () => participantsService.getAll(filters),
+    ...options,
+  });
+}
+
+/**
+ * Suspense-enabled hook to fetch a single participant by ID
+ */
+export function useParticipantSuspense(
+  id: string,
+  options?: Omit<UseSuspenseQueryOptions<Participant, ApiError>, 'queryKey' | 'queryFn'>
+) {
+  return useSuspenseQuery({
+    queryKey: queryKeys.participants.detail(id),
+    queryFn: () => participantsService.getById(id),
+    ...options,
+  });
+}
+
+/**
+ * Suspense-enabled hook to fetch detailed participant information
+ */
+export function useParticipantDetailsSuspense(
+  id: string,
+  options?: Omit<UseSuspenseQueryOptions<ParticipantDetails, ApiError>, 'queryKey' | 'queryFn'>
+) {
+  return useSuspenseQuery({
+    queryKey: queryKeys.participants.fullDetails(id),
+    queryFn: () => participantsService.getDetails(id),
+    ...options,
+  });
+}
+
+// ============================================================================
+// Prefetch Hooks
+// ============================================================================
+
+/**
+ * Prefetch a single participant by ID
+ * Use on hover/focus for instant navigation
+ */
+export function usePrefetchParticipant() {
+  const queryClient = useQueryClient();
+  return useCallback(
+    (id: string) => {
+      queryClient.prefetchQuery({
+        queryKey: queryKeys.participants.detail(id),
+        queryFn: () => participantsService.getById(id),
+        staleTime: 60 * 1000,
+      });
+    },
+    [queryClient]
+  );
+}
+
+/**
+ * Prefetch participant details
+ * Useful for pre-loading detail views
+ */
+export function usePrefetchParticipantDetails() {
+  const queryClient = useQueryClient();
+  return useCallback(
+    (id: string) => {
+      queryClient.prefetchQuery({
+        queryKey: queryKeys.participants.fullDetails(id),
+        queryFn: () => participantsService.getDetails(id),
+        staleTime: 60 * 1000,
+      });
+    },
+    [queryClient]
+  );
+}
+
+/**
+ * Prefetch all participants
+ */
+export function usePrefetchParticipants() {
+  const queryClient = useQueryClient();
+  return useCallback(
+    (filters?: { search?: string; status?: string }) => {
+      queryClient.prefetchQuery({
+        queryKey: queryKeys.participants.list(filters),
+        queryFn: () => participantsService.getAll(filters),
+        staleTime: 30 * 1000,
+      });
+    },
+    [queryClient]
+  );
 }
 
 // ============================================================================

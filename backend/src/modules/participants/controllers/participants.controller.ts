@@ -148,6 +148,93 @@ export class ParticipantsController {
     };
   }
 
+  @Get('travel-grants')
+  @ApiOperation({ summary: 'Get all travel grant applicants' })
+  @ApiResponse({ status: 200, description: 'Travel grant applicants retrieved successfully' })
+  async getAllTravelGrants() {
+    const applicants = await this.participantsService.getAllTravelGrants();
+    return {
+      status: 'success',
+      message: 'Travel grant applicants retrieved successfully',
+      data: applicants,
+    };
+  }
+
+  @Get('ambassadors')
+  @ApiOperation({ summary: 'Get all ambassadors' })
+  @ApiResponse({ status: 200, description: 'Ambassadors retrieved successfully' })
+  async getAllAmbassadors() {
+    const ambassadors = await this.participantsService.getAllAmbassadors();
+    return {
+      status: 'success',
+      message: 'Ambassadors retrieved successfully',
+      data: ambassadors,
+    };
+  }
+
+  @Get('ambassadors/search')
+  @ApiOperation({ summary: 'Search ambassadors with pagination and sorting' })
+  @ApiQuery({ name: 'search', required: false, type: String })
+  @ApiQuery({ name: 'sortBy', required: false, type: String, example: 'ambassadorPoints' })
+  @ApiQuery({ name: 'sortOrder', required: false, enum: ['asc', 'desc'], example: 'desc' })
+  @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
+  @ApiQuery({ name: 'limit', required: false, type: Number, example: 10 })
+  @ApiResponse({ status: 200, description: 'Ambassadors retrieved successfully' })
+  async searchAmbassadors(
+    @Query('search') search?: string,
+    @Query('sortBy') sortBy: string = 'ambassadorPoints',
+    @Query('sortOrder') sortOrder: 'asc' | 'desc' = 'desc',
+    @Query('page') page: number = 1,
+    @Query('limit') limit: number = 10,
+  ) {
+    const result = await this.participantsService.searchAmbassadors(
+      search,
+      sortBy,
+      sortOrder,
+      Number(page),
+      Number(limit),
+    );
+    return {
+      status: 'success',
+      message: 'Ambassadors retrieved successfully',
+      data: result.data,
+      meta: result.meta,
+    };
+  }
+
+  @Get('travel-grants/search')
+  @ApiOperation({ summary: 'Search travel grant applicants with pagination' })
+  @ApiQuery({ name: 'search', required: false, type: String })
+  @ApiQuery({ name: 'status', required: false, enum: ['pending', 'approved', 'rejected'] })
+  @ApiQuery({ name: 'sortBy', required: false, type: String, example: 'travelGrantAppliedAt' })
+  @ApiQuery({ name: 'sortOrder', required: false, enum: ['asc', 'desc'], example: 'desc' })
+  @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
+  @ApiQuery({ name: 'limit', required: false, type: Number, example: 10 })
+  @ApiResponse({ status: 200, description: 'Travel grant applicants retrieved successfully' })
+  async searchTravelGrants(
+    @Query('search') search?: string,
+    @Query('status') status?: 'pending' | 'approved' | 'rejected',
+    @Query('sortBy') sortBy: string = 'travelGrantAppliedAt',
+    @Query('sortOrder') sortOrder: 'asc' | 'desc' = 'desc',
+    @Query('page') page: number = 1,
+    @Query('limit') limit: number = 10,
+  ) {
+    const result = await this.participantsService.searchTravelGrants(
+      search,
+      status,
+      sortBy,
+      sortOrder,
+      Number(page),
+      Number(limit),
+    );
+    return {
+      status: 'success',
+      message: 'Travel grant applicants retrieved successfully',
+      data: result.data,
+      meta: result.meta,
+    };
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Get a participant by ID' })
   @ApiParam({ name: 'id', description: 'Participant ID', example: '507f1f77bcf86cd799439011' })
@@ -307,6 +394,32 @@ export class ParticipantsController {
     };
   }
 
+  @Post(':id/ambassador/sync-referrals')
+  @ApiOperation({ summary: 'Sync ambassador referrals based on organization' })
+  @ApiParam({ name: 'id', description: 'Ambassador ID', example: '507f1f77bcf86cd799439011' })
+  @ApiResponse({ status: 200, description: 'Referrals synced successfully' })
+  @ApiResponse({ status: 400, description: 'Participant is not an ambassador or has no organization' })
+  async syncAmbassadorReferrals(@Param('id', ParseMongoIdPipe) id: string) {
+    const result = await this.participantsService.syncOrganizationReferrals(id);
+    return {
+      status: 'success',
+      message: `Synced referrals: added ${result.addedCount} new, total ${result.totalReferrals}`,
+      data: result,
+    };
+  }
+
+  @Post('ambassadors/sync-all-referrals')
+  @ApiOperation({ summary: 'Sync referrals for all ambassadors based on their organizations' })
+  @ApiResponse({ status: 200, description: 'All ambassador referrals synced successfully' })
+  async syncAllAmbassadorReferrals() {
+    const result = await this.participantsService.syncAllAmbassadorReferrals();
+    return {
+      status: 'success',
+      message: `Processed ${result.processed} ambassadors, added ${result.totalAdded} total referrals`,
+      data: result,
+    };
+  }
+
   @Post(':id/travel-grant/apply')
   @ApiOperation({ summary: 'Apply for travel grant' })
   @ApiParam({ name: 'id', description: 'Participant ID', example: '507f1f77bcf86cd799439011' })
@@ -335,6 +448,89 @@ export class ParticipantsController {
       status: 'success',
       message: `Travel grant ${dto.approved ? 'approved' : 'rejected'} successfully`,
       data: participant,
+    };
+  }
+
+  @Post(':id/travel-grant/approve')
+  @ApiOperation({ summary: 'Approve travel grant application' })
+  @ApiParam({ name: 'id', description: 'Participant ID', example: '507f1f77bcf86cd799439011' })
+  @ApiResponse({ status: 200, description: 'Travel grant approved successfully' })
+  @ApiResponse({ status: 400, description: 'No travel grant application found' })
+  async approveTravelGrant(@Param('id', ParseMongoIdPipe) id: string) {
+    const participant = await this.participantsService.decideTravelGrant(id, true);
+    return {
+      status: 'success',
+      message: 'Travel grant approved successfully',
+      data: participant,
+    };
+  }
+
+  @Post(':id/travel-grant/reject')
+  @ApiOperation({ summary: 'Reject travel grant application' })
+  @ApiParam({ name: 'id', description: 'Participant ID', example: '507f1f77bcf86cd799439011' })
+  @ApiResponse({ status: 200, description: 'Travel grant rejected successfully' })
+  @ApiResponse({ status: 400, description: 'No travel grant application found' })
+  async rejectTravelGrant(@Param('id', ParseMongoIdPipe) id: string) {
+    const participant = await this.participantsService.decideTravelGrant(id, false);
+    return {
+      status: 'success',
+      message: 'Travel grant rejected successfully',
+      data: participant,
+    };
+  }
+
+  @Post(':id/ambassador/promote')
+  @ApiOperation({ summary: 'Promote participant to ambassador' })
+  @ApiParam({ name: 'id', description: 'Participant ID', example: '507f1f77bcf86cd799439011' })
+  @ApiResponse({ status: 200, description: 'Participant promoted to ambassador successfully' })
+  @ApiResponse({ status: 400, description: 'Participant is already an ambassador' })
+  async promoteToAmbassador(@Param('id', ParseMongoIdPipe) id: string) {
+    const participant = await this.participantsService.promoteToAmbassador(id);
+    return {
+      status: 'success',
+      message: 'Participant promoted to ambassador successfully',
+      data: participant,
+    };
+  }
+
+  @Post(':id/ambassador/demote')
+  @ApiOperation({ summary: 'Demote ambassador to regular participant' })
+  @ApiParam({ name: 'id', description: 'Ambassador ID', example: '507f1f77bcf86cd799439011' })
+  @ApiResponse({ status: 200, description: 'Ambassador demoted successfully' })
+  @ApiResponse({ status: 400, description: 'Participant is not an ambassador' })
+  async demoteFromAmbassador(@Param('id', ParseMongoIdPipe) id: string) {
+    const participant = await this.participantsService.demoteFromAmbassador(id);
+    return {
+      status: 'success',
+      message: 'Ambassador demoted to regular participant successfully',
+      data: participant,
+    };
+  }
+
+  @Get(':id/ambassador/details')
+  @ApiOperation({ summary: 'Get detailed ambassador information with referrals' })
+  @ApiParam({ name: 'id', description: 'Ambassador ID', example: '507f1f77bcf86cd799439011' })
+  @ApiResponse({ status: 200, description: 'Ambassador details retrieved successfully' })
+  @ApiResponse({ status: 400, description: 'Participant is not an ambassador' })
+  async getAmbassadorDetails(@Param('id', ParseMongoIdPipe) id: string) {
+    const details = await this.participantsService.getAmbassadorDetails(id);
+    return {
+      status: 'success',
+      message: 'Ambassador details retrieved successfully',
+      data: details,
+    };
+  }
+
+  @Get(':id/travel-grant/details')
+  @ApiOperation({ summary: 'Get detailed travel grant applicant information' })
+  @ApiParam({ name: 'id', description: 'Participant ID', example: '507f1f77bcf86cd799439011' })
+  @ApiResponse({ status: 200, description: 'Travel grant details retrieved successfully' })
+  async getTravelGrantDetails(@Param('id', ParseMongoIdPipe) id: string) {
+    const details = await this.participantsService.getTravelGrantDetails(id);
+    return {
+      status: 'success',
+      message: 'Travel grant details retrieved successfully',
+      data: details,
     };
   }
 }

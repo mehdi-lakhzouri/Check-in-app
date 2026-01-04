@@ -31,7 +31,45 @@ export class RegistrationRepository extends BaseRepository<RegistrationDocument>
       filter.sessionId = new Types.ObjectId(filterDto.sessionId);
     }
 
-    return this.findWithPagination(filter, filterDto, []);
+    // Use custom pagination with populate
+    return this.findWithPaginationAndPopulate(filter, filterDto);
+  }
+
+  /**
+   * Find with pagination and populate participant/session
+   */
+  private async findWithPaginationAndPopulate(
+    filter: QueryFilter<RegistrationDocument>,
+    pagination: RegistrationFilterDto,
+  ): Promise<PaginatedResult<RegistrationDocument>> {
+    const { page = 1, limit = 10, sortBy = 'createdAt', sortOrder = 'desc' } = pagination;
+    const skip = (page - 1) * limit;
+
+    const [data, total] = await Promise.all([
+      this.registrationModel
+        .find(filter)
+        .populate('participantId')
+        .populate('sessionId')
+        .sort({ [sortBy]: sortOrder === 'asc' ? 1 : -1 })
+        .skip(skip)
+        .limit(limit)
+        .exec(),
+      this.registrationModel.countDocuments(filter).exec(),
+    ]);
+
+    const totalPages = Math.ceil(total / limit);
+
+    return {
+      data,
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages,
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1,
+      },
+    };
   }
 
   async findByParticipantAndSession(

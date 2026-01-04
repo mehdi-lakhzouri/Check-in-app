@@ -11,6 +11,13 @@ export {
   useUpdateSession,
   useDeleteSession,
   useBulkCreateSessions,
+  // Suspense hooks
+  useSessionsSuspense,
+  useSessionSuspense,
+  // Prefetch hooks
+  usePrefetchSession,
+  usePrefetchSessions,
+  usePrefetchSessionCheckIns,
 } from './use-sessions';
 
 // Participants
@@ -26,6 +33,14 @@ export {
   useBulkUploadParticipants,
   downloadParticipantQRCodes,
   downloadParticipantTemplate,
+  // Suspense hooks
+  useParticipantsSuspense,
+  useParticipantSuspense,
+  useParticipantDetailsSuspense,
+  // Prefetch hooks
+  usePrefetchParticipant,
+  usePrefetchParticipantDetails,
+  usePrefetchParticipants,
 } from './use-participants';
 
 // Check-ins
@@ -35,6 +50,10 @@ export {
   useCheckInWithQr,
   useCheckInManual,
   useDeleteCheckIn,
+  // Suspense hooks
+  useCheckInsSuspense,
+  // Prefetch hooks
+  usePrefetchCheckIns,
 } from './use-checkins';
 
 // Registrations
@@ -73,3 +92,18 @@ export {
   // Combined hook
   useAdminDashboard,
 } from './use-admin';
+
+// Realtime (WebSocket)
+export {
+  useRealtime,
+  useAmbassadorRealtime,
+  useTravelGrantRealtime,
+  useSessionRealtime,
+  useSessionStatusRealtime,
+  type AmbassadorPointsUpdate,
+  type TravelGrantUpdate,
+  type CheckInUpdate,
+  type SessionUpdate,
+  type SessionStatusUpdate,
+  type RealtimeEvent,
+} from './use-realtime';

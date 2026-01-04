@@ -6,3 +6,4 @@ export * from './pipes';
 export * from './decorators';
 export * from './exceptions';
 export * from './repositories';
+export * from './logger';

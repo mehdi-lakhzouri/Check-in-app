@@ -3,19 +3,29 @@ import {
   Catch,
   ArgumentsHost,
   HttpStatus,
-  Logger,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { Error as MongooseError } from 'mongoose';
+import { PinoLoggerService, getCurrentRequestId } from '../logger';
+
+interface RequestWithId extends Request {
+  id?: string;
+}
 
 @Catch(MongooseError)
 export class MongoExceptionFilter implements ExceptionFilter {
-  private readonly logger = new Logger(MongoExceptionFilter.name);
+  private readonly logger: PinoLoggerService;
+
+  constructor() {
+    this.logger = new PinoLoggerService();
+    this.logger.setContext(MongoExceptionFilter.name);
+  }
 
   catch(exception: MongooseError, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
-    const request = ctx.getRequest<Request>();
+    const request = ctx.getRequest<RequestWithId>();
+    const reqId = request.id || getCurrentRequestId() || 'unknown';
 
     let status = HttpStatus.INTERNAL_SERVER_ERROR;
     let message = 'Database error';
@@ -46,7 +56,13 @@ export class MongoExceptionFilter implements ExceptionFilter {
       }
     }
 
-    this.logger.error(`MongoDB Error: ${message}`, exception.stack);
+    this.logger.error('MongoDB Error', exception.stack, { 
+      reqId,
+      message, 
+      statusCode: status,
+      path: request.url,
+      method: request.method,
+    });
 
     response.status(status).json({
       status: 'error',

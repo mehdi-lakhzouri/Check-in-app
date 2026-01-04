@@ -1,7 +1,7 @@
 import { Module, Global } from '@nestjs/common';
 import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
 import { AllExceptionsFilter, MongoExceptionFilter } from './filters';
-import { TransformInterceptor, LoggingInterceptor, TimeoutInterceptor } from './interceptors';
+import { TransformInterceptor, TimeoutInterceptor } from './interceptors';
 
 @Global()
 @Module({
@@ -17,10 +17,6 @@ import { TransformInterceptor, LoggingInterceptor, TimeoutInterceptor } from './
     {
       provide: APP_INTERCEPTOR,
       useClass: TransformInterceptor,
-    },
-    {
-      provide: APP_INTERCEPTOR,
-      useClass: LoggingInterceptor,
     },
     {
       provide: APP_INTERCEPTOR,

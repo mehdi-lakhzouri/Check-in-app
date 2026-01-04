@@ -30,6 +30,8 @@ export interface DashboardData {
   stats: DashboardStats;
   recentSessions: Session[];
   recentCheckIns: CheckIn[];
+  sessions: Session[];
+  checkIns: CheckIn[];
   isLoading: boolean;
   isError: boolean;
   error: ApiError | null;
@@ -88,6 +90,8 @@ export function useDashboard(): DashboardData {
     },
     recentSessions: sessions.slice(0, 5),
     recentCheckIns: checkIns.slice(0, 5),
+    sessions, // Include full sessions for overview
+    checkIns, // Include full check-ins for analysis
     isLoading,
     isError,
     error,

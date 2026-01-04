@@ -1,24 +1,28 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import * as XLSX from 'xlsx';
 import { SessionsService } from '../../sessions/services';
 import { ParticipantsService } from '../../participants/services';
 import { CheckInsService } from '../../checkins/services';
 import { RegistrationsService } from '../../registrations/services';
 import { AttendanceReportDto, ReportFormat } from '../dto';
+import { PinoLoggerService, getCurrentRequestId } from '../../../common/logger';
 
 @Injectable()
 export class ReportsService {
-  private readonly logger = new Logger(ReportsService.name);
+  private readonly logger: PinoLoggerService;
 
   constructor(
     private readonly sessionsService: SessionsService,
     private readonly participantsService: ParticipantsService,
     private readonly checkInsService: CheckInsService,
     private readonly registrationsService: RegistrationsService,
-  ) {}
+  ) {
+    this.logger = new PinoLoggerService();
+    this.logger.setContext(ReportsService.name);
+  }
 
   async generateAttendanceReport(dto: AttendanceReportDto) {
-    this.logger.log(`Generating attendance report with filters: ${JSON.stringify(dto)}`);
+    this.logger.debug('Generating attendance report', { filters: dto, reqId: getCurrentRequestId() });
 
     const checkIns = await this.checkInsService.findAll({
       sessionId: dto.sessionId,

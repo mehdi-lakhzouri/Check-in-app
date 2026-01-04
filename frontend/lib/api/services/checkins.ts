@@ -10,9 +10,18 @@ import type {
   ApiResponse,
 } from '@/lib/schemas';
 
+export interface CapacityInfo {
+  capacity: number;
+  checkInsCount: number;
+  remaining: number;
+  percentFull: number;
+  isNearCapacity: boolean;
+}
+
 export interface CheckInResponse {
   checkIn: CheckIn;
   message: string;
+  capacityInfo?: CapacityInfo;
 }
 
 export interface CheckInStats {
@@ -43,16 +52,16 @@ export const checkInsService = {
    * Check-in a participant using QR code
    */
   checkInWithQr: async (data: CheckInQrDto): Promise<CheckInResponse> => {
-    const res = await api.post<ApiResponse<CheckIn> & { message: string }>('/checkin/qr', data);
-    return { checkIn: res.data, message: res.message || 'Check-in successful' };
+    const res = await api.post<ApiResponse<CheckIn> & { message: string; capacityInfo?: CapacityInfo }>('/checkin/qr', data);
+    return { checkIn: res.data, message: res.message || 'Check-in successful', capacityInfo: res.capacityInfo };
   },
 
   /**
    * Check-in a participant manually (by ID)
    */
   checkInManual: async (data: CheckInManualDto): Promise<CheckInResponse> => {
-    const res = await api.post<ApiResponse<CheckIn> & { message: string }>('/checkin', data);
-    return { checkIn: res.data, message: res.message || 'Check-in successful' };
+    const res = await api.post<ApiResponse<CheckIn> & { message: string; capacityInfo?: CapacityInfo }>('/checkin', data);
+    return { checkIn: res.data, message: res.message || 'Check-in successful', capacityInfo: res.capacityInfo };
   },
 
   /**

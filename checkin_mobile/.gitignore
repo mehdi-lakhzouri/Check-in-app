@@ -1,0 +1,165 @@
+# =============================================================================
+# Mobile App .gitignore (Flutter / Dart)
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Dart/Flutter
+# -----------------------------------------------------------------------------
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+/build/
+/coverage/
+**/doc/api/
+flutter_*.png
+linked_*.ds
+unlinked.ds
+unlinked_spec.ds
+
+# -----------------------------------------------------------------------------
+# Android
+# -----------------------------------------------------------------------------
+**/android/**/gradle-wrapper.jar
+**/android/.gradle/
+**/android/captures/
+**/android/gradlew
+**/android/gradlew.bat
+**/android/local.properties
+**/android/**/GeneratedPluginRegistrant.*
+**/android/app/debug/
+**/android/app/profile/
+**/android/app/release/
+**/android/.cxx/
+
+# Android Studio (if not needed)
+# !**/android/**/build.gradle.kts
+# !**/android/**/settings.gradle.kts
+
+# -----------------------------------------------------------------------------
+# iOS
+# -----------------------------------------------------------------------------
+**/ios/Flutter/.last_build_id
+**/ios/.generated/
+**/ios/Flutter/App.framework/
+**/ios/Flutter/Flutter.framework/
+**/ios/Flutter/Flutter.podspec
+**/ios/Flutter/Generated.xcconfig
+**/ios/Flutter/ephemeral/
+**/ios/Flutter/flutter_export_environment.sh
+**/ios/Pods/
+**/ios/.symlinks/
+**/ios/Runner.xcworkspace/xcshareddata/
+**/ios/Runner.xcworkspace/xcuserdata/
+**/ios/Runner.xcodeproj/xcuserdata/
+**/ios/Runner.xcodeproj/project.xcworkspace/xcuserdata/
+**/ios/ServiceDefinitions.json
+
+# -----------------------------------------------------------------------------
+# macOS
+# -----------------------------------------------------------------------------
+**/macos/Flutter/ephemeral/
+**/macos/Pods/
+**/macos/.symlinks/
+
+# -----------------------------------------------------------------------------
+# Windows
+# -----------------------------------------------------------------------------
+**/windows/flutter/ephemeral/
+
+# -----------------------------------------------------------------------------
+# Linux
+# -----------------------------------------------------------------------------
+**/linux/flutter/ephemeral/
+
+# -----------------------------------------------------------------------------
+# Web
+# -----------------------------------------------------------------------------
+**/web/favicon.png
+lib/generated_plugin_registrant.dart
+
+# -----------------------------------------------------------------------------
+# Symbolication & Obfuscation
+# -----------------------------------------------------------------------------
+app.*.symbols
+app.*.map.json
+
+# -----------------------------------------------------------------------------
+# Miscellaneous
+# -----------------------------------------------------------------------------
+*.class
+*.log
+*.pyc
+*.swp
+*.swo
+*~
+.atom/
+.build/
+.buildlog/
+.history
+.svn/
+.swiftpm/
+migrate_working_dir/
+
+# -----------------------------------------------------------------------------
+# OS Generated
+# -----------------------------------------------------------------------------
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+desktop.ini
+
+# -----------------------------------------------------------------------------
+# IDE & Editors
+# -----------------------------------------------------------------------------
+# IntelliJ / Android Studio
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# VS Code (uncomment to track)
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# Other editors
+*.sublime-workspace
+*.sublime-project
+
+# -----------------------------------------------------------------------------
+# Environment Variables
+# -----------------------------------------------------------------------------
+.env
+.env.*
+!.env.example
+
+# -----------------------------------------------------------------------------
+# FVM (Flutter Version Management)
+# -----------------------------------------------------------------------------
+.fvm/flutter_sdk
+
+# -----------------------------------------------------------------------------
+# Fastlane (if used)
+# -----------------------------------------------------------------------------
+**/fastlane/report.xml
+**/fastlane/Preview.html
+**/fastlane/screenshots/
+**/fastlane/test_output/
+
+# -----------------------------------------------------------------------------
+# Keys & Certificates (NEVER commit these)
+# -----------------------------------------------------------------------------
+*.jks
+*.keystore
+**/android/key.properties
+**/ios/*.mobileprovision
+**/ios/*.p12
+**/ios/AuthKey_*.p8
+google-services.json
+GoogleService-Info.plist
+

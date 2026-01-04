@@ -33,6 +33,7 @@ import {
   List,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { tableRowVariants, staggerContainer, pageTransition, TIMING, EASING } from '@/lib/animations';
 import { useDropzone } from 'react-dropzone';
 import QRCodeGenerator from 'qrcode';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -144,12 +145,7 @@ const formatDateTime = (value?: string) => {
   }
 };
 
-// Animation variants
-const tableRowVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0 },
-  exit: { opacity: 0, x: -20 },
-};
+// Animation variants imported from @/lib/animations
 
 // Reusable table row component
 interface ParticipantTableRowProps {
@@ -341,7 +337,7 @@ export function ParticipantsContent() {
   const [sortConfig, setSortConfig] = useState<SortConfig>({ field: 'name', direction: 'asc' });
   const [groupBy, setGroupBy] = useState<GroupByOption>('none');
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [itemsPerPage, setItemsPerPage] = useState(5);
   const [organizationFilter, setOrganizationFilter] = useState<string>('all');
   const [orgFilterComboOpen, setOrgFilterComboOpen] = useState(false);
   
@@ -1668,24 +1664,6 @@ export function ParticipantsContent() {
               </CardDescription>
             </div>
             <div className="flex items-center gap-3">
-              {groupBy === 'none' && (
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <span>Show</span>
-                  <Select value={String(itemsPerPage)} onValueChange={(v) => setItemsPerPage(Number(v))}>
-                    <SelectTrigger className="w-[70px] h-8">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="5">5</SelectItem>
-                      <SelectItem value="10">10</SelectItem>
-                      <SelectItem value="25">25</SelectItem>
-                      <SelectItem value="50">50</SelectItem>
-                      <SelectItem value="100">100</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <span>per page</span>
-                </div>
-              )}
               <Badge variant="secondary" className="text-sm">
                 {participants.length} total
               </Badge>
@@ -1693,6 +1671,27 @@ export function ParticipantsContent() {
           </div>
         </CardHeader>
         <CardContent className="p-0">
+          {/* Page Size Selector - Before Table */}
+          {groupBy === 'none' && totalItems > 0 && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground px-6 py-4">
+              <label htmlFor="participants-page-size" className="sr-only">Items per page</label>
+              <span aria-hidden="true">Show</span>
+              <Select value={String(itemsPerPage)} onValueChange={(v) => { setItemsPerPage(Number(v)); setCurrentPage(1); }}>
+                <SelectTrigger id="participants-page-size" className="w-[70px] h-8">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="5">5</SelectItem>
+                  <SelectItem value="10">10</SelectItem>
+                  <SelectItem value="25">25</SelectItem>
+                  <SelectItem value="50">50</SelectItem>
+                  <SelectItem value="100">100</SelectItem>
+                </SelectContent>
+              </Select>
+              <span aria-hidden="true">entries per page</span>
+            </div>
+          )}
+
           {/* Grouped View */}
           {groupBy !== 'none' && groupedParticipants ? (
             <div className="divide-y">
@@ -1711,30 +1710,33 @@ export function ParticipantsContent() {
                   <Table>
                     <TableHeader>
                       <TableRow className="bg-muted/20 hover:bg-muted/20">
-                        <TableHead className="w-[60px]">QR</TableHead>
-                        <TableHead>
+                        <TableHead className="w-[60px] text-center" scope="col">QR</TableHead>
+                        <TableHead className="text-center" scope="col">
                           <button 
                             onClick={() => handleSort('name')}
-                            className="flex items-center hover:text-foreground transition-colors font-semibold"
+                            className="flex items-center justify-center w-full hover:text-foreground transition-colors font-semibold"
+                            aria-label="Sort by name"
                           >
                             Name
                             <SortIndicator field="name" />
                           </button>
                         </TableHead>
-                        <TableHead>
+                        <TableHead className="text-center" scope="col">
                           <button 
                             onClick={() => handleSort('email')}
-                            className="flex items-center hover:text-foreground transition-colors font-semibold"
+                            className="flex items-center justify-center w-full hover:text-foreground transition-colors font-semibold"
+                            aria-label="Sort by email"
                           >
                             Email
                             <SortIndicator field="email" />
                           </button>
                         </TableHead>
                         {groupBy !== 'organization' && (
-                          <TableHead>
+                          <TableHead className="text-center" scope="col">
                             <button 
                               onClick={() => handleSort('organization')}
-                              className="flex items-center hover:text-foreground transition-colors font-semibold"
+                              className="flex items-center justify-center w-full hover:text-foreground transition-colors font-semibold"
+                              aria-label="Sort by organization"
                             >
                               Organization
                               <SortIndicator field="organization" />
@@ -1742,17 +1744,18 @@ export function ParticipantsContent() {
                           </TableHead>
                         )}
                         {groupBy !== 'status' && (
-                          <TableHead>
+                          <TableHead className="text-center" scope="col">
                             <button 
                               onClick={() => handleSort('status')}
-                              className="flex items-center hover:text-foreground transition-colors font-semibold"
+                              className="flex items-center justify-center w-full hover:text-foreground transition-colors font-semibold"
+                              aria-label="Sort by status"
                             >
                               Status
                               <SortIndicator field="status" />
                             </button>
                           </TableHead>
                         )}
-                        <TableHead className="text-right w-[140px]">Actions</TableHead>
+                        <TableHead className="text-center w-[140px]" scope="col">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -1779,47 +1782,51 @@ export function ParticipantsContent() {
           ) : (
             /* Standard Table View */
             <>
-              <Table>
+              <Table role="table" aria-label="Participants list">
                 <TableHeader>
                   <TableRow className="bg-muted/30 hover:bg-muted/30">
-                    <TableHead className="w-[60px]">QR</TableHead>
-                    <TableHead>
+                    <TableHead className="w-[60px] text-center" scope="col">QR</TableHead>
+                    <TableHead className="text-center" scope="col">
                       <button 
                         onClick={() => handleSort('name')}
-                        className="flex items-center hover:text-foreground transition-colors font-semibold"
+                        className="flex items-center justify-center w-full hover:text-foreground transition-colors font-semibold"
+                        aria-label="Sort by name"
                       >
                         Name
                         <SortIndicator field="name" />
                       </button>
                     </TableHead>
-                    <TableHead>
+                    <TableHead className="text-center" scope="col">
                       <button 
                         onClick={() => handleSort('email')}
-                        className="flex items-center hover:text-foreground transition-colors font-semibold"
+                        className="flex items-center justify-center w-full hover:text-foreground transition-colors font-semibold"
+                        aria-label="Sort by email"
                       >
                         Email
                         <SortIndicator field="email" />
                       </button>
                     </TableHead>
-                    <TableHead>
+                    <TableHead className="text-center" scope="col">
                       <button 
                         onClick={() => handleSort('organization')}
-                        className="flex items-center hover:text-foreground transition-colors font-semibold"
+                        className="flex items-center justify-center w-full hover:text-foreground transition-colors font-semibold"
+                        aria-label="Sort by organization"
                       >
                         Organization
                         <SortIndicator field="organization" />
                       </button>
                     </TableHead>
-                    <TableHead>
+                    <TableHead className="text-center" scope="col">
                       <button 
                         onClick={() => handleSort('status')}
-                        className="flex items-center hover:text-foreground transition-colors font-semibold"
+                        className="flex items-center justify-center w-full hover:text-foreground transition-colors font-semibold"
+                        aria-label="Sort by status"
                       >
                         Status
                         <SortIndicator field="status" />
                       </button>
                     </TableHead>
-                    <TableHead className="text-right w-[140px]">Actions</TableHead>
+                    <TableHead className="text-center w-[140px]" scope="col">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -1861,81 +1868,36 @@ export function ParticipantsContent() {
                 </TableBody>
               </Table>
 
-              {/* Pagination */}
-              {totalPages > 1 && (
-                <div className="flex items-center justify-between border-t px-6 py-4 bg-muted/20">
-                  <div className="text-sm text-muted-foreground">
-                    Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, totalItems)} of {totalItems} entries
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setCurrentPage(1)}
-                      disabled={currentPage === 1}
-                    >
-                      First
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="h-8 w-8"
-                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                      disabled={currentPage === 1}
-                    >
-                      <ChevronLeft className="h-4 w-4" />
-                    </Button>
-                    
-                    {/* Page numbers */}
-                    <div className="flex items-center gap-1">
-                      {Array.from({ length: totalPages }, (_, i) => i + 1)
-                        .filter(page => {
-                          if (totalPages <= 7) return true;
-                          if (page === 1 || page === totalPages) return true;
-                          if (Math.abs(page - currentPage) <= 1) return true;
-                          return false;
-                        })
-                        .map((page, index, arr) => {
-                          const prevPage = arr[index - 1];
-                          const showEllipsis = prevPage && page - prevPage > 1;
-                          
-                          return (
-                            <div key={page} className="flex items-center">
-                              {showEllipsis && (
-                                <span className="px-2 text-muted-foreground">...</span>
-                              )}
-                              <Button
-                                variant={currentPage === page ? 'default' : 'outline'}
-                                size="sm"
-                                className="h-8 w-8 p-0"
-                                onClick={() => setCurrentPage(page)}
-                              >
-                                {page}
-                              </Button>
-                            </div>
-                          );
-                        })}
-                    </div>
-                    
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="h-8 w-8"
-                      onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                      disabled={currentPage === totalPages}
-                    >
-                      <ChevronRight className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setCurrentPage(totalPages)}
-                      disabled={currentPage === totalPages}
-                    >
-                      Last
-                    </Button>
-                  </div>
-                </div>
+              {/* Pagination Controls - Bottom Right */}
+              {groupBy === 'none' && totalItems > 0 && (
+                <nav 
+                  className="flex items-center justify-end gap-2 border-t px-6 py-4 bg-muted/20"
+                  aria-label="Participants table pagination"
+                >
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                    aria-label="Go to previous page"
+                  >
+                    <ChevronLeft className="h-4 w-4 mr-1" aria-hidden="true" />
+                    Previous
+                  </Button>
+                  <span className="text-sm min-w-[100px] text-center" aria-live="polite">
+                    Page {currentPage} of {totalPages || 1}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={currentPage === totalPages || totalPages === 0}
+                    aria-label="Go to next page"
+                  >
+                    Next
+                    <ChevronRight className="h-4 w-4 ml-1" aria-hidden="true" />
+                  </Button>
+                </nav>
               )}
             </>
           )}
@@ -2217,8 +2179,8 @@ export function ParticipantsContent() {
                                   <Clock className="h-3 w-3" /> {formatDateTime(checkInTime)}
                                 </p>
                               </div>
-                              <Badge variant="default" className="self-start capitalize md:self-center">
-                                {checkIn.status || 'present'}
+                              <Badge variant={checkIn.isLate ? 'secondary' : 'default'} className="self-start capitalize md:self-center">
+                                {checkIn.isLate ? 'Late' : 'On Time'}
                               </Badge>
                             </div>
                           );

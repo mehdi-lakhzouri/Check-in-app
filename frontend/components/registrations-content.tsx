@@ -16,6 +16,7 @@ import {
   CalendarPlus,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { tableRowVariants, staggerContainer, pageTransition, TIMING, EASING } from '@/lib/animations';
 import { format } from 'date-fns';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -79,14 +80,9 @@ interface PopulatedRegistration extends Omit<Registration, 'participantId' | 'se
   sessionId: Session;
 }
 
-// Animation variants
-const tableRowVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0 },
-  exit: { opacity: 0, x: -20 },
-};
+// Animation variants imported from @/lib/animations
 
-const ITEMS_PER_PAGE_OPTIONS = [10, 25, 50, 100];
+const ITEMS_PER_PAGE_OPTIONS = [5, 10, 25, 50, 100];
 
 export function RegistrationsContent() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -106,7 +102,7 @@ export function RegistrationsContent() {
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [itemsPerPage, setItemsPerPage] = useState(5);
 
   // TanStack Query hooks
   const {
@@ -144,13 +140,13 @@ export function RegistrationsContent() {
       // Search filter
       if (searchQuery) {
         const query = searchQuery.toLowerCase();
-        const participantName = typeof registration.participantId === 'object'
+        const participantName = typeof registration.participantId === 'object' && registration.participantId?.name
           ? registration.participantId.name.toLowerCase()
           : '';
-        const participantEmail = typeof registration.participantId === 'object'
+        const participantEmail = typeof registration.participantId === 'object' && registration.participantId
           ? (registration.participantId.email || '').toLowerCase()
           : '';
-        const sessionName = typeof registration.sessionId === 'object'
+        const sessionName = typeof registration.sessionId === 'object' && registration.sessionId?.name
           ? registration.sessionId.name.toLowerCase()
           : '';
 
@@ -165,7 +161,7 @@ export function RegistrationsContent() {
 
       // Session filter
       if (sessionFilter !== 'all') {
-        const sessionId = typeof registration.sessionId === 'object'
+        const sessionId = typeof registration.sessionId === 'object' && registration.sessionId?._id
           ? registration.sessionId._id
           : registration.sessionId;
         if (sessionId !== sessionFilter) return false;
@@ -576,14 +572,41 @@ export function RegistrationsContent() {
           <CardDescription>A list of all session registrations</CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
+          {/* Page Size Selector - Before Table */}
+          {filteredRegistrations.length > 0 && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
+              <label htmlFor="registrations-page-size" className="sr-only">Items per page</label>
+              <span aria-hidden="true">Show</span>
+              <Select
+                value={itemsPerPage.toString()}
+                onValueChange={(value) => {
+                  setItemsPerPage(parseInt(value));
+                  setCurrentPage(1);
+                }}
+              >
+                <SelectTrigger id="registrations-page-size" className="h-8 w-[70px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {ITEMS_PER_PAGE_OPTIONS.map((option) => (
+                    <SelectItem key={option} value={option.toString()}>
+                      {option}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <span aria-hidden="true">entries per page</span>
+            </div>
+          )}
+
+          <Table role="table" aria-label="Registrations list">
             <TableHeader>
               <TableRow>
-                <TableHead>Participant</TableHead>
-                <TableHead>Session</TableHead>
-                <TableHead>Registration Date</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead className="text-center" scope="col">Participant</TableHead>
+                <TableHead className="text-center" scope="col">Session</TableHead>
+                <TableHead className="text-center" scope="col">Registration Date</TableHead>
+                <TableHead className="text-center" scope="col">Status</TableHead>
+                <TableHead className="text-center" scope="col">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -602,12 +625,12 @@ export function RegistrationsContent() {
                       <TableCell className="font-medium">
                         <div>
                           <p className="font-medium">
-                            {typeof registration.participantId === 'object'
+                            {typeof registration.participantId === 'object' && registration.participantId?.name
                               ? registration.participantId.name
                               : 'Unknown'}
                           </p>
                           {typeof registration.participantId === 'object' &&
-                            registration.participantId.email && (
+                            registration.participantId?.email && (
                               <p className="text-sm text-muted-foreground">
                                 {registration.participantId.email}
                               </p>
@@ -615,7 +638,7 @@ export function RegistrationsContent() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        {typeof registration.sessionId === 'object'
+                        {typeof registration.sessionId === 'object' && registration.sessionId?.name
                           ? registration.sessionId.name
                           : 'Unknown'}
                       </TableCell>
@@ -633,14 +656,15 @@ export function RegistrationsContent() {
                           {registration.status}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="text-center">
                         <Button
                           variant="ghost"
                           size="icon"
                           onClick={() => handleDelete(registration._id)}
                           disabled={deleteMutation.isPending}
+                          aria-label={`Delete registration for ${typeof registration.participantId === 'object' && registration.participantId?.name ? registration.participantId.name : 'participant'}`}
                         >
-                          <Trash2 className="h-4 w-4 text-destructive" />
+                          <Trash2 className="h-4 w-4 text-destructive" aria-hidden="true" />
                         </Button>
                       </TableCell>
                     </motion.tr>
@@ -658,54 +682,36 @@ export function RegistrationsContent() {
             </TableBody>
           </Table>
 
-          {/* Pagination */}
+          {/* Pagination Controls - Bottom Right */}
           {filteredRegistrations.length > 0 && (
-            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between pt-4 border-t mt-4">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <span>Showing</span>
-                <Select
-                  value={itemsPerPage.toString()}
-                  onValueChange={(value) => {
-                    setItemsPerPage(parseInt(value));
-                    setCurrentPage(1);
-                  }}
-                >
-                  <SelectTrigger className="h-8 w-[70px]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {ITEMS_PER_PAGE_OPTIONS.map((option) => (
-                      <SelectItem key={option} value={option.toString()}>
-                        {option}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <span>of {filteredRegistrations.length} registrations</span>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                  disabled={currentPage === 1}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <span className="text-sm min-w-[100px] text-center">
-                  Page {currentPage} of {totalPages || 1}
-                </span>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                  disabled={currentPage === totalPages || totalPages === 0}
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
+            <nav 
+              className="flex items-center justify-end gap-2 pt-4 border-t mt-4"
+              aria-label="Registrations table pagination"
+            >
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                aria-label="Go to previous page"
+              >
+                <ChevronLeft className="h-4 w-4 mr-1" aria-hidden="true" />
+                Previous
+              </Button>
+              <span className="text-sm min-w-[100px] text-center" aria-live="polite">
+                Page {currentPage} of {totalPages || 1}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages || totalPages === 0}
+                aria-label="Go to next page"
+              >
+                Next
+                <ChevronRight className="h-4 w-4 ml-1" aria-hidden="true" />
+              </Button>
+            </nav>
           )}
         </CardContent>
       </Card>

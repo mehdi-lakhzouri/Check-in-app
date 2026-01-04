@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { tableRowVariants, staggerContainer, pageTransition, TIMING, EASING } from '@/lib/animations';
 import {
   Search,
   Filter,
@@ -49,13 +50,9 @@ interface PopulatedCheckIn extends Omit<CheckIn, 'participantId' | 'sessionId'> 
   sessionId: Session;
 }
 
-// Animation variants
-const tableRowVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0 },
-};
+// Animation variants imported from @/lib/animations
 
-const ITEMS_PER_PAGE_OPTIONS = [10, 25, 50, 100];
+const ITEMS_PER_PAGE_OPTIONS = [5, 10, 25, 50, 100];
 
 export function CheckInsContent() {
   // State for filters
@@ -67,7 +64,7 @@ export function CheckInsContent() {
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [itemsPerPage, setItemsPerPage] = useState(5);
 
   // Fetch data
   const {
@@ -89,13 +86,13 @@ export function CheckInsContent() {
       // Search filter
       if (searchQuery) {
         const query = searchQuery.toLowerCase();
-        const participantName = typeof checkIn.participantId === 'object' 
+        const participantName = typeof checkIn.participantId === 'object' && checkIn.participantId?.name
           ? checkIn.participantId.name.toLowerCase() 
           : '';
-        const sessionName = typeof checkIn.sessionId === 'object'
+        const sessionName = typeof checkIn.sessionId === 'object' && checkIn.sessionId?.name
           ? checkIn.sessionId.name.toLowerCase()
           : '';
-        const participantEmail = typeof checkIn.participantId === 'object'
+        const participantEmail = typeof checkIn.participantId === 'object' && checkIn.participantId
           ? (checkIn.participantId.email || '').toLowerCase()
           : '';
         
@@ -108,7 +105,7 @@ export function CheckInsContent() {
 
       // Session filter
       if (sessionFilter !== 'all') {
-        const sessionId = typeof checkIn.sessionId === 'object' 
+        const sessionId = typeof checkIn.sessionId === 'object' && checkIn.sessionId?._id
           ? checkIn.sessionId._id 
           : checkIn.sessionId;
         if (sessionId !== sessionFilter) return false;
@@ -275,8 +272,8 @@ export function CheckInsContent() {
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
               {new Set(populatedCheckIns.map(c => 
-                typeof c.sessionId === 'object' ? c.sessionId._id : c.sessionId
-              )).size}
+                typeof c.sessionId === 'object' && c.sessionId?._id ? c.sessionId._id : c.sessionId
+              ).filter(Boolean)).size}
             </div>
           </CardContent>
         </Card>
@@ -394,14 +391,41 @@ export function CheckInsContent() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
+          {/* Page Size Selector - Before Table */}
+          {filteredCheckIns.length > 0 && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
+              <label htmlFor="checkins-page-size" className="sr-only">Items per page</label>
+              <span aria-hidden="true">Show</span>
+              <Select
+                value={itemsPerPage.toString()}
+                onValueChange={(value) => {
+                  setItemsPerPage(parseInt(value));
+                  setCurrentPage(1);
+                }}
+              >
+                <SelectTrigger id="checkins-page-size" className="h-8 w-[70px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {ITEMS_PER_PAGE_OPTIONS.map((option) => (
+                    <SelectItem key={option} value={option.toString()}>
+                      {option}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <span aria-hidden="true">entries per page</span>
+            </div>
+          )}
+
+          <Table role="table" aria-label="Check-ins list">
             <TableHeader>
               <TableRow>
-                <TableHead>Participant</TableHead>
-                <TableHead>Session</TableHead>
-                <TableHead>Check-in Time</TableHead>
-                <TableHead>Method</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead className="text-center" scope="col">Participant</TableHead>
+                <TableHead className="text-center" scope="col">Session</TableHead>
+                <TableHead className="text-center" scope="col">Check-in Time</TableHead>
+                <TableHead className="text-center" scope="col">Method</TableHead>
+                <TableHead className="text-center" scope="col">Status</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -419,11 +443,11 @@ export function CheckInsContent() {
                       <TableCell className="font-medium">
                         <div>
                           <p className="font-medium">
-                            {typeof checkIn.participantId === 'object'
+                            {typeof checkIn.participantId === 'object' && checkIn.participantId?.name
                               ? checkIn.participantId.name
                               : 'Unknown'}
                           </p>
-                          {typeof checkIn.participantId === 'object' && checkIn.participantId.email && (
+                          {typeof checkIn.participantId === 'object' && checkIn.participantId?.email && (
                             <p className="text-sm text-muted-foreground">
                               {checkIn.participantId.email}
                             </p>
@@ -431,7 +455,7 @@ export function CheckInsContent() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        {typeof checkIn.sessionId === 'object'
+                        {typeof checkIn.sessionId === 'object' && checkIn.sessionId?.name
                           ? checkIn.sessionId.name
                           : 'Unknown'}
                       </TableCell>
@@ -475,54 +499,36 @@ export function CheckInsContent() {
             </TableBody>
           </Table>
 
-          {/* Pagination */}
+          {/* Pagination Controls - Bottom Right */}
           {filteredCheckIns.length > 0 && (
-            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between pt-4 border-t mt-4">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <span>Showing</span>
-                <Select
-                  value={itemsPerPage.toString()}
-                  onValueChange={(value) => {
-                    setItemsPerPage(parseInt(value));
-                    setCurrentPage(1);
-                  }}
-                >
-                  <SelectTrigger className="h-8 w-[70px]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {ITEMS_PER_PAGE_OPTIONS.map((option) => (
-                      <SelectItem key={option} value={option.toString()}>
-                        {option}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <span>of {filteredCheckIns.length} check-ins</span>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                  disabled={currentPage === 1}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <span className="text-sm min-w-[100px] text-center">
-                  Page {currentPage} of {totalPages || 1}
-                </span>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                  disabled={currentPage === totalPages || totalPages === 0}
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
+            <nav 
+              className="flex items-center justify-end gap-2 pt-4 border-t mt-4"
+              aria-label="Check-ins table pagination"
+            >
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                aria-label="Go to previous page"
+              >
+                <ChevronLeft className="h-4 w-4 mr-1" aria-hidden="true" />
+                Previous
+              </Button>
+              <span className="text-sm min-w-[100px] text-center" aria-live="polite">
+                Page {currentPage} of {totalPages || 1}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages || totalPages === 0}
+                aria-label="Go to next page"
+              >
+                Next
+                <ChevronRight className="h-4 w-4 ml-1" aria-hidden="true" />
+              </Button>
+            </nav>
           )}
         </CardContent>
       </Card>

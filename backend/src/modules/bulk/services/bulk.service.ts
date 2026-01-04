@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import * as XLSX from 'xlsx';
 import { ParticipantsService } from '../../participants/services';
 import { RegistrationsService } from '../../registrations/services';
@@ -6,6 +6,7 @@ import { SessionsService } from '../../sessions/services';
 import { CheckInsService } from '../../checkins/services';
 import { BulkUploadResultDto, BulkAssignResultDto } from '../dto';
 import { RegistrationStatus } from '../../registrations/schemas';
+import { PinoLoggerService, getCurrentRequestId } from '../../../common/logger';
 
 interface ParticipantRow {
   name: string;
@@ -16,14 +17,17 @@ interface ParticipantRow {
 
 @Injectable()
 export class BulkService {
-  private readonly logger = new Logger(BulkService.name);
+  private readonly logger: PinoLoggerService;
 
   constructor(
     private readonly participantsService: ParticipantsService,
     private readonly registrationsService: RegistrationsService,
     private readonly sessionsService: SessionsService,
     private readonly checkInsService: CheckInsService,
-  ) {}
+  ) {
+    this.logger = new PinoLoggerService();
+    this.logger.setContext(BulkService.name);
+  }
 
   generateParticipantsTemplate(): { buffer: Buffer; filename: string } {
     const templateData = [
@@ -54,7 +58,7 @@ export class BulkService {
   }
 
   async bulkUploadParticipants(file: Express.Multer.File): Promise<BulkUploadResultDto> {
-    this.logger.log(`Processing bulk upload: ${file.originalname}`);
+    this.logger.log('Processing bulk upload', { filename: file.originalname, reqId: getCurrentRequestId() });
 
     const workbook = XLSX.read(file.buffer, { type: 'buffer' });
     const sheetName = workbook.SheetNames[0];
