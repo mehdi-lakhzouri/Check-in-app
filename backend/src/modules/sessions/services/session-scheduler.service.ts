@@ -27,6 +27,21 @@ export interface SessionStatusUpdate {
 }
 
 /**
+ * Session Lifecycle Update Result (alias for compatibility)
+ * Used by the processor for auto-open/auto-end operations
+ */
+export interface SessionLifecycleUpdate {
+  sessionId: string;
+  sessionName: string;
+  previousLifecycle: SessionStatus;
+  newLifecycle: SessionStatus;
+  previousIsOpen: boolean;
+  newIsOpen: boolean;
+  reason: 'auto_open' | 'auto_end' | 'manual';
+  timestamp: Date;
+}
+
+/**
  * Session Scheduler Service
  *
  * Handles automatic session status management using Bull queue:
@@ -68,7 +83,7 @@ export class SessionSchedulerService implements OnModuleInit, OnModuleDestroy {
   ): void {
     this.onStatusUpdate = callback;
     // Also register with the processor for distributed job processing
-    this.processor.registerStatusUpdateCallback(callback);
+    this.processor.registerLifecycleUpdateCallback(callback as any);
     this.logger.debug('Status update callback registered');
   }
 
@@ -77,7 +92,7 @@ export class SessionSchedulerService implements OnModuleInit, OnModuleDestroy {
    */
   unregisterStatusUpdateCallback(): void {
     this.onStatusUpdate = null;
-    this.processor.unregisterStatusUpdateCallback();
+    this.processor.unregisterLifecycleUpdateCallback();
   }
 
   async onModuleInit() {

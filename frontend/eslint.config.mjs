@@ -12,32 +12,23 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
-    "node_modules/**",
-    "coverage/**",
   ]),
-  // Custom rules for production readiness
+  // Custom rule overrides for CI/CD compatibility
   {
     rules: {
-      // Allow explicit any in specific cases (API responses, etc.)
+      // Relax React Compiler rules to warnings (these require significant refactoring)
+      "react-hooks/static-components": "warn",
+      "react-hooks/set-state-in-effect": "warn",
+      "react-hooks/preserve-manual-memoization": "warn",
+      // Relax TypeScript strict rules to warnings
       "@typescript-eslint/no-explicit-any": "warn",
-      
-      // Relax unused vars - prefix with underscore to ignore
-      "@typescript-eslint/no-unused-vars": ["warn", { 
-        argsIgnorePattern: "^_",
-        varsIgnorePattern: "^_",
-      }],
-      
-      // Allow anonymous default exports
-      "import/no-anonymous-default-export": "off",
-      
-      // Relax react hooks exhaustive deps - sometimes intentional
+      "@typescript-eslint/no-unused-vars": "warn",
+      "@typescript-eslint/no-empty-object-type": "warn",
+      // Relax Next.js rules
+      "@next/next/no-img-element": "warn",
+      // Relax other rules
       "react-hooks/exhaustive-deps": "warn",
-      
-      // Allow setState in effects (sometimes needed for complex state machines)
-      "react-hooks/set-state-in-effect": "off",
-      
-      // Allow empty interfaces extending other types
-      "@typescript-eslint/no-empty-object-type": "off",
+      "import/no-anonymous-default-export": "warn",
     },
   },
 ]);

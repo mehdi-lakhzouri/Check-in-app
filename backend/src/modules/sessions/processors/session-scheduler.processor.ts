@@ -112,7 +112,7 @@ export class SessionSchedulerProcessor {
     // 3. Haven't ended yet
     const sessionsToOpen = await this.sessionModel
       .find({
-        lifecycle: SessionLifecycle.SCHEDULED,
+        status: SessionLifecycle.SCHEDULED,
         startTime: { $lte: openThreshold },
         endTime: { $gt: now },
       })
@@ -178,7 +178,7 @@ export class SessionSchedulerProcessor {
     // This ensures sessions that were never opened but have passed their end time are also marked as ended
     const sessionsToEnd = await this.sessionModel
       .find({
-        lifecycle: { $in: [SessionLifecycle.OPEN, SessionLifecycle.SCHEDULED] },
+        status: { $in: [SessionLifecycle.OPEN, SessionLifecycle.SCHEDULED] },
         endTime: { $lte: endThreshold },
       })
       .exec();
@@ -221,7 +221,7 @@ export class SessionSchedulerProcessor {
     newIsOpen: boolean,
     reason: 'auto_open' | 'auto_end' | 'manual',
   ): Promise<SessionLifecycleUpdate | null> {
-    const previousLifecycle = session.lifecycle;
+    const previousLifecycle = session.status;
     const previousIsOpen = session.isOpen;
 
     // Skip if lifecycle hasn't changed
@@ -235,7 +235,7 @@ export class SessionSchedulerProcessor {
         { _id: session._id },
         {
           $set: {
-            lifecycle: newLifecycle,
+            status: newLifecycle,
             isOpen: newIsOpen,
             updatedAt: new Date(),
           },

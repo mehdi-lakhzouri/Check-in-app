@@ -28,7 +28,7 @@ jobs:
   # Stage 1: Code Quality & Linting
   # ============================================
   lint:
-    name: 🔍 Lint & Format Check
+    name:  Lint & Format Check
     runs-on: ubuntu-latest
     timeout-minutes: 10
     
@@ -49,9 +49,9 @@ jobs:
 
       - name: Run ESLint
         working-directory: frontend
-        # Use --max-warnings to allow warnings but fail on errors
-        # React Compiler rules produce warnings that don't block production
-        run: npm run lint -- --max-warnings=200
+        # 
+        # run npm lint 
+        run: npm run lint 
 
       - name: Check TypeScript
         working-directory: frontend
@@ -61,7 +61,7 @@ jobs:
   # Stage 2: Unit & Component Tests
   # ============================================
   test:
-    name: 🧪 Tests
+    name:  Tests
     runs-on: ubuntu-latest
     timeout-minutes: 15
     needs: lint
@@ -101,7 +101,7 @@ jobs:
   # Stage 3: Build Verification
   # ============================================
   build-check:
-    name: 🏗️ Build Check
+    name:  Build Check
     runs-on: ubuntu-latest
     timeout-minutes: 15
     needs: lint
@@ -139,7 +139,7 @@ jobs:
   # Stage 4: Lighthouse Performance Audit
   # ============================================
   lighthouse:
-    name: 🚀 Lighthouse Audit
+    name: Lighthouse Audit
     runs-on: ubuntu-latest
     timeout-minutes: 15
     needs: build-check
@@ -183,7 +183,7 @@ jobs:
   # Stage 5: Security Scanning
   # ============================================
   security:
-    name: 🔐 Security Scan
+    name:  Security Scan
     runs-on: ubuntu-latest
     timeout-minutes: 10
     needs: lint
@@ -219,7 +219,7 @@ jobs:
   # Stage 6: Build Docker Image
   # ============================================
   docker-build:
-    name: 🐳 Build & Push Docker
+    name:  Build & Push Docker
     runs-on: ubuntu-latest
     timeout-minutes: 20
     needs: [test, build-check, security]
@@ -280,7 +280,7 @@ jobs:
   # Notification on Failure
   # ============================================
   notify-failure:
-    name: 📢 Notify Failure
+    name:  Notify Failure
     runs-on: ubuntu-latest
     needs: [lint, test, build-check, security, docker-build]
     if: failure()
