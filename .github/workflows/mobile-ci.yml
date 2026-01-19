@@ -5,12 +5,12 @@ name: Mobile CI
 
 on:
   push:
-    branches: [main, develop, 'feature/**', 'release/**']
+    branches: [master, main, develop, 'feature/**', 'release/**']
     paths:
       - 'checkin_mobile/**'
       - '.github/workflows/mobile-ci.yml'
   pull_request:
-    branches: [main, develop]
+    branches: [master, main, develop]
     paths:
       - 'checkin_mobile/**'
 
