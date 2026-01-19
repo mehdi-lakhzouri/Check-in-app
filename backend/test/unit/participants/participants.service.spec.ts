@@ -4,21 +4,37 @@
  */
 
 import { Test, TestingModule } from '@nestjs/testing';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { ConfigService } from '@nestjs/config';
 import { ParticipantsService } from '../../../src/modules/participants/services/participants.service';
 import { ParticipantRepository } from '../../../src/modules/participants/repositories/participant.repository';
+import { CheckInsService } from '../../../src/modules/checkins/services/checkins.service';
+import { RegistrationsService } from '../../../src/modules/registrations/services/registrations.service';
 import {
   EntityNotFoundException,
   EntityExistsException,
 } from '../../../src/common/exceptions';
-import { createMockParticipantRepository } from '../../utils/mock-factories';
+import { createMockParticipantRepository, createMockConfigService, createMockCheckInsService, createMockRegistrationsService } from '../../utils/mock-factories';
 import { mockData, generateObjectId } from '../../utils/test-utils';
 
 describe('ParticipantsService', () => {
   let service: ParticipantsService;
   let repository: ReturnType<typeof createMockParticipantRepository>;
+  let configService: ReturnType<typeof createMockConfigService>;
+  let checkInsService: ReturnType<typeof createMockCheckInsService>;
+  let registrationsService: ReturnType<typeof createMockRegistrationsService>;
+
+  const mockCacheManager = {
+    get: jest.fn(),
+    set: jest.fn(),
+    del: jest.fn(),
+  };
 
   beforeEach(async () => {
     repository = createMockParticipantRepository();
+    configService = createMockConfigService();
+    checkInsService = createMockCheckInsService();
+    registrationsService = createMockRegistrationsService();
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -26,6 +42,22 @@ describe('ParticipantsService', () => {
         {
           provide: ParticipantRepository,
           useValue: repository,
+        },
+        {
+          provide: CACHE_MANAGER,
+          useValue: mockCacheManager,
+        },
+        {
+          provide: ConfigService,
+          useValue: configService,
+        },
+        {
+          provide: CheckInsService,
+          useValue: checkInsService,
+        },
+        {
+          provide: RegistrationsService,
+          useValue: registrationsService,
         },
       ],
     }).compile();
@@ -221,11 +253,13 @@ describe('ParticipantsService', () => {
     it('should update a participant successfully', async () => {
       const participantId = generateObjectId();
       const updateDto = { name: 'Updated Name' };
+      const existingParticipant = mockData.participant({ _id: participantId });
       const updatedParticipant = mockData.participant({
         _id: participantId,
         ...updateDto,
       });
 
+      repository.findById.mockResolvedValue(existingParticipant);
       repository.findByEmail.mockResolvedValue(null);
       repository.updateById.mockResolvedValue(updatedParticipant);
 
@@ -240,6 +274,7 @@ describe('ParticipantsService', () => {
 
     it('should throw EntityNotFoundException when updating non-existent participant', async () => {
       const participantId = generateObjectId();
+      repository.findById.mockResolvedValue(null);
       repository.findByEmail.mockResolvedValue(null);
       repository.updateById.mockResolvedValue(null);
 
@@ -253,11 +288,13 @@ describe('ParticipantsService', () => {
       const existingParticipantId = generateObjectId();
       const updateDto = { email: 'existing@example.com' };
 
+      const currentParticipant = mockData.participant({ _id: participantId });
       const existingParticipant = mockData.participant({
         _id: existingParticipantId,
         email: updateDto.email,
       });
 
+      repository.findById.mockResolvedValue(currentParticipant);
       repository.findByEmail.mockResolvedValue(existingParticipant);
 
       await expect(service.update(participantId, updateDto)).rejects.toThrow(
@@ -274,6 +311,7 @@ describe('ParticipantsService', () => {
         email: updateDto.email,
       });
 
+      repository.findById.mockResolvedValue(sameParticipant);
       repository.findByEmail.mockResolvedValue(sameParticipant);
       repository.updateById.mockResolvedValue({
         ...sameParticipant,

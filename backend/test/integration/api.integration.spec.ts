@@ -25,7 +25,7 @@ import { RegistrationsController } from '../../src/modules/registrations/control
 import { RegistrationsService } from '../../src/modules/registrations/services/registrations.service';
 import { CheckInsController } from '../../src/modules/checkins/controllers/checkins.controller';
 import { CheckInsService } from '../../src/modules/checkins/services/checkins.service';
-import { ParticipantRole } from '../../src/modules/participants/schemas';
+import { ParticipantStatus } from '../../src/modules/participants/schemas';
 import { Types } from 'mongoose';
 
 describe('API Integration Tests', () => {
@@ -232,7 +232,7 @@ describe('API Integration Tests', () => {
       const participantData = {
         name: 'Test Participant',
         email: 'test@example.com',
-        role: ParticipantRole.ATTENDEE,
+        status: ParticipantStatus.REGULAR,
       };
 
       const createdParticipant = {
@@ -259,7 +259,7 @@ describe('API Integration Tests', () => {
       const invalidParticipant = {
         name: 'Test Participant',
         email: 'invalid-email',
-        role: ParticipantRole.ATTENDEE,
+        status: ParticipantStatus.REGULAR,
       };
 
       const response = await request(app.getHttpServer())
@@ -274,7 +274,7 @@ describe('API Integration Tests', () => {
       const invalidParticipant = {
         name: '',
         email: 'test@example.com',
-        role: ParticipantRole.ATTENDEE,
+        status: ParticipantStatus.REGULAR,
       };
 
       const response = await request(app.getHttpServer())
@@ -285,11 +285,11 @@ describe('API Integration Tests', () => {
       expect(mockParticipantsService.create).not.toHaveBeenCalled();
     });
 
-    it('should reject participant with invalid role', async () => {
+    it('should reject participant with invalid status', async () => {
       const invalidParticipant = {
         name: 'Test Participant',
         email: 'test@example.com',
-        role: 'INVALID_ROLE',
+        status: 'INVALID_STATUS',
       };
 
       const response = await request(app.getHttpServer())

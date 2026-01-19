@@ -4,21 +4,46 @@
  */
 
 import { Test, TestingModule } from '@nestjs/testing';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { ConfigService } from '@nestjs/config';
 import { SessionsService } from '../../../src/modules/sessions/services/sessions.service';
+import { SessionSchedulerService } from '../../../src/modules/sessions/services/session-scheduler.service';
 import { SessionRepository } from '../../../src/modules/sessions/repositories/session.repository';
+import { REDIS_CLIENT } from '../../../src/common/redis';
 import {
   EntityNotFoundException,
   ValidationException,
 } from '../../../src/common/exceptions';
-import { createMockSessionRepository } from '../../utils/mock-factories';
+import { createMockSessionRepository, createMockConfigService } from '../../utils/mock-factories';
 import { mockData, generateObjectId } from '../../utils/test-utils';
 
 describe('SessionsService', () => {
   let service: SessionsService;
   let repository: ReturnType<typeof createMockSessionRepository>;
+  let configService: ReturnType<typeof createMockConfigService>;
+
+  const mockCacheManager = {
+    get: jest.fn(),
+    set: jest.fn(),
+    del: jest.fn(),
+  };
+
+  const mockRedisClient = {
+    get: jest.fn(),
+    set: jest.fn(),
+    del: jest.fn(),
+    eval: jest.fn(),
+  };
+
+  const mockSchedulerService = {
+    registerStatusUpdateCallback: jest.fn(),
+    unregisterStatusUpdateCallback: jest.fn(),
+    manualStatusUpdate: jest.fn(),
+  };
 
   beforeEach(async () => {
     repository = createMockSessionRepository();
+    configService = createMockConfigService();
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -26,6 +51,22 @@ describe('SessionsService', () => {
         {
           provide: SessionRepository,
           useValue: repository,
+        },
+        {
+          provide: CACHE_MANAGER,
+          useValue: mockCacheManager,
+        },
+        {
+          provide: ConfigService,
+          useValue: configService,
+        },
+        {
+          provide: SessionSchedulerService,
+          useValue: mockSchedulerService,
+        },
+        {
+          provide: REDIS_CLIENT,
+          useValue: mockRedisClient,
         },
       ],
     }).compile();
@@ -156,8 +197,10 @@ describe('SessionsService', () => {
     it('should update a session successfully', async () => {
       const sessionId = generateObjectId();
       const updateDto = { name: 'Updated Session Name' };
+      const existingSession = mockData.session({ _id: sessionId });
       const updatedSession = mockData.session({ _id: sessionId, ...updateDto });
 
+      repository.findById.mockResolvedValue(existingSession);
       repository.updateById.mockResolvedValue(updatedSession);
 
       const result = await service.update(sessionId, updateDto);
@@ -171,6 +214,7 @@ describe('SessionsService', () => {
 
     it('should throw EntityNotFoundException when updating non-existent session', async () => {
       const sessionId = generateObjectId();
+      repository.findById.mockResolvedValue(null);
       repository.updateById.mockResolvedValue(null);
 
       await expect(
@@ -180,10 +224,13 @@ describe('SessionsService', () => {
 
     it('should throw ValidationException when updating with invalid date range', async () => {
       const sessionId = generateObjectId();
+      const existingSession = mockData.session({ _id: sessionId });
       const updateDto = {
         startTime: '2026-01-15T10:00:00Z',
         endTime: '2026-01-15T09:00:00Z',
       };
+
+      repository.findById.mockResolvedValue(existingSession);
 
       await expect(service.update(sessionId, updateDto)).rejects.toThrow(
         ValidationException,
