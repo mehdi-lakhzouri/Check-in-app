@@ -1,0 +1,292 @@
+# Prometheus Stack Helm Values for Check-in App
+# Used by Terraform to deploy kube-prometheus-stack
+
+# Global settings
+fullnameOverride: prometheus-stack
+
+# Prometheus configuration
+prometheus:
+  enabled: true
+  prometheusSpec:
+    # Resource limits
+    resources:
+      requests:
+        memory: 512Mi
+        cpu: 250m
+      limits:
+        memory: 2Gi
+        cpu: 1000m
+    
+    # Retention settings
+    retention: 15d
+    retentionSize: 10GB
+    
+    # Storage configuration
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          storageClassName: standard
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 50Gi
+    
+    # Additional scrape configs from ConfigMap
+    additionalScrapeConfigsSecret:
+      enabled: false
+    
+    # Service monitor selectors
+    serviceMonitorSelectorNilUsesHelmValues: false
+    podMonitorSelectorNilUsesHelmValues: false
+    ruleSelectorNilUsesHelmValues: false
+    
+    # Enable admin API for configuration reloads
+    enableAdminAPI: true
+    
+    # External URL for Prometheus
+    externalUrl: ""
+    
+    # Replicas for HA
+    replicas: 1
+
+  # Ingress for Prometheus
+  ingress:
+    enabled: false
+
+# Alertmanager configuration
+alertmanager:
+  enabled: true
+  alertmanagerSpec:
+    # Resource limits
+    resources:
+      requests:
+        memory: 128Mi
+        cpu: 100m
+      limits:
+        memory: 256Mi
+        cpu: 200m
+    
+    # Storage
+    storage:
+      volumeClaimTemplate:
+        spec:
+          storageClassName: standard
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 5Gi
+    
+    # Replicas
+    replicas: 1
+
+  # Ingress for Alertmanager
+  ingress:
+    enabled: false
+
+  # Alertmanager config secret
+  config:
+    global:
+      resolve_timeout: 5m
+    route:
+      receiver: 'default'
+      group_by: ['alertname', 'severity']
+      group_wait: 30s
+      group_interval: 5m
+      repeat_interval: 4h
+    receivers:
+      - name: 'default'
+        webhook_configs:
+          - url: 'http://alertmanager-webhook:9090/alert'
+            send_resolved: true
+
+# Grafana configuration
+grafana:
+  enabled: true
+  
+  # Admin credentials (override in production)
+  adminUser: admin
+  adminPassword: admin
+  
+  # Resource limits
+  resources:
+    requests:
+      memory: 256Mi
+      cpu: 100m
+    limits:
+      memory: 512Mi
+      cpu: 500m
+  
+  # Persistence
+  persistence:
+    enabled: true
+    size: 10Gi
+    storageClassName: standard
+  
+  # Default dashboards
+  defaultDashboardsEnabled: true
+  defaultDashboardsTimezone: utc
+  
+  # Sidecar for dashboard discovery
+  sidecar:
+    dashboards:
+      enabled: true
+      label: grafana_dashboard
+      searchNamespace: ALL
+    datasources:
+      enabled: true
+      label: grafana_datasource
+  
+  # Additional data sources
+  additionalDataSources:
+    - name: Loki
+      type: loki
+      url: http://loki:3100
+      access: proxy
+      isDefault: false
+  
+  # Grafana.ini settings
+  grafana.ini:
+    server:
+      root_url: "%(protocol)s://%(domain)s/grafana/"
+      serve_from_sub_path: true
+    auth:
+      disable_login_form: false
+    auth.anonymous:
+      enabled: false
+    security:
+      admin_user: admin
+      allow_embedding: true
+    users:
+      allow_sign_up: false
+  
+  # Ingress for Grafana
+  ingress:
+    enabled: false
+
+# Node exporter for node-level metrics
+nodeExporter:
+  enabled: true
+  resources:
+    requests:
+      memory: 32Mi
+      cpu: 50m
+    limits:
+      memory: 64Mi
+      cpu: 100m
+
+# Kube-state-metrics for Kubernetes object metrics
+kubeStateMetrics:
+  enabled: true
+
+# Prometheus Operator
+prometheusOperator:
+  enabled: true
+  resources:
+    requests:
+      memory: 128Mi
+      cpu: 100m
+    limits:
+      memory: 256Mi
+      cpu: 200m
+
+# Additional PrometheusRules
+additionalPrometheusRulesMap:
+  checkin-app-rules:
+    groups:
+      - name: checkin-app
+        rules:
+          - alert: BackendHighLatency
+            expr: histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{job="backend"}[5m])) by (le)) > 1
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: "Backend API latency is high"
+              description: "95th percentile latency is above 1 second"
+
+# ServiceMonitor for backend
+additionalServiceMonitors:
+  - name: backend-monitor
+    selector:
+      matchLabels:
+        app: backend
+    endpoints:
+      - port: http
+        path: /metrics
+        interval: 15s
+    namespaceSelector:
+      matchNames:
+        - checkin
+        - checkin-staging
+        - checkin-production
+
+# Custom Grafana dashboards
+grafana:
+  dashboardProviders:
+    dashboardproviders.yaml:
+      apiVersion: 1
+      providers:
+        - name: 'custom'
+          orgId: 1
+          folder: 'Check-in App'
+          type: file
+          disableDeletion: false
+          editable: true
+          options:
+            path: /var/lib/grafana/dashboards/custom
+
+  dashboards:
+    custom:
+      checkin-overview:
+        json: |
+          {
+            "title": "Check-in App Overview",
+            "uid": "checkin-overview",
+            "timezone": "browser",
+            "panels": [
+              {
+                "title": "Request Rate",
+                "type": "stat",
+                "gridPos": {"x": 0, "y": 0, "w": 6, "h": 4},
+                "targets": [
+                  {
+                    "expr": "sum(rate(http_request_duration_seconds_count{job=\"backend\"}[5m]))",
+                    "legendFormat": "Requests/sec"
+                  }
+                ]
+              },
+              {
+                "title": "Error Rate",
+                "type": "stat",
+                "gridPos": {"x": 6, "y": 0, "w": 6, "h": 4},
+                "targets": [
+                  {
+                    "expr": "sum(rate(http_request_duration_seconds_count{job=\"backend\",status_code=~\"5..\"}[5m])) / sum(rate(http_request_duration_seconds_count{job=\"backend\"}[5m])) * 100",
+                    "legendFormat": "Error %"
+                  }
+                ]
+              },
+              {
+                "title": "P95 Latency",
+                "type": "stat",
+                "gridPos": {"x": 12, "y": 0, "w": 6, "h": 4},
+                "targets": [
+                  {
+                    "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{job=\"backend\"}[5m])) by (le))",
+                    "legendFormat": "P95 Latency"
+                  }
+                ]
+              },
+              {
+                "title": "Active Pods",
+                "type": "stat",
+                "gridPos": {"x": 18, "y": 0, "w": 6, "h": 4},
+                "targets": [
+                  {
+                    "expr": "count(kube_pod_status_phase{namespace=~\"checkin.*\",phase=\"Running\"})",
+                    "legendFormat": "Running Pods"
+                  }
+                ]
+              }
+            ]
+          }

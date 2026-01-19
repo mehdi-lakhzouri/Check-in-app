@@ -1,0 +1,2102 @@
+<testsuites id="" name="" tests="515" failures="0" skipped="515" errors="0" time="0.38625">
+<testsuite name="checkin-flow.spec.ts" timestamp="2026-01-19T11:01:22.615Z" hostname="chromium" tests="28" failures="0" skipped="28" time="0" errors="0">
+<testcase name="Check-in Flow › Check-in Dashboard › should display check-in dashboard" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Check-in Dashboard › should show session selector" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Check-in Dashboard › should show only open sessions in selector" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Check-in Dashboard › should display real-time check-in count" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Check-in Dashboard › should show recent check-ins list" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Manual Check-in › should search and find participant" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Manual Check-in › should show participant details before check-in" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Manual Check-in › should check in participant successfully" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Manual Check-in › should show error for already checked-in participant" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Manual Check-in › should update count after successful check-in" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › QR Scanner › should display QR scanner page" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › QR Scanner › should show camera permission request" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › QR Scanner › should have manual QR input fallback" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › QR Scanner › should process manual QR code input" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › QR Scanner › should show error for invalid QR code" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Verification Workflow › should display verification modal on scan" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Verification Workflow › should show registration status in verification" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Verification Workflow › should complete check-in on accept" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Verification Workflow › should log attempt on decline" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Check-in History › should display check-in history" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Check-in History › should filter history by session" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Check-in History › should filter history by date range" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Check-in History › should allow undoing check-in" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Check-in History › should export check-in history" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Real-time Updates › should show real-time check-in notifications" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Real-time Updates › should update capacity bar in real-time" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Capacity Warnings › should show warning when session is near capacity" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Capacity Warnings › should disable check-in when session is full" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="participants.spec.ts" timestamp="2026-01-19T11:01:22.615Z" hostname="chromium" tests="27" failures="0" skipped="27" time="0" errors="0">
+<testcase name="Participants Page › Participant Listing › should display participants list" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Participant Listing › should show participant count" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Participant Listing › should display participant details in table" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Participant Listing › should show QR code button for each participant" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Participant Creation › should create a new participant with valid data" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Participant Creation › should show validation error for empty name" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Participant Creation › should show validation error for invalid email" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Participant Creation › should show validation error for duplicate email" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Participant Creation › should auto-generate QR code on creation" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Participant Creation › should allow setting role as ambassador" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Participant Editing › should load existing participant data in form" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Participant Editing › should update participant successfully" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Participant Editing › should not allow changing email to existing one" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Search and Filtering › should search participants by name" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Search and Filtering › should search participants by email" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Search and Filtering › should filter by role" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Search and Filtering › should show no results message for empty search" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › QR Code Functionality › should display QR code modal on button click" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › QR Code Functionality › should show download button for QR code" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › QR Code Functionality › should close QR modal on dismiss" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Participant Deletion › should show confirmation dialog on delete" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Participant Deletion › should warn about related data on delete" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Participant Deletion › should delete participant on confirmation" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Bulk Operations › should show bulk actions when selecting participants" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Bulk Operations › should select all participants" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Ambassador Leaderboard › should navigate to ambassador leaderboard" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Ambassador Leaderboard › should display ambassador rankings" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="registrations.spec.ts" timestamp="2026-01-19T11:01:22.615Z" hostname="chromium" tests="28" failures="0" skipped="28" time="0" errors="0">
+<testcase name="Registrations Management › Registration Listing › should display registrations list page" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Registration Listing › should show registration details in table" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Registration Listing › should show registration status badges" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Registration Listing › should display empty state when no registrations" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Registration Listing › should support pagination" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Registration Creation › should open new registration dialog" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Registration Creation › should show participant and session selectors" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Registration Creation › should require participant selection" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Registration Creation › should require session selection" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Registration Creation › should create registration successfully" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Registration Creation › should prevent duplicate registration" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Status Management › should show status options in row actions" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Status Management › should change registration status" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Status Management › should confirm cancellation" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Search and Filtering › should search by participant name" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Search and Filtering › should filter by registration status" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Search and Filtering › should filter by session" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Search and Filtering › should clear all filters" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Search and Filtering › should combine multiple filters" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Bulk Operations › should select multiple registrations" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Bulk Operations › should select all registrations" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Bulk Operations › should bulk confirm registrations" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Bulk Operations › should bulk cancel registrations with confirmation" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Export Functionality › should export registrations as CSV" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Export Functionality › should export filtered results only" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Edge Cases › should handle session capacity limits" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Edge Cases › should handle closed session registration attempt" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Edge Cases › should validate registration time constraints" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="sessions.spec.ts" timestamp="2026-01-19T11:01:22.615Z" hostname="chromium" tests="20" failures="0" skipped="20" time="0" errors="0">
+<testcase name="Sessions Page › Session Listing › should display sessions list" classname="sessions.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sessions Page › Session Listing › should show empty state when no sessions" classname="sessions.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sessions Page › Session Listing › should navigate to session details on click" classname="sessions.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sessions Page › Session Listing › should display session capacity information" classname="sessions.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sessions Page › Session Creation › should create a new session with valid data" classname="sessions.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sessions Page › Session Creation › should show validation error for empty name" classname="sessions.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sessions Page › Session Creation › should show validation error for invalid date range" classname="sessions.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sessions Page › Session Creation › should show validation error for negative capacity" classname="sessions.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sessions Page › Session Creation › should navigate back to list on cancel" classname="sessions.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sessions Page › Session Editing › should load existing session data in form" classname="sessions.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sessions Page › Session Editing › should update session successfully" classname="sessions.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sessions Page › Session Status Toggle › should toggle session open/closed" classname="sessions.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sessions Page › Session Deletion › should show confirmation dialog on delete" classname="sessions.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sessions Page › Session Deletion › should cancel deletion on dialog dismiss" classname="sessions.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sessions Page › Session Deletion › should delete session on confirmation" classname="sessions.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sessions Page › Search and Filtering › should filter sessions by search term" classname="sessions.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sessions Page › Search and Filtering › should filter by session status" classname="sessions.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sessions Page › Search and Filtering › should clear filters" classname="sessions.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sessions Page › Pagination › should display pagination controls when needed" classname="sessions.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sessions Page › Pagination › should navigate between pages" classname="sessions.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="checkin-flow.spec.ts" timestamp="2026-01-19T11:01:22.615Z" hostname="firefox" tests="28" failures="0" skipped="28" time="0" errors="0">
+<testcase name="Check-in Flow › Check-in Dashboard › should display check-in dashboard" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Check-in Dashboard › should show session selector" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Check-in Dashboard › should show only open sessions in selector" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Check-in Dashboard › should display real-time check-in count" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Check-in Dashboard › should show recent check-ins list" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Manual Check-in › should search and find participant" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Manual Check-in › should show participant details before check-in" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Manual Check-in › should check in participant successfully" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Manual Check-in › should show error for already checked-in participant" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Manual Check-in › should update count after successful check-in" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › QR Scanner › should display QR scanner page" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › QR Scanner › should show camera permission request" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › QR Scanner › should have manual QR input fallback" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › QR Scanner › should process manual QR code input" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › QR Scanner › should show error for invalid QR code" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Verification Workflow › should display verification modal on scan" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Verification Workflow › should show registration status in verification" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Verification Workflow › should complete check-in on accept" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Verification Workflow › should log attempt on decline" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Check-in History › should display check-in history" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Check-in History › should filter history by session" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Check-in History › should filter history by date range" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Check-in History › should allow undoing check-in" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Check-in History › should export check-in history" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Real-time Updates › should show real-time check-in notifications" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Real-time Updates › should update capacity bar in real-time" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Capacity Warnings › should show warning when session is near capacity" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Capacity Warnings › should disable check-in when session is full" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="participants.spec.ts" timestamp="2026-01-19T11:01:22.615Z" hostname="firefox" tests="27" failures="0" skipped="27" time="0" errors="0">
+<testcase name="Participants Page › Participant Listing › should display participants list" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Participant Listing › should show participant count" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Participant Listing › should display participant details in table" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Participant Listing › should show QR code button for each participant" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Participant Creation › should create a new participant with valid data" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Participant Creation › should show validation error for empty name" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Participant Creation › should show validation error for invalid email" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Participant Creation › should show validation error for duplicate email" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Participant Creation › should auto-generate QR code on creation" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Participant Creation › should allow setting role as ambassador" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Participant Editing › should load existing participant data in form" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Participant Editing › should update participant successfully" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Participant Editing › should not allow changing email to existing one" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Search and Filtering › should search participants by name" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Search and Filtering › should search participants by email" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Search and Filtering › should filter by role" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Search and Filtering › should show no results message for empty search" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › QR Code Functionality › should display QR code modal on button click" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › QR Code Functionality › should show download button for QR code" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › QR Code Functionality › should close QR modal on dismiss" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Participant Deletion › should show confirmation dialog on delete" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Participant Deletion › should warn about related data on delete" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Participant Deletion › should delete participant on confirmation" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Bulk Operations › should show bulk actions when selecting participants" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Bulk Operations › should select all participants" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Ambassador Leaderboard › should navigate to ambassador leaderboard" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Ambassador Leaderboard › should display ambassador rankings" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="registrations.spec.ts" timestamp="2026-01-19T11:01:22.615Z" hostname="firefox" tests="28" failures="0" skipped="28" time="0" errors="0">
+<testcase name="Registrations Management › Registration Listing › should display registrations list page" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Registration Listing › should show registration details in table" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Registration Listing › should show registration status badges" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Registration Listing › should display empty state when no registrations" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Registration Listing › should support pagination" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Registration Creation › should open new registration dialog" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Registration Creation › should show participant and session selectors" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Registration Creation › should require participant selection" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Registration Creation › should require session selection" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Registration Creation › should create registration successfully" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Registration Creation › should prevent duplicate registration" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Status Management › should show status options in row actions" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Status Management › should change registration status" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Status Management › should confirm cancellation" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Search and Filtering › should search by participant name" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Search and Filtering › should filter by registration status" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Search and Filtering › should filter by session" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Search and Filtering › should clear all filters" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Search and Filtering › should combine multiple filters" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Bulk Operations › should select multiple registrations" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Bulk Operations › should select all registrations" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Bulk Operations › should bulk confirm registrations" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Bulk Operations › should bulk cancel registrations with confirmation" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Export Functionality › should export registrations as CSV" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Export Functionality › should export filtered results only" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Edge Cases › should handle session capacity limits" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Edge Cases › should handle closed session registration attempt" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Edge Cases › should validate registration time constraints" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="sessions.spec.ts" timestamp="2026-01-19T11:01:22.615Z" hostname="firefox" tests="20" failures="0" skipped="20" time="0" errors="0">
+<testcase name="Sessions Page › Session Listing › should display sessions list" classname="sessions.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sessions Page › Session Listing › should show empty state when no sessions" classname="sessions.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sessions Page › Session Listing › should navigate to session details on click" classname="sessions.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sessions Page › Session Listing › should display session capacity information" classname="sessions.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sessions Page › Session Creation › should create a new session with valid data" classname="sessions.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sessions Page › Session Creation › should show validation error for empty name" classname="sessions.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sessions Page › Session Creation › should show validation error for invalid date range" classname="sessions.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sessions Page › Session Creation › should show validation error for negative capacity" classname="sessions.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sessions Page › Session Creation › should navigate back to list on cancel" classname="sessions.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sessions Page › Session Editing › should load existing session data in form" classname="sessions.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sessions Page › Session Editing › should update session successfully" classname="sessions.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sessions Page › Session Status Toggle › should toggle session open/closed" classname="sessions.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sessions Page › Session Deletion › should show confirmation dialog on delete" classname="sessions.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sessions Page › Session Deletion › should cancel deletion on dialog dismiss" classname="sessions.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sessions Page › Session Deletion › should delete session on confirmation" classname="sessions.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sessions Page › Search and Filtering › should filter sessions by search term" classname="sessions.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sessions Page › Search and Filtering › should filter by session status" classname="sessions.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sessions Page › Search and Filtering › should clear filters" classname="sessions.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sessions Page › Pagination › should display pagination controls when needed" classname="sessions.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sessions Page › Pagination › should navigate between pages" classname="sessions.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="checkin-flow.spec.ts" timestamp="2026-01-19T11:01:22.615Z" hostname="webkit" tests="28" failures="0" skipped="28" time="0" errors="0">
+<testcase name="Check-in Flow › Check-in Dashboard › should display check-in dashboard" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Check-in Dashboard › should show session selector" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Check-in Dashboard › should show only open sessions in selector" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Check-in Dashboard › should display real-time check-in count" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Check-in Dashboard › should show recent check-ins list" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Manual Check-in › should search and find participant" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Manual Check-in › should show participant details before check-in" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Manual Check-in › should check in participant successfully" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Manual Check-in › should show error for already checked-in participant" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Manual Check-in › should update count after successful check-in" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › QR Scanner › should display QR scanner page" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › QR Scanner › should show camera permission request" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › QR Scanner › should have manual QR input fallback" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › QR Scanner › should process manual QR code input" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › QR Scanner › should show error for invalid QR code" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Verification Workflow › should display verification modal on scan" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Verification Workflow › should show registration status in verification" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Verification Workflow › should complete check-in on accept" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Verification Workflow › should log attempt on decline" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Check-in History › should display check-in history" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Check-in History › should filter history by session" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Check-in History › should filter history by date range" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Check-in History › should allow undoing check-in" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Check-in History › should export check-in history" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Real-time Updates › should show real-time check-in notifications" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Real-time Updates › should update capacity bar in real-time" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Capacity Warnings › should show warning when session is near capacity" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Capacity Warnings › should disable check-in when session is full" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="participants.spec.ts" timestamp="2026-01-19T11:01:22.615Z" hostname="webkit" tests="27" failures="0" skipped="27" time="0" errors="0">
+<testcase name="Participants Page › Participant Listing › should display participants list" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Participant Listing › should show participant count" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Participant Listing › should display participant details in table" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Participant Listing › should show QR code button for each participant" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Participant Creation › should create a new participant with valid data" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Participant Creation › should show validation error for empty name" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Participant Creation › should show validation error for invalid email" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Participant Creation › should show validation error for duplicate email" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Participant Creation › should auto-generate QR code on creation" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Participant Creation › should allow setting role as ambassador" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Participant Editing › should load existing participant data in form" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Participant Editing › should update participant successfully" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Participant Editing › should not allow changing email to existing one" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Search and Filtering › should search participants by name" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Search and Filtering › should search participants by email" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Search and Filtering › should filter by role" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Search and Filtering › should show no results message for empty search" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › QR Code Functionality › should display QR code modal on button click" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › QR Code Functionality › should show download button for QR code" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › QR Code Functionality › should close QR modal on dismiss" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Participant Deletion › should show confirmation dialog on delete" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Participant Deletion › should warn about related data on delete" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Participant Deletion › should delete participant on confirmation" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Bulk Operations › should show bulk actions when selecting participants" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Bulk Operations › should select all participants" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Ambassador Leaderboard › should navigate to ambassador leaderboard" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Ambassador Leaderboard › should display ambassador rankings" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="registrations.spec.ts" timestamp="2026-01-19T11:01:22.615Z" hostname="webkit" tests="28" failures="0" skipped="28" time="0" errors="0">
+<testcase name="Registrations Management › Registration Listing › should display registrations list page" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Registration Listing › should show registration details in table" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Registration Listing › should show registration status badges" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Registration Listing › should display empty state when no registrations" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Registration Listing › should support pagination" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Registration Creation › should open new registration dialog" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Registration Creation › should show participant and session selectors" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Registration Creation › should require participant selection" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Registration Creation › should require session selection" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Registration Creation › should create registration successfully" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Registration Creation › should prevent duplicate registration" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Status Management › should show status options in row actions" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Status Management › should change registration status" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Status Management › should confirm cancellation" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Search and Filtering › should search by participant name" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Search and Filtering › should filter by registration status" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Search and Filtering › should filter by session" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Search and Filtering › should clear all filters" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Search and Filtering › should combine multiple filters" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Bulk Operations › should select multiple registrations" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Bulk Operations › should select all registrations" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Bulk Operations › should bulk confirm registrations" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Bulk Operations › should bulk cancel registrations with confirmation" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Export Functionality › should export registrations as CSV" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Export Functionality › should export filtered results only" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Edge Cases › should handle session capacity limits" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Edge Cases › should handle closed session registration attempt" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Edge Cases › should validate registration time constraints" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="sessions.spec.ts" timestamp="2026-01-19T11:01:22.615Z" hostname="webkit" tests="20" failures="0" skipped="20" time="0" errors="0">
+<testcase name="Sessions Page › Session Listing › should display sessions list" classname="sessions.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sessions Page › Session Listing › should show empty state when no sessions" classname="sessions.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sessions Page › Session Listing › should navigate to session details on click" classname="sessions.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sessions Page › Session Listing › should display session capacity information" classname="sessions.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sessions Page › Session Creation › should create a new session with valid data" classname="sessions.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sessions Page › Session Creation › should show validation error for empty name" classname="sessions.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sessions Page › Session Creation › should show validation error for invalid date range" classname="sessions.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sessions Page › Session Creation › should show validation error for negative capacity" classname="sessions.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sessions Page › Session Creation › should navigate back to list on cancel" classname="sessions.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sessions Page › Session Editing › should load existing session data in form" classname="sessions.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sessions Page › Session Editing › should update session successfully" classname="sessions.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sessions Page › Session Status Toggle › should toggle session open/closed" classname="sessions.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sessions Page › Session Deletion › should show confirmation dialog on delete" classname="sessions.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sessions Page › Session Deletion › should cancel deletion on dialog dismiss" classname="sessions.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sessions Page › Session Deletion › should delete session on confirmation" classname="sessions.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sessions Page › Search and Filtering › should filter sessions by search term" classname="sessions.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sessions Page › Search and Filtering › should filter by session status" classname="sessions.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sessions Page › Search and Filtering › should clear filters" classname="sessions.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sessions Page › Pagination › should display pagination controls when needed" classname="sessions.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sessions Page › Pagination › should navigate between pages" classname="sessions.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="checkin-flow.spec.ts" timestamp="2026-01-19T11:01:22.615Z" hostname="Mobile Chrome" tests="28" failures="0" skipped="28" time="0" errors="0">
+<testcase name="Check-in Flow › Check-in Dashboard › should display check-in dashboard" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Check-in Dashboard › should show session selector" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Check-in Dashboard › should show only open sessions in selector" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Check-in Dashboard › should display real-time check-in count" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Check-in Dashboard › should show recent check-ins list" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Manual Check-in › should search and find participant" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Manual Check-in › should show participant details before check-in" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Manual Check-in › should check in participant successfully" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Manual Check-in › should show error for already checked-in participant" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Manual Check-in › should update count after successful check-in" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › QR Scanner › should display QR scanner page" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › QR Scanner › should show camera permission request" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › QR Scanner › should have manual QR input fallback" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › QR Scanner › should process manual QR code input" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › QR Scanner › should show error for invalid QR code" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Verification Workflow › should display verification modal on scan" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Verification Workflow › should show registration status in verification" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Verification Workflow › should complete check-in on accept" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Verification Workflow › should log attempt on decline" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Check-in History › should display check-in history" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Check-in History › should filter history by session" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Check-in History › should filter history by date range" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Check-in History › should allow undoing check-in" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Check-in History › should export check-in history" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Real-time Updates › should show real-time check-in notifications" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Real-time Updates › should update capacity bar in real-time" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Capacity Warnings › should show warning when session is near capacity" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Capacity Warnings › should disable check-in when session is full" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="participants.spec.ts" timestamp="2026-01-19T11:01:22.615Z" hostname="Mobile Chrome" tests="27" failures="0" skipped="27" time="0" errors="0">
+<testcase name="Participants Page › Participant Listing › should display participants list" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Participant Listing › should show participant count" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Participant Listing › should display participant details in table" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Participant Listing › should show QR code button for each participant" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Participant Creation › should create a new participant with valid data" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Participant Creation › should show validation error for empty name" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Participant Creation › should show validation error for invalid email" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Participant Creation › should show validation error for duplicate email" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Participant Creation › should auto-generate QR code on creation" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Participant Creation › should allow setting role as ambassador" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Participant Editing › should load existing participant data in form" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Participant Editing › should update participant successfully" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Participant Editing › should not allow changing email to existing one" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Search and Filtering › should search participants by name" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Search and Filtering › should search participants by email" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Search and Filtering › should filter by role" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Search and Filtering › should show no results message for empty search" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › QR Code Functionality › should display QR code modal on button click" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › QR Code Functionality › should show download button for QR code" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › QR Code Functionality › should close QR modal on dismiss" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Participant Deletion › should show confirmation dialog on delete" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Participant Deletion › should warn about related data on delete" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Participant Deletion › should delete participant on confirmation" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Bulk Operations › should show bulk actions when selecting participants" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Bulk Operations › should select all participants" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Ambassador Leaderboard › should navigate to ambassador leaderboard" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Ambassador Leaderboard › should display ambassador rankings" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="registrations.spec.ts" timestamp="2026-01-19T11:01:22.615Z" hostname="Mobile Chrome" tests="28" failures="0" skipped="28" time="0" errors="0">
+<testcase name="Registrations Management › Registration Listing › should display registrations list page" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Registration Listing › should show registration details in table" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Registration Listing › should show registration status badges" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Registration Listing › should display empty state when no registrations" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Registration Listing › should support pagination" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Registration Creation › should open new registration dialog" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Registration Creation › should show participant and session selectors" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Registration Creation › should require participant selection" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Registration Creation › should require session selection" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Registration Creation › should create registration successfully" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Registration Creation › should prevent duplicate registration" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Status Management › should show status options in row actions" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Status Management › should change registration status" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Status Management › should confirm cancellation" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Search and Filtering › should search by participant name" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Search and Filtering › should filter by registration status" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Search and Filtering › should filter by session" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Search and Filtering › should clear all filters" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Search and Filtering › should combine multiple filters" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Bulk Operations › should select multiple registrations" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Bulk Operations › should select all registrations" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Bulk Operations › should bulk confirm registrations" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Bulk Operations › should bulk cancel registrations with confirmation" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Export Functionality › should export registrations as CSV" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Export Functionality › should export filtered results only" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Edge Cases › should handle session capacity limits" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Edge Cases › should handle closed session registration attempt" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Edge Cases › should validate registration time constraints" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="sessions.spec.ts" timestamp="2026-01-19T11:01:22.615Z" hostname="Mobile Chrome" tests="20" failures="0" skipped="20" time="0" errors="0">
+<testcase name="Sessions Page › Session Listing › should display sessions list" classname="sessions.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sessions Page › Session Listing › should show empty state when no sessions" classname="sessions.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sessions Page › Session Listing › should navigate to session details on click" classname="sessions.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sessions Page › Session Listing › should display session capacity information" classname="sessions.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sessions Page › Session Creation › should create a new session with valid data" classname="sessions.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sessions Page › Session Creation › should show validation error for empty name" classname="sessions.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sessions Page › Session Creation › should show validation error for invalid date range" classname="sessions.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sessions Page › Session Creation › should show validation error for negative capacity" classname="sessions.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sessions Page › Session Creation › should navigate back to list on cancel" classname="sessions.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sessions Page › Session Editing › should load existing session data in form" classname="sessions.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sessions Page › Session Editing › should update session successfully" classname="sessions.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sessions Page › Session Status Toggle › should toggle session open/closed" classname="sessions.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sessions Page › Session Deletion › should show confirmation dialog on delete" classname="sessions.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sessions Page › Session Deletion › should cancel deletion on dialog dismiss" classname="sessions.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sessions Page › Session Deletion › should delete session on confirmation" classname="sessions.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sessions Page › Search and Filtering › should filter sessions by search term" classname="sessions.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sessions Page › Search and Filtering › should filter by session status" classname="sessions.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sessions Page › Search and Filtering › should clear filters" classname="sessions.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sessions Page › Pagination › should display pagination controls when needed" classname="sessions.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sessions Page › Pagination › should navigate between pages" classname="sessions.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="checkin-flow.spec.ts" timestamp="2026-01-19T11:01:22.615Z" hostname="Mobile Safari" tests="28" failures="0" skipped="28" time="0" errors="0">
+<testcase name="Check-in Flow › Check-in Dashboard › should display check-in dashboard" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Check-in Dashboard › should show session selector" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Check-in Dashboard › should show only open sessions in selector" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Check-in Dashboard › should display real-time check-in count" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Check-in Dashboard › should show recent check-ins list" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Manual Check-in › should search and find participant" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Manual Check-in › should show participant details before check-in" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Manual Check-in › should check in participant successfully" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Manual Check-in › should show error for already checked-in participant" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Manual Check-in › should update count after successful check-in" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › QR Scanner › should display QR scanner page" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › QR Scanner › should show camera permission request" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › QR Scanner › should have manual QR input fallback" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › QR Scanner › should process manual QR code input" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › QR Scanner › should show error for invalid QR code" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Verification Workflow › should display verification modal on scan" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Verification Workflow › should show registration status in verification" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Verification Workflow › should complete check-in on accept" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Verification Workflow › should log attempt on decline" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Check-in History › should display check-in history" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Check-in History › should filter history by session" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Check-in History › should filter history by date range" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Check-in History › should allow undoing check-in" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Check-in History › should export check-in history" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Real-time Updates › should show real-time check-in notifications" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Real-time Updates › should update capacity bar in real-time" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Capacity Warnings › should show warning when session is near capacity" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Check-in Flow › Capacity Warnings › should disable check-in when session is full" classname="checkin-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="participants.spec.ts" timestamp="2026-01-19T11:01:22.615Z" hostname="Mobile Safari" tests="27" failures="0" skipped="27" time="0" errors="0">
+<testcase name="Participants Page › Participant Listing › should display participants list" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Participant Listing › should show participant count" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Participant Listing › should display participant details in table" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Participant Listing › should show QR code button for each participant" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Participant Creation › should create a new participant with valid data" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Participant Creation › should show validation error for empty name" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Participant Creation › should show validation error for invalid email" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Participant Creation › should show validation error for duplicate email" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Participant Creation › should auto-generate QR code on creation" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Participant Creation › should allow setting role as ambassador" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Participant Editing › should load existing participant data in form" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Participant Editing › should update participant successfully" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Participant Editing › should not allow changing email to existing one" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Search and Filtering › should search participants by name" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Search and Filtering › should search participants by email" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Search and Filtering › should filter by role" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Search and Filtering › should show no results message for empty search" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › QR Code Functionality › should display QR code modal on button click" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › QR Code Functionality › should show download button for QR code" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › QR Code Functionality › should close QR modal on dismiss" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Participant Deletion › should show confirmation dialog on delete" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Participant Deletion › should warn about related data on delete" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Participant Deletion › should delete participant on confirmation" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Bulk Operations › should show bulk actions when selecting participants" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Bulk Operations › should select all participants" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Ambassador Leaderboard › should navigate to ambassador leaderboard" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Participants Page › Ambassador Leaderboard › should display ambassador rankings" classname="participants.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="registrations.spec.ts" timestamp="2026-01-19T11:01:22.615Z" hostname="Mobile Safari" tests="28" failures="0" skipped="28" time="0" errors="0">
+<testcase name="Registrations Management › Registration Listing › should display registrations list page" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Registration Listing › should show registration details in table" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Registration Listing › should show registration status badges" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Registration Listing › should display empty state when no registrations" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Registration Listing › should support pagination" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Registration Creation › should open new registration dialog" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Registration Creation › should show participant and session selectors" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Registration Creation › should require participant selection" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Registration Creation › should require session selection" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Registration Creation › should create registration successfully" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Registration Creation › should prevent duplicate registration" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Status Management › should show status options in row actions" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Status Management › should change registration status" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Status Management › should confirm cancellation" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Search and Filtering › should search by participant name" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Search and Filtering › should filter by registration status" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Search and Filtering › should filter by session" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Search and Filtering › should clear all filters" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Search and Filtering › should combine multiple filters" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Bulk Operations › should select multiple registrations" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Bulk Operations › should select all registrations" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Bulk Operations › should bulk confirm registrations" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Bulk Operations › should bulk cancel registrations with confirmation" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Export Functionality › should export registrations as CSV" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Export Functionality › should export filtered results only" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Edge Cases › should handle session capacity limits" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Edge Cases › should handle closed session registration attempt" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Registrations Management › Edge Cases › should validate registration time constraints" classname="registrations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="sessions.spec.ts" timestamp="2026-01-19T11:01:22.615Z" hostname="Mobile Safari" tests="20" failures="0" skipped="20" time="0" errors="0">
+<testcase name="Sessions Page › Session Listing › should display sessions list" classname="sessions.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sessions Page › Session Listing › should show empty state when no sessions" classname="sessions.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sessions Page › Session Listing › should navigate to session details on click" classname="sessions.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sessions Page › Session Listing › should display session capacity information" classname="sessions.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sessions Page › Session Creation › should create a new session with valid data" classname="sessions.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sessions Page › Session Creation › should show validation error for empty name" classname="sessions.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sessions Page › Session Creation › should show validation error for invalid date range" classname="sessions.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sessions Page › Session Creation › should show validation error for negative capacity" classname="sessions.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sessions Page › Session Creation › should navigate back to list on cancel" classname="sessions.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sessions Page › Session Editing › should load existing session data in form" classname="sessions.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sessions Page › Session Editing › should update session successfully" classname="sessions.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sessions Page › Session Status Toggle › should toggle session open/closed" classname="sessions.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sessions Page › Session Deletion › should show confirmation dialog on delete" classname="sessions.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sessions Page › Session Deletion › should cancel deletion on dialog dismiss" classname="sessions.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sessions Page › Session Deletion › should delete session on confirmation" classname="sessions.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sessions Page › Search and Filtering › should filter sessions by search term" classname="sessions.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sessions Page › Search and Filtering › should filter by session status" classname="sessions.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sessions Page › Search and Filtering › should clear filters" classname="sessions.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sessions Page › Pagination › should display pagination controls when needed" classname="sessions.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sessions Page › Pagination › should navigate between pages" classname="sessions.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+</testsuites>

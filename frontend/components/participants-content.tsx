@@ -31,6 +31,7 @@ import {
   Group,
   LayoutGrid,
   List,
+  AlertTriangle,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { tableRowVariants, staggerContainer, pageTransition, TIMING, EASING } from '@/lib/animations';
@@ -47,6 +48,7 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Dialog,
   DialogContent,
@@ -351,6 +353,11 @@ export function ParticipantsContent() {
   const [orgComboOpenMulti, setOrgComboOpenMulti] = useState<number | null>(null);
   const [tableQRCodes, setTableQRCodes] = useState<Record<string, string>>({});
   
+  // Selection state for bulk operations
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false);
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
+  
   const [formData, setFormData] = useState<CreateParticipantDto>({
     name: '',
     email: '',
@@ -557,6 +564,62 @@ export function ParticipantsContent() {
   const filteredParticipants = processedParticipants;
 
   const referrals = participantDetails?.referredParticipants || [];
+
+  // Selection helpers for bulk operations
+  const allOnPageSelected = useMemo(() => {
+    return paginatedParticipants.length > 0 && paginatedParticipants.every(p => selectedIds.has(p._id));
+  }, [paginatedParticipants, selectedIds]);
+
+  const someOnPageSelected = useMemo(() => {
+    return paginatedParticipants.some(p => selectedIds.has(p._id)) && !allOnPageSelected;
+  }, [paginatedParticipants, selectedIds, allOnPageSelected]);
+
+  const handleSelectAll = useCallback((checked: boolean) => {
+    if (checked) {
+      const newSelected = new Set(selectedIds);
+      paginatedParticipants.forEach(p => newSelected.add(p._id));
+      setSelectedIds(newSelected);
+    } else {
+      const newSelected = new Set(selectedIds);
+      paginatedParticipants.forEach(p => newSelected.delete(p._id));
+      setSelectedIds(newSelected);
+    }
+  }, [paginatedParticipants, selectedIds]);
+
+  const handleSelectOne = useCallback((id: string, checked: boolean) => {
+    const newSelected = new Set(selectedIds);
+    if (checked) {
+      newSelected.add(id);
+    } else {
+      newSelected.delete(id);
+    }
+    setSelectedIds(newSelected);
+  }, [selectedIds]);
+
+  const handleBulkDelete = async () => {
+    setIsBulkDeleting(true);
+    const ids = Array.from(selectedIds);
+    let successCount = 0;
+    let errorCount = 0;
+
+    for (const id of ids) {
+      try {
+        await deleteMutation.mutateAsync(id);
+        successCount++;
+      } catch {
+        errorCount++;
+      }
+    }
+
+    setIsBulkDeleting(false);
+    setIsBulkDeleteDialogOpen(false);
+    setSelectedIds(new Set());
+  };
+
+  // Reset selection when page/filters change
+  useEffect(() => {
+    setSelectedIds(new Set());
+  }, [currentPage, itemsPerPage, searchQuery, statusFilter, organizationFilter]);
 
   // Generate QR codes for table display
   useEffect(() => {
@@ -1654,7 +1717,7 @@ export function ParticipantsContent() {
           <div className="flex items-center justify-between">
             <div>
               <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5 text-primary" />
+                <Users className="h-5 w-5 text-primary" aria-hidden="true" />
                 All Participants
               </CardTitle>
               <CardDescription>
@@ -1664,6 +1727,18 @@ export function ParticipantsContent() {
               </CardDescription>
             </div>
             <div className="flex items-center gap-3">
+              {/* Bulk Delete Button */}
+              {selectedIds.size > 0 && (
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => setIsBulkDeleteDialogOpen(true)}
+                  className="gap-2"
+                >
+                  <Trash2 className="h-4 w-4" aria-hidden="true" />
+                  Delete ({selectedIds.size})
+                </Button>
+              )}
               <Badge variant="secondary" className="text-sm">
                 {participants.length} total
               </Badge>
@@ -1785,6 +1860,18 @@ export function ParticipantsContent() {
               <Table role="table" aria-label="Participants list">
                 <TableHeader>
                   <TableRow className="bg-muted/30 hover:bg-muted/30">
+                    <TableHead className="w-[50px] text-center" scope="col">
+                      <Checkbox
+                        checked={allOnPageSelected}
+                        ref={(el) => {
+                          if (el) {
+                            (el as HTMLButtonElement & { indeterminate: boolean }).indeterminate = someOnPageSelected;
+                          }
+                        }}
+                        onCheckedChange={handleSelectAll}
+                        aria-label="Select all participants on this page"
+                      />
+                    </TableHead>
                     <TableHead className="w-[60px] text-center" scope="col">QR</TableHead>
                     <TableHead className="text-center" scope="col">
                       <button 
@@ -1832,24 +1919,159 @@ export function ParticipantsContent() {
                 <TableBody>
                   <AnimatePresence mode="popLayout">
                     {paginatedParticipants.length > 0 ? (
-                      paginatedParticipants.map((participant, index) => (
-                        <ParticipantTableRow
-                          key={participant._id}
-                          participant={participant}
-                          index={index}
-                          tableQRCodes={tableQRCodes}
-                          generateQRCode={generateQRCode}
-                          handleViewDetails={handleViewDetails}
-                          openEditDialog={openEditDialog}
-                          handleDelete={handleDelete}
-                          deleteMutation={deleteMutation}
-                        />
-                      ))
+                      paginatedParticipants.map((participant, index) => {
+                        const isSelected = selectedIds.has(participant._id);
+                        return (
+                          <motion.tr
+                            key={participant._id}
+                            variants={tableRowVariants}
+                            initial="hidden"
+                            animate="visible"
+                            exit="exit"
+                            transition={{ delay: index * 0.02, duration: 0.15 }}
+                            className={`border-b transition-colors hover:bg-muted/50 group ${isSelected ? 'bg-primary/5' : ''}`}
+                            data-state={isSelected ? 'selected' : undefined}
+                          >
+                            <TableCell className="text-center py-2">
+                              <Checkbox
+                                checked={isSelected}
+                                onCheckedChange={(checked) => handleSelectOne(participant._id, !!checked)}
+                                aria-label={`Select ${participant.name}`}
+                              />
+                            </TableCell>
+                            <TableCell className="py-2">
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <button
+                                      onClick={() => generateQRCode(participant)}
+                                      className="block rounded-md border border-transparent hover:border-primary/30 hover:shadow-sm transition-all p-0.5"
+                                    >
+                                      {tableQRCodes[participant.qrCode] ? (
+                                        <img
+                                          src={tableQRCodes[participant.qrCode]}
+                                          alt={`QR: ${participant.qrCode}`}
+                                          className="w-10 h-10 rounded"
+                                        />
+                                      ) : (
+                                        <div className="w-10 h-10 rounded bg-muted flex items-center justify-center">
+                                          <QrCode className="h-5 w-5 text-muted-foreground" />
+                                        </div>
+                                      )}
+                                    </button>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="right" className="font-mono text-xs">
+                                    {participant.qrCode}
+                                    <br />
+                                    <span className="text-muted-foreground">Click to enlarge</span>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            </TableCell>
+                            <TableCell className="font-medium text-center">
+                              <span className="truncate max-w-[200px] block">{participant.name}</span>
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <span className="text-muted-foreground truncate max-w-[250px] block">{participant.email}</span>
+                            </TableCell>
+                            <TableCell className="text-center">
+                              {participant.organization ? (
+                                <Badge variant="outline" className="font-normal">
+                                  {participant.organization}
+                                </Badge>
+                              ) : (
+                                <span className="text-muted-foreground">—</span>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <Badge
+                                variant={
+                                  participant.role === 'ambassador'
+                                    ? 'default'
+                                    : participant.role === 'travel_grant'
+                                    ? 'secondary'
+                                    : 'outline'
+                                }
+                                className="capitalize"
+                              >
+                                {participant.role === 'travel_grant' ? 'Travel Grant' : participant.role}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <div className="flex justify-center gap-1">
+                                {(participant.role === 'ambassador' || participant.role === 'travel_grant') && (
+                                  <TooltipProvider>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          className="h-8 w-8"
+                                          onClick={() => handleViewDetails(participant)}
+                                        >
+                                          <Eye className="h-4 w-4" />
+                                        </Button>
+                                      </TooltipTrigger>
+                                      <TooltipContent>View Details</TooltipContent>
+                                    </Tooltip>
+                                  </TooltipProvider>
+                                )}
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8"
+                                        onClick={() => generateQRCode(participant)}
+                                      >
+                                        <QrCode className="h-4 w-4" />
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>View QR Code</TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8"
+                                        onClick={() => openEditDialog(participant)}
+                                      >
+                                        <Pencil className="h-4 w-4" />
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>Edit</TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                        onClick={() => handleDelete(participant._id)}
+                                        disabled={deleteMutation.isPending}
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>Delete</TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              </div>
+                            </TableCell>
+                          </motion.tr>
+                        );
+                      })
                     ) : (
                       <TableRow>
-                        <TableCell colSpan={6} className="h-32">
+                        <TableCell colSpan={7} className="h-32">
                           <div className="flex flex-col items-center justify-center text-center">
-                            <Users className="h-10 w-10 text-muted-foreground/50 mb-2" />
+                            <Users className="h-10 w-10 text-muted-foreground/50 mb-2" aria-hidden="true" />
                             <p className="text-muted-foreground font-medium">
                               {searchQuery || statusFilter !== 'all' || organizationFilter !== 'all'
                                 ? 'No participants match your filters'
@@ -2247,6 +2469,43 @@ export function ParticipantsContent() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Bulk Delete Confirmation Dialog */}
+      <AlertDialog open={isBulkDeleteDialogOpen} onOpenChange={setIsBulkDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-destructive" />
+              Delete {selectedIds.size} participant{selectedIds.size === 1 ? '' : 's'}?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the selected 
+              participant{selectedIds.size === 1 ? '' : 's'} and all associated data including 
+              check-ins, session registrations, and referral records.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isBulkDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleBulkDelete}
+              disabled={isBulkDeleting}
+              className="bg-destructive text-white hover:bg-destructive/90"
+            >
+              {isBulkDeleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Delete {selectedIds.size} participant{selectedIds.size === 1 ? '' : 's'}
+                </>
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

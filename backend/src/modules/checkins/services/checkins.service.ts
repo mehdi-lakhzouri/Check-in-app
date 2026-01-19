@@ -153,6 +153,31 @@ export class CheckInsService {
       declineLabel = 'Session Closed';
     }
 
+    // Check session capacity - prevent verification screen if session is full
+    let isAtCapacity = false;
+    let capacityInfo: { current: number; max: number; remaining: number } | null = null;
+    
+    if (session.capacity && session.capacity > 0 && session.capacityEnforced !== false) {
+      const currentCount = await this.checkInRepository.countBySession(verifyDto.sessionId);
+      isAtCapacity = currentCount >= session.capacity;
+      capacityInfo = {
+        current: currentCount,
+        max: session.capacity,
+        remaining: Math.max(0, session.capacity - currentCount),
+      };
+      
+      if (isAtCapacity && !existingCheckIn) {
+        canAccept = false;
+        acceptLabel = 'Session Full';
+        this.logger.log('Session at capacity, blocking check-in', {
+          reqId: getCurrentRequestId(),
+          sessionId: verifyDto.sessionId,
+          capacity: session.capacity,
+          currentCount,
+        });
+      }
+    }
+
     this.logger.log('QR verification complete', {
       reqId: getCurrentRequestId(),
       participantId: participant._id.toString(),
@@ -174,6 +199,8 @@ export class CheckInsService {
         name: session.name,
         isOpen: session.isOpen,
         requiresRegistration: session.requiresRegistration,
+        capacity: session.capacity || null,
+        isAtCapacity,
       },
       verification: {
         isRegistered: registrationCheck.isRegistered,
@@ -187,6 +214,7 @@ export class CheckInsService {
           },
         }),
         badge,
+        isAtCapacity,
       },
       actions: {
         canAccept,
@@ -194,6 +222,7 @@ export class CheckInsService {
         acceptLabel,
         declineLabel,
       },
+      ...(capacityInfo && { capacityInfo }),
     };
   }
 

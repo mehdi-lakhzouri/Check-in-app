@@ -121,6 +121,8 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
     final isProcessing = checkInState.isProcessing;
     final participant = widget.verification.participant;
     final badge = widget.verification.badge;
+    final isAtCapacity = widget.verification.isAtCapacity;
+    final canAccept = widget.verification.canAccept;
 
     return Scaffold(
       appBar: AppBar(
@@ -135,6 +137,12 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            // Capacity warning - show prominently at top if at capacity
+            if (isAtCapacity) ...[
+              _buildCapacityWarningCard(theme),
+              const SizedBox(height: 24),
+            ],
+            
             // Badge indicator
             _buildBadgeCard(theme, badge),
             const SizedBox(height: 24),
@@ -182,14 +190,80 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
               const SizedBox(height: 24),
             ],
 
-            // Action buttons
-            if (!badge.isAlreadyCheckedIn) ...[
+            // Action buttons - disable accept if at capacity
+            if (!badge.isAlreadyCheckedIn && !isAtCapacity) ...[
               _buildActionButtons(theme, isProcessing),
+            ] else if (isAtCapacity && !badge.isAlreadyCheckedIn) ...[
+              // Show only continue scanning when at capacity
+              FilledButton.icon(
+                onPressed: isProcessing ? null : _handleCancel,
+                icon: const Icon(Icons.qr_code_scanner),
+                label: const Text('Continue Scanning'),
+              ),
             ] else ...[
               FilledButton.icon(
                 onPressed: isProcessing ? null : _handleCancel,
                 icon: const Icon(Icons.qr_code_scanner),
                 label: const Text('Continue Scanning'),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCapacityWarningCard(ThemeData theme) {
+    final capacityInfo = widget.verification.capacityInfo;
+    
+    return Card(
+      color: Colors.red.withValues(alpha: 0.1),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.red.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.group_off,
+                size: 48,
+                color: Colors.red,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'SESSION FULL',
+              style: theme.textTheme.titleLarge?.copyWith(
+                color: Colors.red,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'This session has reached maximum capacity. No more check-ins can be accepted.',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            if (capacityInfo != null) ...[
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  '${capacityInfo.current}/${capacityInfo.max} participants',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
             ],
           ],

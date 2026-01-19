@@ -1,0 +1,72 @@
+# Services for all components
+# Optimized for 120-430 participants with MongoDB Atlas
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+  labels:
+    app: backend
+    sizing: small-event
+spec:
+  type: ClusterIP
+  ports:
+    - port: 80
+      targetPort: 3001
+      protocol: TCP
+      name: http
+  selector:
+    app: backend
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+  labels:
+    app: frontend
+    sizing: small-event
+spec:
+  type: ClusterIP
+  ports:
+    - port: 80
+      targetPort: 3000
+      protocol: TCP
+      name: http
+  selector:
+    app: frontend
+---
+# MongoDB Service - COMMENTED OUT (using Atlas)
+# Uncomment if using local MongoDB (mongodb-statefulset.yaml)
+# ---
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   name: mongodb
+#   labels:
+#     app: mongodb
+# spec:
+#   type: ClusterIP
+#   clusterIP: None  # Headless service for StatefulSet
+#   ports:
+#     - port: 27017
+#       targetPort: 27017
+#       protocol: TCP
+#       name: mongodb
+#   selector:
+#     app: mongodb
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+  labels:
+    app: redis
+    sizing: small-event
+spec:
+  type: ClusterIP
+  ports:
+    - port: 6379
+      targetPort: 6379
+      protocol: TCP
+      name: redis
+  selector:
+    app: redis

@@ -488,28 +488,6 @@ export function TravelGrantsContent() {
         </motion.div>
       </motion.div>
 
-      {/* Quick Stats Summary */}
-      {pendingCount > 0 && (
-        <motion.div variants={itemVariants}>
-          <Card className="bg-yellow-50 dark:bg-yellow-950 border-yellow-200 dark:border-yellow-800">
-            <CardContent className="flex items-center gap-4 py-4">
-              <AlertCircle className="h-5 w-5 text-yellow-600" />
-              <p className="text-sm">
-                You have <strong>{pendingCount}</strong> travel grant application{pendingCount !== 1 ? 's' : ''} pending review.
-              </p>
-              <Button 
-                size="sm" 
-                variant="outline" 
-                className="ml-auto"
-                onClick={() => setStatusFilter('pending')}
-              >
-                View Pending
-              </Button>
-            </CardContent>
-          </Card>
-        </motion.div>
-      )}
-
       {/* Search and Filters */}
       <motion.div variants={itemVariants}>
         <Card>

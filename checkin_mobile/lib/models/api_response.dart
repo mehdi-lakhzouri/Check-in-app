@@ -85,18 +85,40 @@ class ApiError implements Exception {
   final String message;
   final int? statusCode;
   final String? details;
+  final List<Map<String, dynamic>>? validationErrors;
 
   const ApiError({
     required this.message,
     this.statusCode,
     this.details,
+    this.validationErrors,
   });
 
   factory ApiError.fromJson(Map<String, dynamic> json) {
+    String message = json['message'] as String? ?? 'Unknown error';
+    List<Map<String, dynamic>>? validationErrors;
+    
+    // Parse validation errors array from ValidationException
+    // Backend returns: { message: "Validation failed", errors: [{field: "...", message: "..."}] }
+    if (json['errors'] != null && json['errors'] is List) {
+      validationErrors = (json['errors'] as List)
+          .map((e) => Map<String, dynamic>.from(e as Map))
+          .toList();
+      
+      // Extract the actual error message from the first validation error
+      if (message == 'Validation failed' && validationErrors.isNotEmpty) {
+        final firstError = validationErrors.first;
+        if (firstError['message'] != null) {
+          message = firstError['message'] as String;
+        }
+      }
+    }
+    
     return ApiError(
-      message: json['message'] as String? ?? 'Unknown error',
+      message: message,
       statusCode: json['statusCode'] as int?,
       details: json['error'] as String?,
+      validationErrors: validationErrors,
     );
   }
 
@@ -105,13 +127,14 @@ class ApiError implements Exception {
 
   /// Get user-friendly error message
   String get userMessage {
-    if (message.contains('already checked in')) {
+    // Check for capacity-related errors (various phrasings)
+    if (isCapacityError) {
+      return 'Session at Full Capacity';
+    } else if (message.contains('already checked in')) {
       return 'Already Checked In';
     } else if (message.contains('not open')) {
       return 'Session Not Open';
-    } else if (message.contains('at capacity')) {
-      return 'Session at Capacity';
-    } else if (message.contains('not registered')) {
+    } else if (message.contains('not registered') || message.contains('requires registration')) {
       return 'Not Registered for Session';
     } else if (message.contains('not found')) {
       return 'Not Found';
@@ -123,4 +146,21 @@ class ApiError implements Exception {
 
   /// Check if error is a duplicate check-in
   bool get isDuplicate => message.contains('already checked in');
+  
+  /// Check if error is a capacity-related error
+  bool get isCapacityError {
+    final lowerMessage = message.toLowerCase();
+    return lowerMessage.contains('capacity') ||
+           lowerMessage.contains('full') ||
+           (validationErrors?.any((e) => 
+             (e['message'] as String?)?.toLowerCase().contains('capacity') ?? false) ?? false);
+  }
+  
+  /// Check if error is a session closed error
+  bool get isSessionClosed => message.contains('not open');
+  
+  /// Check if error is a registration required error
+  bool get isRegistrationRequired => 
+      message.contains('requires registration') || 
+      message.contains('not registered');
 }
