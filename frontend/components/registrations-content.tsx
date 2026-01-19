@@ -1,45 +1,27 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import {
-  Plus,
-  Trash2,
   Search,
   Filter,
   X,
-  ChevronLeft,
-  ChevronRight,
   ClipboardList,
-  CheckCircle,
-  Clock,
-  XCircle,
   CalendarPlus,
+  UserPlus,
+  Building2,
+  Calendar,
+  Trash2,
+  MoreHorizontal,
+  AlertTriangle,
+  Loader2,
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { tableRowVariants, staggerContainer, pageTransition, TIMING, EASING } from '@/lib/animations';
-import { format } from 'date-fns';
+import { motion } from 'framer-motion';
+import { staggerContainer, cardVariants } from '@/lib/animations';
+import { format, isWithinInterval, startOfDay, endOfDay, subWeeks, subMonths } from 'date-fns';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
@@ -62,9 +44,17 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { ButtonLoading } from '@/components/ui/loading-state';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { ErrorState } from '@/components/ui/error-state';
-import { TableSkeleton } from '@/components/ui/skeleton';
+import { DataTable, DataTableSkeleton, type DataTableColumn } from '@/components/ui/data-table';
+import { StatsCard } from '@/components/stats-card';
+import { BulkRegistrationDialog } from '@/components/bulk-registration-dialog';
+import { toast } from 'sonner';
 import {
   useRegistrations,
   useRegistrationStats,
@@ -73,36 +63,49 @@ import {
   useParticipants,
   useSessions,
 } from '@/lib/hooks';
-import type { Registration, Participant, Session, CreateRegistrationDto } from '@/lib/schemas';
+import type { Registration, Participant, Session } from '@/lib/schemas';
+
+// Types
+type DateRangePreset = 'all' | 'today' | 'week' | 'month';
+
+interface DateRange {
+  start: Date | null;
+  end: Date | null;
+}
 
 interface PopulatedRegistration extends Omit<Registration, 'participantId' | 'sessionId'> {
   participantId: Participant;
   sessionId: Session;
 }
 
-// Animation variants imported from @/lib/animations
+// Animation variants
+const containerVariants = staggerContainer;
+const itemVariants = cardVariants;
 
-const ITEMS_PER_PAGE_OPTIONS = [5, 10, 25, 50, 100];
+// ============================================================================
+// Main Component
+// ============================================================================
 
 export function RegistrationsContent() {
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  // Dialog states
+  const [isBulkDialogOpen, setIsBulkDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [registrationToDelete, setRegistrationToDelete] = useState<string | null>(null);
-  const [formData, setFormData] = useState<CreateRegistrationDto>({
-    participantId: '',
-    sessionId: '',
-    status: 'confirmed',
-  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Filter state
   const [searchQuery, setSearchQuery] = useState('');
   const [sessionFilter, setSessionFilter] = useState<string>('all');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [organizationFilter, setOrganizationFilter] = useState<string>('all');
+  const [dateRangePreset, setDateRangePreset] = useState<DateRangePreset>('all');
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
+
+  // Selection state
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(5);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   // TanStack Query hooks
   const {
@@ -117,13 +120,7 @@ export function RegistrationsContent() {
   const { data: participants = [], isLoading: participantsLoading } = useParticipants();
   const { data: sessions = [], isLoading: sessionsLoading } = useSessions();
 
-  const createMutation = useCreateRegistration({
-    onSuccess: () => {
-      setIsDialogOpen(false);
-      resetForm();
-    },
-  });
-
+  const createMutation = useCreateRegistration({});
   const deleteMutation = useDeleteRegistration({
     onSuccess: () => {
       setDeleteDialogOpen(false);
@@ -134,26 +131,48 @@ export function RegistrationsContent() {
   const isLoading = registrationsLoading || participantsLoading || sessionsLoading;
   const populatedRegistrations = registrations as PopulatedRegistration[];
 
-  // Filter and search registrations
+  // Get unique organizations
+  const organizations = useMemo(() => {
+    const orgs = new Set<string>();
+    participants.forEach((p) => {
+      if (p.organization?.trim()) {
+        orgs.add(p.organization.trim());
+      }
+    });
+    return Array.from(orgs).sort();
+  }, [participants]);
+
+  // Calculate date range
+  const dateRange = useMemo((): DateRange => {
+    const now = new Date();
+    switch (dateRangePreset) {
+      case 'today':
+        return { start: startOfDay(now), end: endOfDay(now) };
+      case 'week':
+        return { start: startOfDay(subWeeks(now, 1)), end: endOfDay(now) };
+      case 'month':
+        return { start: startOfDay(subMonths(now, 1)), end: endOfDay(now) };
+      default:
+        return { start: null, end: null };
+    }
+  }, [dateRangePreset]);
+
+  // Filter registrations
   const filteredRegistrations = useMemo(() => {
     return populatedRegistrations.filter((registration) => {
       // Search filter
       if (searchQuery) {
         const query = searchQuery.toLowerCase();
-        const participantName = typeof registration.participantId === 'object' && registration.participantId?.name
-          ? registration.participantId.name.toLowerCase()
-          : '';
-        const participantEmail = typeof registration.participantId === 'object' && registration.participantId
-          ? (registration.participantId.email || '').toLowerCase()
-          : '';
-        const sessionName = typeof registration.sessionId === 'object' && registration.sessionId?.name
-          ? registration.sessionId.name.toLowerCase()
-          : '';
+        const participantName = registration.participantId?.name?.toLowerCase() ?? '';
+        const participantEmail = registration.participantId?.email?.toLowerCase() ?? '';
+        const sessionName = registration.sessionId?.name?.toLowerCase() ?? '';
+        const participantOrg = registration.participantId?.organization?.toLowerCase() ?? '';
 
         if (
           !participantName.includes(query) &&
           !participantEmail.includes(query) &&
-          !sessionName.includes(query)
+          !sessionName.includes(query) &&
+          !participantOrg.includes(query)
         ) {
           return false;
         }
@@ -161,20 +180,27 @@ export function RegistrationsContent() {
 
       // Session filter
       if (sessionFilter !== 'all') {
-        const sessionId = typeof registration.sessionId === 'object' && registration.sessionId?._id
-          ? registration.sessionId._id
-          : registration.sessionId;
+        const sessionId = registration.sessionId?._id ?? registration.sessionId;
         if (sessionId !== sessionFilter) return false;
       }
 
-      // Status filter
-      if (statusFilter !== 'all' && registration.status !== statusFilter) {
-        return false;
+      // Organization filter
+      if (organizationFilter !== 'all') {
+        const participantOrg = registration.participantId?.organization?.trim() ?? '';
+        if (participantOrg !== organizationFilter) return false;
+      }
+
+      // Date range filter
+      if (dateRange.start && dateRange.end) {
+        const registeredAt = new Date(registration.registeredAt);
+        if (!isWithinInterval(registeredAt, { start: dateRange.start, end: dateRange.end })) {
+          return false;
+        }
       }
 
       return true;
     });
-  }, [populatedRegistrations, searchQuery, sessionFilter, statusFilter]);
+  }, [populatedRegistrations, searchQuery, sessionFilter, organizationFilter, dateRange]);
 
   // Pagination
   const totalPages = Math.ceil(filteredRegistrations.length / itemsPerPage);
@@ -183,61 +209,185 @@ export function RegistrationsContent() {
     return filteredRegistrations.slice(startIndex, startIndex + itemsPerPage);
   }, [filteredRegistrations, currentPage, itemsPerPage]);
 
-  // Reset to page 1 when filters change
+  // Reset page when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, sessionFilter, statusFilter]);
+    setSelectedIds(new Set());
+  }, [searchQuery, sessionFilter, organizationFilter, dateRangePreset]);
 
-  const hasActiveFilters = sessionFilter !== 'all' || statusFilter !== 'all';
+  const hasActiveFilters = sessionFilter !== 'all' || organizationFilter !== 'all' || dateRangePreset !== 'all';
+  const activeFilterCount = [sessionFilter, organizationFilter, dateRangePreset].filter((f) => f !== 'all').length;
 
-  function clearFilters() {
+  // Handlers
+  const clearFilters = useCallback(() => {
     setSearchQuery('');
     setSessionFilter('all');
-    setStatusFilter('all');
-  }
+    setOrganizationFilter('all');
+    setDateRangePreset('all');
+  }, []);
 
-  function formatDate(dateString: string): string {
-    return format(new Date(dateString), 'MMM d, yyyy');
-  }
+  const handleBulkSubmit = useCallback(
+    async (sessionId: string, participantIds: string[]) => {
+      setIsSubmitting(true);
+      let successCount = 0;
+      let errorCount = 0;
 
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    createMutation.mutate(formData);
-  }
+      try {
+        for (const participantId of participantIds) {
+          try {
+            await createMutation.mutateAsync({ sessionId, participantId });
+            successCount++;
+          } catch {
+            errorCount++;
+          }
+        }
 
-  function handleDelete(id: string) {
+        if (successCount > 0) {
+          const message = `Successfully registered ${successCount} participant${successCount !== 1 ? 's' : ''}${errorCount > 0 ? `. ${errorCount} failed.` : '.'}`;
+          if (errorCount > 0) {
+            toast.warning('Registrations Created', { description: message });
+          } else {
+            toast.success('Registrations Created', { description: message });
+          }
+        }
+
+        if (errorCount === 0) {
+          setIsBulkDialogOpen(false);
+        }
+      } finally {
+        setIsSubmitting(false);
+      }
+    },
+    [createMutation]
+  );
+
+  const handleBulkDelete = useCallback(
+    async (ids: string[]) => {
+      let successCount = 0;
+      let errorCount = 0;
+
+      for (const id of ids) {
+        try {
+          await deleteMutation.mutateAsync(id);
+          successCount++;
+        } catch {
+          errorCount++;
+        }
+      }
+
+      if (successCount > 0) {
+        const message = `Successfully deleted ${successCount} registration${successCount !== 1 ? 's' : ''}${errorCount > 0 ? `. ${errorCount} failed.` : '.'}`;
+        if (errorCount > 0) {
+          toast.warning('Registrations Deleted', { description: message });
+        } else {
+          toast.success('Registrations Deleted', { description: message });
+        }
+      }
+
+      setSelectedIds(new Set());
+    },
+    [deleteMutation]
+  );
+
+  const handleSingleDelete = useCallback((id: string) => {
     setRegistrationToDelete(id);
     setDeleteDialogOpen(true);
-  }
+  }, []);
 
-  function confirmDelete() {
+  const confirmSingleDelete = useCallback(() => {
     if (registrationToDelete) {
       deleteMutation.mutate(registrationToDelete);
     }
-  }
+  }, [registrationToDelete, deleteMutation]);
 
-  function resetForm() {
-    setFormData({
-      participantId: '',
-      sessionId: '',
-      status: 'confirmed',
-    });
-  }
+  // Table columns
+  const columns: DataTableColumn<PopulatedRegistration>[] = useMemo(
+    () => [
+      {
+        id: 'participant',
+        header: 'Participant',
+        cell: (row) => (
+          <div className="min-w-[180px]">
+            <p className="font-medium truncate">{row.participantId?.name ?? 'Unknown'}</p>
+            <p className="text-sm text-muted-foreground truncate">{row.participantId?.email ?? ''}</p>
+          </div>
+        ),
+      },
+      {
+        id: 'organization',
+        header: 'Organization',
+        cell: (row) => (
+          <div className="flex items-center gap-2 min-w-[120px]">
+            <Building2 className="h-4 w-4 text-muted-foreground shrink-0" aria-hidden="true" />
+            <span className="truncate text-muted-foreground">
+              {row.participantId?.organization || '—'}
+            </span>
+          </div>
+        ),
+      },
+      {
+        id: 'session',
+        header: 'Session',
+        cell: (row) => (
+          <div className="min-w-[150px]">
+            <Badge variant="secondary" className="font-normal truncate max-w-[200px]">
+              {row.sessionId?.name ?? 'Unknown'}
+            </Badge>
+          </div>
+        ),
+      },
+      {
+        id: 'registeredAt',
+        header: 'Registered At',
+        align: 'center',
+        cell: (row) => (
+          <span className="text-sm tabular-nums text-muted-foreground">
+            {format(new Date(row.registeredAt), 'MMM d, yyyy')}
+          </span>
+        ),
+      },
+      {
+        id: 'actions',
+        header: 'Actions',
+        align: 'center',
+        cell: (row) => (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Actions">
+                <MoreHorizontal className="h-4 w-4" aria-hidden="true" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem
+                onClick={() => handleSingleDelete(row._id)}
+                className="text-destructive focus:text-destructive"
+              >
+                <Trash2 className="h-4 w-4 mr-2" aria-hidden="true" />
+                Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ),
+      },
+    ],
+    [handleSingleDelete]
+  );
 
+  // Loading state
   if (isLoading) {
     return (
       <div className="space-y-6">
         <div className="flex items-center gap-3">
           <div className="p-2 rounded-lg bg-primary/10">
-            <ClipboardList className="h-6 w-6 text-primary" />
+            <ClipboardList className="h-6 w-6 text-primary" aria-hidden="true" />
           </div>
           <div>
-            <h2 className="text-3xl font-bold tracking-tight">Registrations</h2>
+            <h1 className="text-3xl font-bold tracking-tight">Registrations</h1>
             <p className="text-muted-foreground">Loading registrations...</p>
           </div>
         </div>
-        <div className="grid gap-4 md:grid-cols-5">
-          {[...Array(5)].map((_, i) => (
+        <div className="grid gap-4 md:grid-cols-2">
+          {[...Array(2)].map((_, i) => (
             <Card key={i} className="animate-pulse">
               <CardHeader className="pb-2">
                 <div className="h-4 w-20 bg-muted rounded" />
@@ -250,22 +400,23 @@ export function RegistrationsContent() {
         </div>
         <Card>
           <CardContent className="pt-6">
-            <TableSkeleton rows={5} columns={5} />
+            <DataTableSkeleton columns={5} rows={5} showCheckbox />
           </CardContent>
         </Card>
       </div>
     );
   }
 
+  // Error state
   if (registrationsError) {
     return (
       <div className="space-y-6">
         <div className="flex items-center gap-3">
           <div className="p-2 rounded-lg bg-primary/10">
-            <ClipboardList className="h-6 w-6 text-primary" />
+            <ClipboardList className="h-6 w-6 text-primary" aria-hidden="true" />
           </div>
           <div>
-            <h2 className="text-3xl font-bold tracking-tight">Registrations</h2>
+            <h1 className="text-3xl font-bold tracking-tight">Registrations</h1>
             <p className="text-muted-foreground">Manage session registrations</p>
           </div>
         </div>
@@ -280,15 +431,20 @@ export function RegistrationsContent() {
   }
 
   return (
-    <div className="space-y-6">
+    <motion.div
+      className="space-y-6"
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+    >
       {/* Header */}
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
           <div className="p-2 rounded-lg bg-primary/10">
-            <ClipboardList className="h-6 w-6 text-primary" />
+            <ClipboardList className="h-6 w-6 text-primary" aria-hidden="true" />
           </div>
           <div>
-            <h2 className="text-3xl font-bold tracking-tight">Registrations</h2>
+            <h1 className="text-3xl font-bold tracking-tight">Registrations</h1>
             <p className="text-muted-foreground">
               Manage session registrations
               {filteredRegistrations.length !== populatedRegistrations.length && (
@@ -300,427 +456,223 @@ export function RegistrationsContent() {
           </div>
         </div>
 
-        <Dialog
-          open={isDialogOpen}
-          onOpenChange={(open) => {
-            setIsDialogOpen(open);
-            if (!open) resetForm();
-          }}
-        >
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              Add Registration
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <form onSubmit={handleSubmit}>
-              <DialogHeader>
-                <DialogTitle>Create New Registration</DialogTitle>
-                <DialogDescription>
-                  Register a participant for a session.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="grid gap-4 py-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="participant">Participant</Label>
-                  <Select
-                    value={formData.participantId}
-                    onValueChange={(value) =>
-                      setFormData({ ...formData, participantId: value })
-                    }
-                    disabled={createMutation.isPending}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select participant" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {participants.map((participant) => (
-                        <SelectItem key={participant._id} value={participant._id}>
-                          {participant.name} ({participant.email})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="session">Session</Label>
-                  <Select
-                    value={formData.sessionId}
-                    onValueChange={(value) =>
-                      setFormData({ ...formData, sessionId: value })
-                    }
-                    disabled={createMutation.isPending}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select session" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {sessions.map((session) => (
-                        <SelectItem key={session._id} value={session._id}>
-                          {session.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="status">Status</Label>
-                  <Select
-                    value={formData.status}
-                    onValueChange={(value: 'confirmed' | 'pending' | 'cancelled') =>
-                      setFormData({ ...formData, status: value })
-                    }
-                    disabled={createMutation.isPending}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="confirmed">Confirmed</SelectItem>
-                      <SelectItem value="pending">Pending</SelectItem>
-                      <SelectItem value="cancelled">Cancelled</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <DialogFooter>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    setIsDialogOpen(false);
-                    resetForm();
-                  }}
-                  disabled={createMutation.isPending}
-                >
-                  Cancel
-                </Button>
-                <Button type="submit" disabled={createMutation.isPending}>
-                  {createMutation.isPending && <ButtonLoading className="mr-2" />}
-                  Create
-                </Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
+        <Button onClick={() => setIsBulkDialogOpen(true)}>
+          <UserPlus className="mr-2 h-4 w-4" aria-hidden="true" />
+          Add Registrations
+        </Button>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-5">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total</CardTitle>
-            <ClipboardList className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {isStatsLoading ? '...' : stats?.total ?? populatedRegistrations.length}
-            </div>
-          </CardContent>
-        </Card>
+      <motion.div variants={itemVariants} className="grid gap-4 md:grid-cols-2">
+        <StatsCard
+          title="Total Registrations"
+          value={isStatsLoading ? '...' : stats?.total ?? populatedRegistrations.length}
+          description="All time"
+          icon={ClipboardList}
+        />
+        <StatsCard
+          title="Today's Registrations"
+          value={isStatsLoading ? '...' : stats?.todayRegistrations ?? 0}
+          description="Registered today"
+          icon={CalendarPlus}
+        />
+      </motion.div>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Confirmed</CardTitle>
-            <CheckCircle className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">
-              {isStatsLoading
-                ? '...'
-                : stats?.confirmed ?? populatedRegistrations.filter((r) => r.status === 'confirmed').length}
-            </div>
-          </CardContent>
-        </Card>
+      {/* Filters */}
+      <motion.div variants={itemVariants}>
+        <Card className="border-dashed">
+          <CardContent className="py-4">
+            <div className="flex flex-col gap-4">
+              {/* Search Row */}
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+                <div className="relative flex-1 max-w-md">
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+                  <Input
+                    placeholder="Search by name, email, session, or organization..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-9 bg-background"
+                    aria-label="Search registrations"
+                  />
+                  {searchQuery && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
+                      onClick={() => setSearchQuery('')}
+                      aria-label="Clear search"
+                    >
+                      <X className="h-4 w-4" aria-hidden="true" />
+                    </Button>
+                  )}
+                </div>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pending</CardTitle>
-            <Clock className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-yellow-600">
-              {isStatsLoading
-                ? '...'
-                : stats?.pending ?? populatedRegistrations.filter((r) => r.status === 'pending').length}
-            </div>
-          </CardContent>
-        </Card>
+                <Collapsible open={isFiltersOpen} onOpenChange={setIsFiltersOpen}>
+                  <CollapsibleTrigger asChild>
+                    <Button variant="outline" className="gap-2">
+                      <Filter className="h-4 w-4" aria-hidden="true" />
+                      Filters
+                      {activeFilterCount > 0 && (
+                        <Badge variant="secondary" className="ml-1 px-1.5 py-0">
+                          {activeFilterCount}
+                        </Badge>
+                      )}
+                    </Button>
+                  </CollapsibleTrigger>
+                </Collapsible>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Cancelled</CardTitle>
-            <XCircle className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-red-600">
-              {isStatsLoading
-                ? '...'
-                : stats?.cancelled ?? populatedRegistrations.filter((r) => r.status === 'cancelled').length}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Today</CardTitle>
-            <CalendarPlus className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-blue-600">
-              {isStatsLoading ? '...' : stats?.todayRegistrations ?? 0}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Search and Filters */}
-      <Card className="border-dashed">
-        <CardContent className="py-4">
-          <div className="flex flex-col gap-4">
-            {/* Search Row */}
-            <div className="flex flex-col gap-4 md:flex-row md:items-center">
-              <div className="relative flex-1 max-w-md">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  placeholder="Search by participant name, email, or session..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-9 bg-background"
-                />
-                {searchQuery && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
-                    onClick={() => setSearchQuery('')}
-                  >
-                    <X className="h-4 w-4" />
+                {hasActiveFilters && (
+                  <Button variant="ghost" size="sm" onClick={clearFilters} className="gap-1">
+                    <X className="h-3 w-3" aria-hidden="true" />
+                    Clear filters
                   </Button>
                 )}
               </div>
 
+              {/* Filter Options */}
               <Collapsible open={isFiltersOpen} onOpenChange={setIsFiltersOpen}>
-                <CollapsibleTrigger asChild>
-                  <Button variant="outline" className="gap-2">
-                    <Filter className="h-4 w-4" />
-                    Filters
-                    {hasActiveFilters && (
-                      <Badge variant="secondary" className="ml-1 px-1.5 py-0">
-                        {[sessionFilter, statusFilter].filter((f) => f !== 'all').length}
-                      </Badge>
-                    )}
-                  </Button>
-                </CollapsibleTrigger>
+                <CollapsibleContent className="space-y-4">
+                  <div className="grid gap-4 sm:grid-cols-3 pt-2">
+                    {/* Session Filter */}
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium flex items-center gap-2">
+                        <Calendar className="h-4 w-4" aria-hidden="true" />
+                        Session
+                      </label>
+                      <Select value={sessionFilter} onValueChange={setSessionFilter}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="All sessions" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All sessions</SelectItem>
+                          {sessions.map((session) => (
+                            <SelectItem key={session._id} value={session._id}>
+                              {session.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* Organization Filter */}
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium flex items-center gap-2">
+                        <Building2 className="h-4 w-4" aria-hidden="true" />
+                        Organization
+                      </label>
+                      <Select value={organizationFilter} onValueChange={setOrganizationFilter}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="All organizations" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All organizations</SelectItem>
+                          {organizations.map((org) => (
+                            <SelectItem key={org} value={org}>
+                              {org}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* Date Range Filter */}
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium flex items-center gap-2">
+                        <CalendarPlus className="h-4 w-4" aria-hidden="true" />
+                        Date Range
+                      </label>
+                      <Select value={dateRangePreset} onValueChange={(v) => setDateRangePreset(v as DateRangePreset)}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="All time" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All time</SelectItem>
+                          <SelectItem value="today">Today</SelectItem>
+                          <SelectItem value="week">Last 7 days</SelectItem>
+                          <SelectItem value="month">Last 30 days</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </CollapsibleContent>
               </Collapsible>
-
-              {hasActiveFilters && (
-                <Button variant="ghost" size="sm" onClick={clearFilters} className="gap-1">
-                  <X className="h-3 w-3" />
-                  Clear filters
-                </Button>
-              )}
             </div>
-
-            {/* Filter Options */}
-            <Collapsible open={isFiltersOpen} onOpenChange={setIsFiltersOpen}>
-              <CollapsibleContent className="space-y-4">
-                <div className="grid gap-4 md:grid-cols-2 pt-2">
-                  <div className="space-y-2">
-                    <Label>Session</Label>
-                    <Select value={sessionFilter} onValueChange={setSessionFilter}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="All sessions" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All sessions</SelectItem>
-                        {sessions.map((session) => (
-                          <SelectItem key={session._id} value={session._id}>
-                            {session.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Status</Label>
-                    <Select value={statusFilter} onValueChange={setStatusFilter}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="All statuses" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All statuses</SelectItem>
-                        <SelectItem value="confirmed">Confirmed</SelectItem>
-                        <SelectItem value="pending">Pending</SelectItem>
-                        <SelectItem value="cancelled">Cancelled</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              </CollapsibleContent>
-            </Collapsible>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </motion.div>
 
       {/* Registrations Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>All Registrations</CardTitle>
-          <CardDescription>A list of all session registrations</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {/* Page Size Selector - Before Table */}
-          {filteredRegistrations.length > 0 && (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
-              <label htmlFor="registrations-page-size" className="sr-only">Items per page</label>
-              <span aria-hidden="true">Show</span>
-              <Select
-                value={itemsPerPage.toString()}
-                onValueChange={(value) => {
-                  setItemsPerPage(parseInt(value));
-                  setCurrentPage(1);
-                }}
-              >
-                <SelectTrigger id="registrations-page-size" className="h-8 w-[70px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {ITEMS_PER_PAGE_OPTIONS.map((option) => (
-                    <SelectItem key={option} value={option.toString()}>
-                      {option}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <span aria-hidden="true">entries per page</span>
-            </div>
-          )}
+      <motion.div variants={itemVariants}>
+        <Card>
+          <CardHeader>
+            <CardTitle>All Registrations</CardTitle>
+            <CardDescription>A list of all session registrations</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <DataTable
+              data={paginatedRegistrations}
+              columns={columns}
+              getRowId={(row) => row._id}
+              selectable={true}
+              selectedIds={selectedIds}
+              onSelectionChange={setSelectedIds}
+              bulkDeleteEnabled={true}
+              onBulkDelete={handleBulkDelete}
+              deleteConfirmMessage={(count) => (
+                <>
+                  <p>
+                    You are about to delete{' '}
+                    <strong className="text-foreground">{count}</strong>{' '}
+                    registration{count !== 1 ? 's' : ''}.
+                  </p>
+                  <p className="text-destructive font-medium mt-2">
+                    This action cannot be undone. The participants will be unregistered from their sessions.
+                  </p>
+                </>
+              )}
+              isLoading={false}
+              emptyMessage="No registrations found"
+              emptyDescription={
+                hasActiveFilters || searchQuery
+                  ? 'Try adjusting your search or filter criteria'
+                  : 'Start by adding registrations using the button above'
+              }
+              currentPage={currentPage}
+              totalPages={totalPages}
+              itemsPerPage={itemsPerPage}
+              totalItems={filteredRegistrations.length}
+              onPageChange={setCurrentPage}
+              onItemsPerPageChange={(perPage) => {
+                setItemsPerPage(perPage);
+                setCurrentPage(1);
+              }}
+              stickyHeader={true}
+              maxHeight="600px"
+              ariaLabel="Registrations table"
+            />
+          </CardContent>
+        </Card>
+      </motion.div>
 
-          <Table role="table" aria-label="Registrations list">
-            <TableHeader>
-              <TableRow>
-                <TableHead className="text-center" scope="col">Participant</TableHead>
-                <TableHead className="text-center" scope="col">Session</TableHead>
-                <TableHead className="text-center" scope="col">Registration Date</TableHead>
-                <TableHead className="text-center" scope="col">Status</TableHead>
-                <TableHead className="text-center" scope="col">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              <AnimatePresence mode="popLayout">
-                {paginatedRegistrations.length > 0 ? (
-                  paginatedRegistrations.map((registration, index) => (
-                    <motion.tr
-                      key={registration._id}
-                      variants={tableRowVariants}
-                      initial="hidden"
-                      animate="visible"
-                      exit="exit"
-                      transition={{ delay: index * 0.03 }}
-                      className="border-b"
-                    >
-                      <TableCell className="font-medium">
-                        <div>
-                          <p className="font-medium">
-                            {typeof registration.participantId === 'object' && registration.participantId?.name
-                              ? registration.participantId.name
-                              : 'Unknown'}
-                          </p>
-                          {typeof registration.participantId === 'object' &&
-                            registration.participantId?.email && (
-                              <p className="text-sm text-muted-foreground">
-                                {registration.participantId.email}
-                              </p>
-                            )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {typeof registration.sessionId === 'object' && registration.sessionId?.name
-                          ? registration.sessionId.name
-                          : 'Unknown'}
-                      </TableCell>
-                      <TableCell>{formatDate(registration.registrationDate)}</TableCell>
-                      <TableCell>
-                        <Badge
-                          variant={
-                            registration.status === 'confirmed'
-                              ? 'default'
-                              : registration.status === 'pending'
-                              ? 'secondary'
-                              : 'destructive'
-                          }
-                        >
-                          {registration.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleDelete(registration._id)}
-                          disabled={deleteMutation.isPending}
-                          aria-label={`Delete registration for ${typeof registration.participantId === 'object' && registration.participantId?.name ? registration.participantId.name : 'participant'}`}
-                        >
-                          <Trash2 className="h-4 w-4 text-destructive" aria-hidden="true" />
-                        </Button>
-                      </TableCell>
-                    </motion.tr>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
-                      {hasActiveFilters || searchQuery
-                        ? 'No registrations match your search criteria.'
-                        : 'No registrations found.'}
-                    </TableCell>
-                  </TableRow>
-                )}
-              </AnimatePresence>
-            </TableBody>
-          </Table>
+      {/* Bulk Registration Dialog */}
+      <BulkRegistrationDialog
+        open={isBulkDialogOpen}
+        onOpenChange={setIsBulkDialogOpen}
+        sessions={sessions}
+        participants={participants}
+        existingRegistrations={registrations}
+        onSubmit={handleBulkSubmit}
+        isSubmitting={isSubmitting}
+      />
 
-          {/* Pagination Controls - Bottom Right */}
-          {filteredRegistrations.length > 0 && (
-            <nav 
-              className="flex items-center justify-end gap-2 pt-4 border-t mt-4"
-              aria-label="Registrations table pagination"
-            >
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                disabled={currentPage === 1}
-                aria-label="Go to previous page"
-              >
-                <ChevronLeft className="h-4 w-4 mr-1" aria-hidden="true" />
-                Previous
-              </Button>
-              <span className="text-sm min-w-[100px] text-center" aria-live="polite">
-                Page {currentPage} of {totalPages || 1}
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                disabled={currentPage === totalPages || totalPages === 0}
-                aria-label="Go to next page"
-              >
-                Next
-                <ChevronRight className="h-4 w-4 ml-1" aria-hidden="true" />
-              </Button>
-            </nav>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Delete Confirmation Dialog */}
+      {/* Single Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Registration</AlertDialogTitle>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-destructive" aria-hidden="true" />
+              Delete Registration
+            </AlertDialogTitle>
             <AlertDialogDescription>
               Are you sure you want to delete this registration? This action cannot be undone.
             </AlertDialogDescription>
@@ -728,16 +680,25 @@ export function RegistrationsContent() {
           <AlertDialogFooter>
             <AlertDialogCancel disabled={deleteMutation.isPending}>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              onClick={confirmDelete}
+              onClick={confirmSingleDelete}
               disabled={deleteMutation.isPending}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {deleteMutation.isPending && <ButtonLoading className="mr-2" />}
-              Delete
+              {deleteMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
+                  Deleting...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="mr-2 h-4 w-4" aria-hidden="true" />
+                  Delete
+                </>
+              )}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </motion.div>
   );
 }

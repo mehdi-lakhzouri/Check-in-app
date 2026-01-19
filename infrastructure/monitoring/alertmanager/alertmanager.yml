@@ -1,0 +1,227 @@
+# Alertmanager Configuration for Check-in App
+global:
+  # Global SMTP settings
+  smtp_smarthost: 'smtp.gmail.com:587'
+  smtp_from: 'alerts@checkin-app.com'
+  smtp_auth_username: '${SMTP_USERNAME}'
+  smtp_auth_password: '${SMTP_PASSWORD}'
+  smtp_require_tls: true
+
+  # Slack settings (global)
+  slack_api_url: '${SLACK_WEBHOOK_URL}'
+
+  # Default resolve timeout
+  resolve_timeout: 5m
+
+# Templates for notifications
+templates:
+  - '/etc/alertmanager/templates/*.tmpl'
+
+# Route tree for alert routing
+route:
+  # Default receiver
+  receiver: 'default-receiver'
+  
+  # Group alerts by these labels
+  group_by: ['alertname', 'severity', 'component']
+  
+  # Wait before sending initial notification
+  group_wait: 30s
+  
+  # Wait before sending notification about new alerts in group
+  group_interval: 5m
+  
+  # Repeat interval for unresolved alerts
+  repeat_interval: 4h
+
+  # Child routes for specific handling
+  routes:
+    # Critical alerts - immediate notification via all channels
+    - match:
+        severity: critical
+      receiver: 'critical-alerts'
+      group_wait: 10s
+      repeat_interval: 1h
+      continue: true
+
+    # Database alerts
+    - match:
+        component: database
+      receiver: 'database-alerts'
+      group_by: ['alertname', 'instance']
+      
+    # Cache alerts
+    - match:
+        component: cache
+      receiver: 'cache-alerts'
+      group_by: ['alertname', 'instance']
+
+    # Security alerts - high priority
+    - match:
+        component: security
+      receiver: 'security-alerts'
+      group_wait: 10s
+      repeat_interval: 30m
+
+    # Business metrics
+    - match:
+        component: business
+      receiver: 'business-alerts'
+      group_wait: 5m
+      repeat_interval: 2h
+
+    # Backend alerts
+    - match:
+        component: backend
+      receiver: 'backend-alerts'
+
+    # Frontend alerts
+    - match:
+        component: frontend
+      receiver: 'frontend-alerts'
+
+# Inhibition rules to suppress redundant alerts
+inhibit_rules:
+  # Inhibit warning alerts when critical alert exists for same alertname
+  - source_match:
+      severity: 'critical'
+    target_match:
+      severity: 'warning'
+    equal: ['alertname', 'component']
+
+  # If the whole backend is down, don't alert on individual endpoints
+  - source_match:
+      alertname: 'BackendDown'
+    target_match_re:
+      alertname: 'High.*'
+    equal: ['component']
+
+  # If MongoDB is down, don't alert on slow queries
+  - source_match:
+      alertname: 'MongoDBDown'
+    target_match:
+      alertname: 'SlowDatabaseQueries'
+
+  # If Redis is down, don't alert on evictions
+  - source_match:
+      alertname: 'RedisDown'
+    target_match_re:
+      alertname: 'Redis.*'
+
+# Receivers configuration
+receivers:
+  # Default receiver for uncategorized alerts
+  - name: 'default-receiver'
+    slack_configs:
+      - channel: '#alerts'
+        username: 'Alertmanager'
+        icon_emoji: ':warning:'
+        send_resolved: true
+        title: '{{ template "slack.default.title" . }}'
+        text: '{{ template "slack.default.text" . }}'
+        actions:
+          - type: button
+            text: 'View in Grafana'
+            url: '{{ template "grafana.url" . }}'
+          - type: button
+            text: 'Silence Alert'
+            url: '{{ template "silence.url" . }}'
+
+  # Critical alerts - multiple notification channels
+  - name: 'critical-alerts'
+    slack_configs:
+      - channel: '#critical-alerts'
+        username: 'CRITICAL ALERT'
+        icon_emoji: ':fire:'
+        send_resolved: true
+        color: '{{ if eq .Status "firing" }}danger{{ else }}good{{ end }}'
+        title: ':rotating_light: CRITICAL: {{ .CommonAnnotations.summary }}'
+        text: |
+          *Alert:* {{ .CommonLabels.alertname }}
+          *Description:* {{ .CommonAnnotations.description }}
+          *Component:* {{ .CommonLabels.component }}
+          *Started:* {{ .StartsAt.Format "2006-01-02 15:04:05 MST" }}
+          {{ if .CommonAnnotations.runbook_url }}*Runbook:* {{ .CommonAnnotations.runbook_url }}{{ end }}
+    pagerduty_configs:
+      - service_key: '${PAGERDUTY_SERVICE_KEY}'
+        severity: critical
+        description: '{{ .CommonAnnotations.summary }}'
+        details:
+          firing: '{{ template "pagerduty.default.instances" .Alerts.Firing }}'
+          resolved: '{{ template "pagerduty.default.instances" .Alerts.Resolved }}'
+    email_configs:
+      - to: 'oncall@checkin-app.com'
+        send_resolved: true
+        headers:
+          subject: '[CRITICAL] {{ .CommonAnnotations.summary }}'
+        html: '{{ template "email.default.html" . }}'
+
+  # Database alerts
+  - name: 'database-alerts'
+    slack_configs:
+      - channel: '#database-alerts'
+        username: 'Database Alert'
+        icon_emoji: ':floppy_disk:'
+        send_resolved: true
+        color: '{{ if eq .Status "firing" }}warning{{ else }}good{{ end }}'
+        title: 'Database Alert: {{ .CommonAnnotations.summary }}'
+        text: '{{ .CommonAnnotations.description }}'
+
+  # Cache alerts
+  - name: 'cache-alerts'
+    slack_configs:
+      - channel: '#infrastructure-alerts'
+        username: 'Cache Alert'
+        icon_emoji: ':zap:'
+        send_resolved: true
+        title: 'Cache Alert: {{ .CommonAnnotations.summary }}'
+        text: '{{ .CommonAnnotations.description }}'
+
+  # Security alerts - high priority
+  - name: 'security-alerts'
+    slack_configs:
+      - channel: '#security-alerts'
+        username: 'Security Alert'
+        icon_emoji: ':shield:'
+        send_resolved: true
+        color: 'danger'
+        title: ':lock: Security Alert: {{ .CommonAnnotations.summary }}'
+        text: |
+          *Alert:* {{ .CommonLabels.alertname }}
+          *Description:* {{ .CommonAnnotations.description }}
+          *Time:* {{ .StartsAt.Format "2006-01-02 15:04:05 MST" }}
+    email_configs:
+      - to: 'security@checkin-app.com'
+        send_resolved: true
+        headers:
+          subject: '[SECURITY] {{ .CommonAnnotations.summary }}'
+
+  # Business alerts
+  - name: 'business-alerts'
+    slack_configs:
+      - channel: '#business-alerts'
+        username: 'Business Metrics'
+        icon_emoji: ':chart_with_upwards_trend:'
+        send_resolved: true
+        title: 'Business Alert: {{ .CommonAnnotations.summary }}'
+        text: '{{ .CommonAnnotations.description }}'
+
+  # Backend alerts
+  - name: 'backend-alerts'
+    slack_configs:
+      - channel: '#backend-alerts'
+        username: 'Backend Alert'
+        icon_emoji: ':gear:'
+        send_resolved: true
+        title: 'Backend Alert: {{ .CommonAnnotations.summary }}'
+        text: '{{ .CommonAnnotations.description }}'
+
+  # Frontend alerts
+  - name: 'frontend-alerts'
+    slack_configs:
+      - channel: '#frontend-alerts'
+        username: 'Frontend Alert'
+        icon_emoji: ':computer:'
+        send_resolved: true
+        title: 'Frontend Alert: {{ .CommonAnnotations.summary }}'
+        text: '{{ .CommonAnnotations.description }}'

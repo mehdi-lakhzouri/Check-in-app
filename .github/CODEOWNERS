@@ -1,0 +1,54 @@
+# CODEOWNERS - Code Ownership Rules
+# These owners will be automatically requested for review
+# when someone opens a pull request that modifies code they own.
+
+# Default owners for everything in the repo
+* @medma
+
+# ============================================
+# Backend Ownership
+# ============================================
+/backend/ @medma
+/backend/src/modules/checkins/ @medma
+/backend/src/modules/sessions/ @medma
+/backend/src/modules/participants/ @medma
+/backend/src/modules/registrations/ @medma
+/backend/src/common/ @medma
+
+# ============================================
+# Frontend Ownership
+# ============================================
+/frontend/ @medma
+/frontend/app/ @medma
+/frontend/components/ @medma
+/frontend/lib/ @medma
+
+# ============================================
+# Mobile Ownership
+# ============================================
+/checkin_mobile/ @medma
+/checkin_mobile/lib/ @medma
+/checkin_mobile/android/ @medma
+/checkin_mobile/ios/ @medma
+
+# ============================================
+# Infrastructure & DevOps
+# ============================================
+/infrastructure/ @medma
+/.github/ @medma
+/.github/workflows/ @medma
+
+# ============================================
+# Configuration Files
+# ============================================
+*.yml @medma
+*.yaml @medma
+*.json @medma
+Dockerfile @medma
+*.tf @medma
+
+# ============================================
+# Documentation
+# ============================================
+*.md @medma
+/docs/ @medma

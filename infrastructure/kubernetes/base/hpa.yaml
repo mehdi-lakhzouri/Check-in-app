@@ -1,0 +1,70 @@
+# Horizontal Pod Autoscalers
+# DISABLED FOR SMALL EVENTS (120-430 participants)
+# HPA is commented out because:
+#   1. Single pod handles 500+ users easily
+#   2. On single-node VPS, HPA can cause resource exhaustion
+#   3. Manual scaling is simpler and more predictable
+#
+# ENABLE HPA when scaling beyond 300 participants by uncommenting below
+# and changing minReplicas/maxReplicas appropriately
+
+# ---
+# # Backend HPA - Enable for 300+ participants
+# apiVersion: autoscaling/v2
+# kind: HorizontalPodAutoscaler
+# metadata:
+#   name: backend-hpa
+#   labels:
+#     app: backend
+# spec:
+#   scaleTargetRef:
+#     apiVersion: apps/v1
+#     kind: Deployment
+#     name: backend
+#   minReplicas: 2
+#   maxReplicas: 3  # REDUCED from 10 - safe for single VPS
+#   metrics:
+#     - type: Resource
+#       resource:
+#         name: cpu
+#         target:
+#           type: Utilization
+#           averageUtilization: 75
+#   behavior:
+#     scaleDown:
+#       stabilizationWindowSeconds: 300
+#       policies:
+#         - type: Pods
+#           value: 1
+#           periodSeconds: 60
+#     scaleUp:
+#       stabilizationWindowSeconds: 30
+#       policies:
+#         - type: Pods
+#           value: 1
+#           periodSeconds: 30
+
+# ---
+# # Frontend HPA - Enable for 600+ participants
+# apiVersion: autoscaling/v2
+# kind: HorizontalPodAutoscaler
+# metadata:
+#   name: frontend-hpa
+#   labels:
+#     app: frontend
+# spec:
+#   scaleTargetRef:
+#     apiVersion: apps/v1
+#     kind: Deployment
+#     name: frontend
+#   minReplicas: 1
+#   maxReplicas: 2  # REDUCED from 5 - safe for single VPS
+#   metrics:
+#     - type: Resource
+#       resource:
+#         name: cpu
+#         target:
+#           type: Utilization
+#           averageUtilization: 75
+          value: 10
+          periodSeconds: 60
