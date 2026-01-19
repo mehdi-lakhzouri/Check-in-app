@@ -1,0 +1,380 @@
+# Prometheus Alert Rules for Check-in App
+groups:
+  # =============================================================================
+  # Application Health Alerts
+  # =============================================================================
+  - name: application-health
+    rules:
+      # Backend is down
+      - alert: BackendDown
+        expr: up{job="backend-api"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: backend
+        annotations:
+          summary: "Backend API is down"
+          description: "Backend API instance {{ $labels.instance }} has been down for more than 1 minute."
+          runbook_url: "https://docs.checkin-app.com/runbooks/backend-down"
+
+      # Frontend is down (if serving metrics)
+      - alert: FrontendDown
+        expr: up{job="frontend"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: frontend
+        annotations:
+          summary: "Frontend is down"
+          description: "Frontend instance {{ $labels.instance }} has been down for more than 1 minute."
+
+      # High error rate on backend
+      - alert: HighBackendErrorRate
+        expr: |
+          sum(rate(http_request_duration_seconds_count{job="backend-api", status_code=~"5.."}[5m])) 
+          / 
+          sum(rate(http_request_duration_seconds_count{job="backend-api"}[5m])) 
+          > 0.05
+        for: 5m
+        labels:
+          severity: warning
+          component: backend
+        annotations:
+          summary: "High error rate on backend API"
+          description: "Backend API error rate is {{ $value | humanizePercentage }} (threshold: 5%)"
+
+      # Critical error rate on backend
+      - alert: CriticalBackendErrorRate
+        expr: |
+          sum(rate(http_request_duration_seconds_count{job="backend-api", status_code=~"5.."}[5m])) 
+          / 
+          sum(rate(http_request_duration_seconds_count{job="backend-api"}[5m])) 
+          > 0.10
+        for: 2m
+        labels:
+          severity: critical
+          component: backend
+        annotations:
+          summary: "Critical error rate on backend API"
+          description: "Backend API error rate is {{ $value | humanizePercentage }} (threshold: 10%)"
+
+  # =============================================================================
+  # Latency Alerts
+  # =============================================================================
+  - name: latency-alerts
+    rules:
+      # High API latency (P95)
+      - alert: HighAPILatency
+        expr: |
+          histogram_quantile(0.95, 
+            sum(rate(http_request_duration_seconds_bucket{job="backend-api"}[5m])) by (le)
+          ) > 1
+        for: 5m
+        labels:
+          severity: warning
+          component: backend
+        annotations:
+          summary: "High API latency detected"
+          description: "95th percentile latency is {{ $value | humanizeDuration }} (threshold: 1s)"
+
+      # Critical API latency (P99)
+      - alert: CriticalAPILatency
+        expr: |
+          histogram_quantile(0.99, 
+            sum(rate(http_request_duration_seconds_bucket{job="backend-api"}[5m])) by (le)
+          ) > 3
+        for: 2m
+        labels:
+          severity: critical
+          component: backend
+        annotations:
+          summary: "Critical API latency detected"
+          description: "99th percentile latency is {{ $value | humanizeDuration }} (threshold: 3s)"
+
+      # Slow database queries
+      - alert: SlowDatabaseQueries
+        expr: |
+          histogram_quantile(0.95, 
+            sum(rate(mongodb_operation_duration_seconds_bucket[5m])) by (le, operation)
+          ) > 0.5
+        for: 5m
+        labels:
+          severity: warning
+          component: database
+        annotations:
+          summary: "Slow database queries detected"
+          description: "95th percentile DB query time for {{ $labels.operation }} is {{ $value | humanizeDuration }}"
+
+  # =============================================================================
+  # Database Alerts
+  # =============================================================================
+  - name: database-alerts
+    rules:
+      # MongoDB is down
+      - alert: MongoDBDown
+        expr: mongodb_up == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: database
+        annotations:
+          summary: "MongoDB is down"
+          description: "MongoDB instance {{ $labels.instance }} has been down for more than 1 minute."
+
+      # MongoDB high connections
+      - alert: MongoDBHighConnections
+        expr: mongodb_connections_current / mongodb_connections_available * 100 > 80
+        for: 5m
+        labels:
+          severity: warning
+          component: database
+        annotations:
+          summary: "MongoDB connection usage is high"
+          description: "MongoDB connection usage is {{ $value | humanizePercentage }}"
+
+      # MongoDB replication lag
+      - alert: MongoDBReplicationLag
+        expr: mongodb_replset_member_optime_date{state="SECONDARY"} - mongodb_replset_member_optime_date{state="PRIMARY"} > 10
+        for: 5m
+        labels:
+          severity: warning
+          component: database
+        annotations:
+          summary: "MongoDB replication lag detected"
+          description: "MongoDB replication lag is {{ $value }} seconds"
+
+  # =============================================================================
+  # Redis Alerts
+  # =============================================================================
+  - name: redis-alerts
+    rules:
+      # Redis is down
+      - alert: RedisDown
+        expr: redis_up == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: cache
+        annotations:
+          summary: "Redis is down"
+          description: "Redis instance {{ $labels.instance }} has been down for more than 1 minute."
+
+      # Redis high memory usage
+      - alert: RedisHighMemoryUsage
+        expr: redis_memory_used_bytes / redis_memory_max_bytes * 100 > 80
+        for: 5m
+        labels:
+          severity: warning
+          component: cache
+        annotations:
+          summary: "Redis memory usage is high"
+          description: "Redis memory usage is {{ $value | humanizePercentage }}"
+
+      # Redis evictions
+      - alert: RedisEvictions
+        expr: increase(redis_evicted_keys_total[1h]) > 100
+        for: 5m
+        labels:
+          severity: warning
+          component: cache
+        annotations:
+          summary: "Redis is evicting keys"
+          description: "Redis has evicted {{ $value }} keys in the last hour"
+
+      # Redis connection rejected
+      - alert: RedisConnectionsRejected
+        expr: increase(redis_rejected_connections_total[5m]) > 0
+        for: 1m
+        labels:
+          severity: warning
+          component: cache
+        annotations:
+          summary: "Redis is rejecting connections"
+          description: "Redis has rejected {{ $value }} connections in the last 5 minutes"
+
+  # =============================================================================
+  # Kubernetes Resource Alerts
+  # =============================================================================
+  - name: kubernetes-resources
+    rules:
+      # Pod CPU usage high
+      - alert: PodHighCPUUsage
+        expr: |
+          sum(rate(container_cpu_usage_seconds_total{namespace=~"checkin.*", container!=""}[5m])) by (pod, namespace) 
+          / 
+          sum(kube_pod_container_resource_limits{namespace=~"checkin.*", resource="cpu"}) by (pod, namespace) 
+          > 0.80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Pod CPU usage is high"
+          description: "Pod {{ $labels.namespace }}/{{ $labels.pod }} CPU usage is {{ $value | humanizePercentage }}"
+
+      # Pod memory usage high
+      - alert: PodHighMemoryUsage
+        expr: |
+          sum(container_memory_working_set_bytes{namespace=~"checkin.*", container!=""}) by (pod, namespace) 
+          / 
+          sum(kube_pod_container_resource_limits{namespace=~"checkin.*", resource="memory"}) by (pod, namespace) 
+          > 0.80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Pod memory usage is high"
+          description: "Pod {{ $labels.namespace }}/{{ $labels.pod }} memory usage is {{ $value | humanizePercentage }}"
+
+      # Pod restart count high
+      - alert: PodRestartingFrequently
+        expr: increase(kube_pod_container_status_restarts_total{namespace=~"checkin.*"}[1h]) > 5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Pod is restarting frequently"
+          description: "Pod {{ $labels.namespace }}/{{ $labels.pod }} has restarted {{ $value }} times in the last hour"
+
+      # Pod in CrashLoopBackOff
+      - alert: PodCrashLoopBackOff
+        expr: kube_pod_container_status_waiting_reason{namespace=~"checkin.*", reason="CrashLoopBackOff"} == 1
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Pod is in CrashLoopBackOff"
+          description: "Pod {{ $labels.namespace }}/{{ $labels.pod }} is in CrashLoopBackOff"
+
+      # PVC running out of space
+      - alert: PVCRunningOutOfSpace
+        expr: |
+          kubelet_volume_stats_available_bytes{namespace=~"checkin.*"} 
+          / 
+          kubelet_volume_stats_capacity_bytes{namespace=~"checkin.*"} 
+          < 0.15
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "PVC is running out of space"
+          description: "PVC {{ $labels.namespace }}/{{ $labels.persistentvolumeclaim }} has {{ $value | humanizePercentage }} space remaining"
+
+  # =============================================================================
+  # Deployment Health Alerts
+  # =============================================================================
+  - name: deployment-health
+    rules:
+      # Deployment replica mismatch
+      - alert: DeploymentReplicasMismatch
+        expr: |
+          kube_deployment_spec_replicas{namespace=~"checkin.*"} 
+          != 
+          kube_deployment_status_replicas_available{namespace=~"checkin.*"}
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Deployment replicas mismatch"
+          description: "Deployment {{ $labels.namespace }}/{{ $labels.deployment }} has {{ $value }} unavailable replicas"
+
+      # HPA at max replicas
+      - alert: HPAAtMaxReplicas
+        expr: |
+          kube_horizontalpodautoscaler_status_current_replicas{namespace=~"checkin.*"} 
+          == 
+          kube_horizontalpodautoscaler_spec_max_replicas{namespace=~"checkin.*"}
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "HPA is at maximum replicas"
+          description: "HPA {{ $labels.namespace }}/{{ $labels.horizontalpodautoscaler }} is at maximum replicas"
+
+  # =============================================================================
+  # Business Metrics Alerts
+  # =============================================================================
+  - name: business-metrics
+    rules:
+      # Check-in rate drop
+      - alert: CheckInRateDrop
+        expr: |
+          sum(rate(checkin_total[5m])) 
+          < 
+          (sum(rate(checkin_total[1h] offset 1d)) * 0.5)
+        for: 15m
+        labels:
+          severity: warning
+          component: business
+        annotations:
+          summary: "Check-in rate has dropped significantly"
+          description: "Check-in rate is 50% lower than the same time yesterday"
+
+      # No check-ins in expected hours
+      - alert: NoCheckInsDetected
+        expr: |
+          sum(increase(checkin_total[30m])) == 0 
+          and ON() hour() >= 8 
+          and ON() hour() <= 20
+        for: 30m
+        labels:
+          severity: warning
+          component: business
+        annotations:
+          summary: "No check-ins detected during business hours"
+          description: "No check-ins have been recorded in the last 30 minutes during business hours"
+
+      # High registration failure rate
+      - alert: HighRegistrationFailureRate
+        expr: |
+          sum(rate(registration_failures_total[5m])) 
+          / 
+          sum(rate(registration_attempts_total[5m])) 
+          > 0.10
+        for: 5m
+        labels:
+          severity: warning
+          component: business
+        annotations:
+          summary: "High registration failure rate"
+          description: "Registration failure rate is {{ $value | humanizePercentage }}"
+
+  # =============================================================================
+  # Security Alerts
+  # =============================================================================
+  - name: security-alerts
+    rules:
+      # High rate of 401 errors (authentication failures)
+      - alert: HighAuthenticationFailures
+        expr: |
+          sum(rate(http_request_duration_seconds_count{job="backend-api", status_code="401"}[5m])) > 10
+        for: 5m
+        labels:
+          severity: warning
+          component: security
+        annotations:
+          summary: "High rate of authentication failures"
+          description: "{{ $value }} authentication failures per second detected"
+
+      # High rate of 403 errors (authorization failures)
+      - alert: HighAuthorizationFailures
+        expr: |
+          sum(rate(http_request_duration_seconds_count{job="backend-api", status_code="403"}[5m])) > 10
+        for: 5m
+        labels:
+          severity: warning
+          component: security
+        annotations:
+          summary: "High rate of authorization failures"
+          description: "{{ $value }} authorization failures per second detected"
+
+      # Possible brute force attack
+      - alert: PossibleBruteForceAttack
+        expr: |
+          sum(rate(http_request_duration_seconds_count{job="backend-api", path="/api/auth/login", status_code="401"}[1m])) > 20
+        for: 2m
+        labels:
+          severity: critical
+          component: security
+        annotations:
+          summary: "Possible brute force attack detected"
+          description: "{{ $value }} failed login attempts per second - possible brute force attack"

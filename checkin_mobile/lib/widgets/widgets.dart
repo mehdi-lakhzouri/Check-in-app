@@ -1,5 +1,6 @@
 export 'session_status_badge.dart';
 export 'session_card.dart';
+export 'session_filter_chips.dart';
 export 'capacity_indicator.dart';
 export 'participant_tile.dart';
 export 'connection_indicator.dart';

@@ -1,0 +1,187 @@
+# Docker Compose for Local Development
+# Spin up full stack with all dependencies
+
+version: '3.8'
+
+services:
+  # ============================================
+  # MongoDB Database
+  # ============================================
+  mongodb:
+    image: mongo:7.0
+    container_name: checkin-mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER:-admin}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:-changeme}
+      MONGO_INITDB_DATABASE: checkin_db
+    volumes:
+      - mongodb_data:/data/db
+      - ./init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.runCommand('ping').ok", "--quiet"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - checkin-network
+
+  # ============================================
+  # Redis Cache
+  # ============================================
+  redis:
+    image: redis:7-alpine
+    container_name: checkin-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - checkin-network
+
+  # ============================================
+  # Backend API
+  # ============================================
+  backend:
+    build:
+      context: ../../backend
+      dockerfile: ../infrastructure/docker/backend.Dockerfile
+      target: runner
+    container_name: checkin-backend
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      NODE_ENV: development
+      PORT: 3001
+      MONGODB_URI: mongodb://${MONGO_ROOT_USER:-admin}:${MONGO_ROOT_PASSWORD:-changeme}@mongodb:27017/checkin_db?authSource=admin
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-change-in-production}
+      LOG_LEVEL: debug
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - checkin-network
+
+  # ============================================
+  # Frontend
+  # ============================================
+  frontend:
+    build:
+      context: ../../frontend
+      dockerfile: ../infrastructure/docker/frontend.Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:3001
+    container_name: checkin-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_API_URL: http://localhost:3001
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - checkin-network
+
+  # ============================================
+  # Nginx Reverse Proxy (Optional)
+  # ============================================
+  nginx:
+    image: nginx:alpine
+    container_name: checkin-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - frontend
+      - backend
+    networks:
+      - checkin-network
+    profiles:
+      - production
+
+  # ============================================
+  # Prometheus (Monitoring)
+  # ============================================
+  prometheus:
+    image: prom/prometheus:v2.47.0
+    container_name: checkin-prometheus
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    volumes:
+      - ../monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ../monitoring/prometheus/alert_rules.yml:/etc/prometheus/alert_rules.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.enable-lifecycle'
+    networks:
+      - checkin-network
+    profiles:
+      - monitoring
+
+  # ============================================
+  # Grafana (Dashboards)
+  # ============================================
+  grafana:
+    image: grafana/grafana:10.1.0
+    container_name: checkin-grafana
+    restart: unless-stopped
+    ports:
+      - "3002:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin}
+      GF_USERS_ALLOW_SIGN_UP: false
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ../monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+    depends_on:
+      - prometheus
+    networks:
+      - checkin-network
+    profiles:
+      - monitoring
+
+networks:
+  checkin-network:
+    driver: bridge
+
+volumes:
+  mongodb_data:
+  redis_data:
+  prometheus_data:
+  grafana_data:

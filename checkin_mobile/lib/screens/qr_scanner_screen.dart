@@ -109,6 +109,15 @@ class _QrScannerScreenState extends ConsumerState<QrScannerScreen> {
     if (!mounted) return;
 
     if (verification != null) {
+      // Check if session is at capacity first - block all check-ins
+      if (verification.isAtCapacity) {
+        setState(() => _isProcessing = false);
+        await _feedbackService.warning();
+        if (!mounted) return;
+        _showCapacityFullDialog(verification);
+        return;
+      }
+      
       // If participant is REGISTERED, auto-accept immediately
       if (verification.isRegistered) {
         await _autoAcceptRegisteredParticipant(verification);
@@ -199,6 +208,110 @@ class _QrScannerScreenState extends ConsumerState<QrScannerScreen> {
         content: Text(message),
         backgroundColor: Colors.red,
         behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  /// Show dialog when session is at full capacity
+  void _showCapacityFullDialog(VerificationResult verification) {
+    final theme = Theme.of(context);
+    final participant = verification.participant;
+    final capacityInfo = verification.capacityInfo;
+    
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        icon: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.orange.withValues(alpha: 0.1),
+            shape: BoxShape.circle,
+          ),
+          child: const Icon(
+            Icons.group_off,
+            color: Colors.orange,
+            size: 48,
+          ),
+        ),
+        title: const Text(
+          'Session Full',
+          textAlign: TextAlign.center,
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'This session has reached maximum capacity.',
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodyLarge,
+            ),
+            if (capacityInfo != null) ...[
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.people,
+                      color: theme.colorScheme.primary,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      '${capacityInfo.current}/${capacityInfo.max} participants',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+            if (participant != null) ...[
+              const SizedBox(height: 16),
+              const Divider(),
+              const SizedBox(height: 8),
+              Text(
+                'Scanned participant:',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                participant.name,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              if (participant.organization != null)
+                Text(
+                  participant.organization!,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+            ],
+          ],
+        ),
+        actions: [
+          FilledButton.icon(
+            onPressed: () {
+              Navigator.of(context).pop();
+              // Reset for next scan
+              _lastScannedCode = null;
+            },
+            icon: const Icon(Icons.qr_code_scanner),
+            label: const Text('Continue Scanning'),
+          ),
+        ],
+        actionsAlignment: MainAxisAlignment.center,
       ),
     );
   }

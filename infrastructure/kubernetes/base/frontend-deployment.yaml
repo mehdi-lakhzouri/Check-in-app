@@ -1,0 +1,109 @@
+# Frontend Deployment - Next.js
+# Optimized for 120-430 participants (single pod deployment)
+# SCALING GUIDE:
+#   - 120-600 participants: 1 pod (current config)
+#   - 600+ participants: 2 pods
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  labels:
+    app: frontend
+    component: web
+    sizing: small-event
+spec:
+  # SINGLE POD - Next.js SSR can easily serve 500+ concurrent users
+  replicas: 1
+  strategy:
+    # Recreate for single pod - faster restart
+    type: Recreate
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+        component: web
+    spec:
+      serviceAccountName: frontend-sa
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        fsGroup: 1001
+      
+      terminationGracePeriodSeconds: 20
+      
+      containers:
+        - name: frontend
+          image: ghcr.io/medma/check-in-app/frontend:latest
+          imagePullPolicy: Always
+          
+          ports:
+            - name: http
+              containerPort: 3000
+              protocol: TCP
+          
+          env:
+            - name: NODE_ENV
+              value: "production"
+            - name: NEXT_PUBLIC_API_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: app-config
+                  key: api-url
+          
+          # Optimized for single pod serving 430 users
+          resources:
+            requests:
+              cpu: "75m"
+              memory: "192Mi"
+            limits:
+              cpu: "300m"
+              memory: "384Mi"
+          
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 20
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 3
+          
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+          
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+            - name: nextjs-cache
+              mountPath: /app/.next/cache
+      
+      volumes:
+        - name: tmp
+          emptyDir: {}
+        - name: nextjs-cache
+          emptyDir: {}
+      
+      # REMOVED: podAntiAffinity - pointless with single pod
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: frontend-sa
+  labels:
+    app: frontend

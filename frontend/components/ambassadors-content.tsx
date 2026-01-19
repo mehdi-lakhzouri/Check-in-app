@@ -10,7 +10,6 @@ const itemVariants = cardVariants;
 import {
   Award,
   Search,
-  Filter,
   RefreshCw,
   MoreVertical,
   Eye,
@@ -30,6 +29,7 @@ import {
   WifiOff,
   Trash2,
   AlertTriangle,
+  Loader2,
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -37,6 +37,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Table,
   TableBody,
@@ -249,6 +250,11 @@ export function AmbassadorsContent() {
   const [isRemoveReferralDialogOpen, setIsRemoveReferralDialogOpen] = useState(false);
   const [referralToRemove, setReferralToRemove] = useState<{ _id: string; name: string } | null>(null);
   
+  // Selection state for bulk operations
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [isBulkDemoteDialogOpen, setIsBulkDemoteDialogOpen] = useState(false);
+  const [isBulkDemoting, setIsBulkDemoting] = useState(false);
+  
   // Realtime updates
   const handlePointsUpdate = useCallback((data: AmbassadorPointsUpdate) => {
     // Invalidate queries to refresh data
@@ -397,6 +403,59 @@ export function AmbassadorsContent() {
     setIsDetailOpen(true);
     // Invalidate any cached details to force fresh fetch
     queryClient.invalidateQueries({ queryKey: ['ambassador', 'details', ambassador._id] });
+  };
+
+  // Selection handlers
+  const handleSelectAll = useCallback((checked: boolean) => {
+    if (checked && ambassadors?.data) {
+      const newSelected = new Set<string>();
+      ambassadors.data.forEach(a => newSelected.add(a._id));
+      setSelectedIds(newSelected);
+    } else {
+      setSelectedIds(new Set());
+    }
+  }, [ambassadors?.data]);
+
+  const handleSelectOne = useCallback((id: string, checked: boolean) => {
+    const newSelected = new Set(selectedIds);
+    if (checked) {
+      newSelected.add(id);
+    } else {
+      newSelected.delete(id);
+    }
+    setSelectedIds(newSelected);
+  }, [selectedIds]);
+
+  const allSelected = useMemo(() => {
+    return ambassadors?.data && ambassadors.data.length > 0 && ambassadors.data.every(a => selectedIds.has(a._id));
+  }, [ambassadors?.data, selectedIds]);
+
+  const someSelected = useMemo(() => {
+    return ambassadors?.data && ambassadors.data.some(a => selectedIds.has(a._id)) && !allSelected;
+  }, [ambassadors?.data, selectedIds, allSelected]);
+
+  const handleBulkDemote = async () => {
+    setIsBulkDemoting(true);
+    const ids = Array.from(selectedIds);
+    let successCount = 0;
+    let errorCount = 0;
+
+    for (const id of ids) {
+      try {
+        await demoteMutation.mutateAsync(id);
+        successCount++;
+      } catch {
+        errorCount++;
+      }
+    }
+
+    setIsBulkDemoting(false);
+    setIsBulkDemoteDialogOpen(false);
+    setSelectedIds(new Set());
+
+    if (successCount > 0) {
+      toast.success(`Demoted ${successCount} ambassador${successCount !== 1 ? 's' : ''}${errorCount > 0 ? `. ${errorCount} failed.` : ''}`);
+    }
   };
 
   const handleDemote = (ambassador: Participant) => {
@@ -572,18 +631,34 @@ export function AmbassadorsContent() {
       <motion.div variants={itemVariants}>
         <Card>
           <CardHeader>
-            <CardTitle>All Ambassadors</CardTitle>
-            <CardDescription>Search, filter, and manage ambassador accounts</CardDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>All Ambassadors</CardTitle>
+                <CardDescription>Search, filter, and manage ambassador accounts</CardDescription>
+              </div>
+              {selectedIds.size > 0 && (
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => setIsBulkDemoteDialogOpen(true)}
+                  className="gap-2"
+                >
+                  <UserMinus className="h-4 w-4" aria-hidden="true" />
+                  Demote ({selectedIds.size})
+                </Button>
+              )}
+            </div>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex flex-col gap-4 sm:flex-row">
               <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
                 <Input
                   placeholder="Search by name, email, or organization..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   className="pl-9"
+                  aria-label="Search ambassadors"
                 />
               </div>
               <Select value={sortBy} onValueChange={setSortBy}>
@@ -600,8 +675,9 @@ export function AmbassadorsContent() {
                 variant="outline"
                 size="icon"
                 onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
+                aria-label={`Sort ${sortOrder === 'asc' ? 'descending' : 'ascending'}`}
               >
-                <ArrowUpDown className="h-4 w-4" />
+                <ArrowUpDown className="h-4 w-4" aria-hidden="true" />
               </Button>
             </div>
 
@@ -615,6 +691,7 @@ export function AmbassadorsContent() {
                   onValueChange={(value) => {
                     setLimit(parseInt(value));
                     setPage(1);
+                    setSelectedIds(new Set());
                   }}
                 >
                   <SelectTrigger id="ambassadors-page-size" className="h-8 w-[70px]">
@@ -637,6 +714,18 @@ export function AmbassadorsContent() {
               <Table role="table" aria-label="Ambassadors list">
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-[50px] text-center" scope="col">
+                      <Checkbox
+                        checked={allSelected}
+                        ref={(el) => {
+                          if (el) {
+                            (el as HTMLButtonElement & { indeterminate: boolean }).indeterminate = someSelected || false;
+                          }
+                        }}
+                        onCheckedChange={handleSelectAll}
+                        aria-label="Select all ambassadors"
+                      />
+                    </TableHead>
                     <TableHead className="text-center" scope="col">Ambassador</TableHead>
                     <TableHead className="text-center" scope="col">Organization</TableHead>
                     <TableHead className="text-center" scope="col">Points</TableHead>
@@ -649,6 +738,7 @@ export function AmbassadorsContent() {
                   {isLoading ? (
                     [...Array(5)].map((_, i) => (
                       <TableRow key={i}>
+                        <TableCell><Skeleton className="h-4 w-4 mx-auto" /></TableCell>
                         <TableCell><Skeleton className="h-4 w-32" /></TableCell>
                         <TableCell><Skeleton className="h-4 w-24" /></TableCell>
                         <TableCell><Skeleton className="h-4 w-12 mx-auto" /></TableCell>
@@ -659,66 +749,80 @@ export function AmbassadorsContent() {
                     ))
                   ) : ambassadors?.data.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                      <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                         No ambassadors found
                       </TableCell>
                     </TableRow>
                   ) : (
-                    ambassadors?.data.map((ambassador) => (
-                      <TableRow key={ambassador._id}>
-                        <TableCell>
-                          <div>
-                            <p className="font-medium">{ambassador.name}</p>
-                            <p className="text-sm text-muted-foreground">{ambassador.email}</p>
-                          </div>
-                        </TableCell>
-                        <TableCell>{ambassador.organization || '-'}</TableCell>
-                        <TableCell className="text-center">
-                          <Badge variant="secondary" className="font-mono">
-                            {ambassador.ambassadorPoints}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-center">
-                          {ambassador.referredParticipantIds.length}
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <Badge variant={ambassador.isActive ? 'default' : 'secondary'}>
-                            {ambassador.isActive ? 'Active' : 'Inactive'}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" aria-label={`Actions for ${ambassador.name}`}>
-                                <MoreVertical className="h-4 w-4" aria-hidden="true" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem onClick={() => handleViewDetails(ambassador)}>
-                                <Eye className="mr-2 h-4 w-4" />
-                                View Details
-                              </DropdownMenuItem>
-                              <DropdownMenuItem 
-                                onClick={() => calculatePointsMutation.mutate(ambassador._id)}
-                              >
-                                <RefreshCw className="mr-2 h-4 w-4" />
-                                Recalculate Points
-                              </DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem 
-                                onClick={() => handleDemote(ambassador)}
-                                className="text-destructive"
-                              >
-                                <UserMinus className="mr-2 h-4 w-4" />
-                                Demote
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      </TableRow>
-                    ))
+                    ambassadors?.data.map((ambassador) => {
+                      const isSelected = selectedIds.has(ambassador._id);
+                      return (
+                        <TableRow 
+                          key={ambassador._id}
+                          className={isSelected ? 'bg-primary/5' : undefined}
+                          data-state={isSelected ? 'selected' : undefined}
+                        >
+                          <TableCell className="text-center">
+                            <Checkbox
+                              checked={isSelected}
+                              onCheckedChange={(checked) => handleSelectOne(ambassador._id, !!checked)}
+                              aria-label={`Select ${ambassador.name}`}
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <div className="text-center">
+                              <p className="font-medium">{ambassador.name}</p>
+                              <p className="text-sm text-muted-foreground">{ambassador.email}</p>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-center">{ambassador.organization || '—'}</TableCell>
+                          <TableCell className="text-center">
+                            <Badge variant="secondary" className="font-mono">
+                              {ambassador.ambassadorPoints}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-center">
+                            {ambassador.referredParticipantIds.length}
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <Badge variant={ambassador.isActive ? 'default' : 'secondary'}>
+                              {ambassador.isActive ? 'Active' : 'Inactive'}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" aria-label={`Actions for ${ambassador.name}`}>
+                                  <MoreVertical className="h-4 w-4" aria-hidden="true" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem onClick={() => handleViewDetails(ambassador)}>
+                                  <Eye className="mr-2 h-4 w-4" aria-hidden="true" />
+                                  View Details
+                                </DropdownMenuItem>
+                                <DropdownMenuItem 
+                                  onClick={() => calculatePointsMutation.mutate(ambassador._id)}
+                                >
+                                  <RefreshCw className="mr-2 h-4 w-4" aria-hidden="true" />
+                                  Recalculate Points
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem 
+                                  onClick={() => handleDemote(ambassador)}
+                                  className="text-destructive"
+                                >
+                                  <UserMinus className="mr-2 h-4 w-4" aria-hidden="true" />
+                                  Demote
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })
                   )}
                 </TableBody>
               </Table>
@@ -1254,6 +1358,57 @@ export function AmbassadorsContent() {
                 <>
                   <Trash2 className="h-4 w-4" aria-hidden="true" />
                   Remove Referral
+                </>
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Bulk Demote Confirmation Dialog */}
+      <AlertDialog open={isBulkDemoteDialogOpen} onOpenChange={setIsBulkDemoteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-destructive" aria-hidden="true" />
+              Demote Multiple Ambassadors
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3">
+                <p>
+                  You are about to demote{' '}
+                  <strong className="text-foreground">{selectedIds.size}</strong>{' '}
+                  ambassador{selectedIds.size !== 1 ? 's' : ''}.
+                </p>
+                <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-3">
+                  <p className="text-sm text-destructive dark:text-red-400 font-medium">
+                    This action will for each ambassador:
+                  </p>
+                  <ul className="text-sm text-destructive/80 dark:text-red-300 mt-1 ml-4 list-disc">
+                    <li>Remove all referral associations</li>
+                    <li>Reset points to 0</li>
+                    <li>Change status back to regular participant</li>
+                  </ul>
+                </div>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isBulkDemoting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleBulkDemote}
+              disabled={isBulkDemoting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isBulkDemoting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
+                  Demoting...
+                </>
+              ) : (
+                <>
+                  <UserMinus className="mr-2 h-4 w-4" aria-hidden="true" />
+                  Demote {selectedIds.size} Ambassador{selectedIds.size !== 1 ? 's' : ''}
                 </>
               )}
             </AlertDialogAction>

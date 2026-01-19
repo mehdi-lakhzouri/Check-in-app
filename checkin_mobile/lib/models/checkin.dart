@@ -122,6 +122,8 @@ class VerificationResult {
   final Session? session;
   final VerificationActions actions;
   final String? existingCheckInId;
+  final bool isAtCapacity;
+  final CapacityInfo? capacityInfo;
 
   const VerificationResult({
     required this.participantId,
@@ -131,6 +133,8 @@ class VerificationResult {
     this.session,
     required this.actions,
     this.existingCheckInId,
+    this.isAtCapacity = false,
+    this.capacityInfo,
   });
 
   factory VerificationResult.fromJson(Map<String, dynamic> json) {
@@ -139,6 +143,7 @@ class VerificationResult {
     final sessionData = json['session'] as Map<String, dynamic>?;
     final verificationData = json['verification'] as Map<String, dynamic>?;
     final actionsData = json['actions'] as Map<String, dynamic>?;
+    final capacityData = json['capacityInfo'] as Map<String, dynamic>?;
     
     // Get participant ID from nested object or direct field
     String participantId;
@@ -177,6 +182,14 @@ class VerificationResult {
       existingCheckInId = existingCheckIn['_id'] as String?;
     }
     
+    // Get isAtCapacity from verification object or session object
+    bool isAtCapacity = false;
+    if (verificationData != null && verificationData['isAtCapacity'] != null) {
+      isAtCapacity = verificationData['isAtCapacity'] as bool;
+    } else if (sessionData != null && sessionData['isAtCapacity'] != null) {
+      isAtCapacity = sessionData['isAtCapacity'] as bool;
+    }
+    
     return VerificationResult(
       participantId: participantId,
       sessionId: sessionId,
@@ -191,6 +204,10 @@ class VerificationResult {
           ? VerificationActions.fromJson(actionsData)
           : const VerificationActions(),
       existingCheckInId: existingCheckInId,
+      isAtCapacity: isAtCapacity,
+      capacityInfo: capacityData != null
+          ? CapacityInfo.fromJson(capacityData)
+          : null,
     );
   }
   
@@ -214,16 +231,29 @@ class VerificationResult {
       name: json['name'] as String? ?? 'Unknown',
       isOpen: json['isOpen'] as bool? ?? false,
       requiresRegistration: json['requiresRegistration'] as bool? ?? false,
+      capacity: json['capacity'] as int?,
+      checkInsCount: 0, // Not provided in verification response
       startTime: DateTime.now(), // Not provided in verification response
       endTime: DateTime.now(),
     );
   }
 
-  bool get canAccept => actions.canAccept;
+  bool get canAccept => actions.canAccept && !isAtCapacity;
   bool get canDecline => actions.canDecline;
   bool get isAlreadyCheckedIn => badge.isAlreadyCheckedIn;
   bool get isRegistered => badge == VerificationBadge.registered;
   bool get isNotRegistered => badge == VerificationBadge.notRegistered;
+  
+  /// Get the reason why check-in cannot proceed
+  String? get blockingReason {
+    if (isAtCapacity) return 'Session is at full capacity';
+    if (isAlreadyCheckedIn) return 'Already checked in';
+    if (!actions.canAccept && session?.requiresRegistration == true) {
+      return 'Registration required for this session';
+    }
+    if (session?.isOpen == false) return 'Session is not open';
+    return null;
+  }
 }
 
 /// Accept check-in result
@@ -377,7 +407,7 @@ class CheckInResult {
 /// Capacity information
 class CapacityInfo {
   final int current;
-  final int capacity;
+  final int max;
   final double percentFull;
   final bool isAtCapacity;
   final int? remaining;
@@ -385,27 +415,36 @@ class CapacityInfo {
 
   const CapacityInfo({
     this.current = 0,
-    this.capacity = 0,
+    this.max = 0,
     this.percentFull = 0.0,
     this.isAtCapacity = false,
     this.remaining,
     this.isNearCapacity = false,
   });
+  
+  /// Alias for backward compatibility
+  int get capacity => max;
 
   factory CapacityInfo.fromJson(Map<String, dynamic> json) {
-    // Backend sends 'checkInsCount', Flutter model uses 'current'
+    // Backend may send 'checkInsCount' or 'current' for current count
     final checkInsCount = (json['checkInsCount'] as num?)?.toInt() ?? 
                           (json['current'] as num?)?.toInt() ?? 0;
-    final capacity = (json['capacity'] as num?)?.toInt() ?? 0;
+    // Backend may send 'capacity' or 'max' for maximum capacity
+    final maxCapacity = (json['max'] as num?)?.toInt() ?? 
+                        (json['capacity'] as num?)?.toInt() ?? 0;
+    final remaining = (json['remaining'] as num?)?.toInt() ?? 
+                      (maxCapacity > 0 ? maxCapacity - checkInsCount : null);
     
     return CapacityInfo(
       current: checkInsCount,
-      capacity: capacity,
-      percentFull: (json['percentFull'] as num?)?.toDouble() ?? 0.0,
+      max: maxCapacity,
+      percentFull: (json['percentFull'] as num?)?.toDouble() ?? 
+                   (maxCapacity > 0 ? (checkInsCount / maxCapacity * 100) : 0.0),
       isAtCapacity: json['isAtCapacity'] as bool? ?? 
-                    (capacity > 0 && checkInsCount >= capacity),
-      remaining: (json['remaining'] as num?)?.toInt(),
-      isNearCapacity: json['isNearCapacity'] as bool? ?? false,
+                    (maxCapacity > 0 && checkInsCount >= maxCapacity),
+      remaining: remaining,
+      isNearCapacity: json['isNearCapacity'] as bool? ?? 
+                      (maxCapacity > 0 && remaining != null && remaining <= (maxCapacity * 0.1).ceil()),
     );
   }
 }

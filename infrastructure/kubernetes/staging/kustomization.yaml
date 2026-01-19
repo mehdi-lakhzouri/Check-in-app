@@ -1,0 +1,77 @@
+# Staging Environment Overlay
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: checkin-staging
+
+namePrefix: staging-
+
+resources:
+  - ../base
+
+commonLabels:
+  environment: staging
+
+patches:
+  # Reduce replicas for staging
+  - target:
+      kind: Deployment
+      name: backend
+    patch: |
+      - op: replace
+        path: /spec/replicas
+        value: 1
+  - target:
+      kind: Deployment
+      name: frontend
+    patch: |
+      - op: replace
+        path: /spec/replicas
+        value: 1
+  # Reduce HPA max replicas
+  - target:
+      kind: HorizontalPodAutoscaler
+      name: backend-hpa
+    patch: |
+      - op: replace
+        path: /spec/maxReplicas
+        value: 3
+      - op: replace
+        path: /spec/minReplicas
+        value: 1
+  - target:
+      kind: HorizontalPodAutoscaler
+      name: frontend-hpa
+    patch: |
+      - op: replace
+        path: /spec/maxReplicas
+        value: 2
+      - op: replace
+        path: /spec/minReplicas
+        value: 1
+
+configMapGenerator:
+  - name: app-config
+    behavior: merge
+    literals:
+      - api-url=https://staging-api.checkin-app.example.com
+      - log-level=debug
+      - cors-origins=https://staging.checkin-app.example.com
+
+# Update ingress hosts for staging
+patches:
+  - target:
+      kind: Ingress
+      name: checkin-ingress
+    patch: |
+      - op: replace
+        path: /spec/tls/0/hosts
+        value:
+          - staging.checkin-app.example.com
+          - staging-api.checkin-app.example.com
+      - op: replace
+        path: /spec/rules/0/host
+        value: staging.checkin-app.example.com
+      - op: replace
+        path: /spec/rules/1/host
+        value: staging-api.checkin-app.example.com

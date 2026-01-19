@@ -47,6 +47,8 @@ export interface VerificationResult {
     name: string;
     isOpen: boolean;
     requiresRegistration: boolean;
+    capacity?: number | null;
+    isAtCapacity?: boolean;
   };
   verification: {
     isRegistered: boolean;
@@ -58,11 +60,17 @@ export interface VerificationResult {
       method: string;
     };
     badge: VerificationBadge;
+    isAtCapacity?: boolean;
   };
   actions: {
     canAccept: boolean;
     canDecline: boolean;
     acceptLabel: string;
     declineLabel: string;
+  };
+  capacityInfo?: {
+    current: number;
+    max: number;
+    remaining: number;
   };
 }
