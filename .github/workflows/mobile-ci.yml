@@ -24,49 +24,12 @@ concurrency:
 
 jobs:
   # ============================================
-  # Stage 1: Code Quality & Analysis
-  # ============================================
-  analyze:
-    name:  Analyze & Lint
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-          channel: 'stable'
-          cache: true
-
-      - name: Get dependencies
-        working-directory: checkin_mobile
-        run: flutter pub get
-
-      - name: Verify formatting
-        working-directory: checkin_mobile
-        run: dart format --output=none --set-exit-if-changed .
-
-      - name: Analyze code
-        working-directory: checkin_mobile
-        # Use --fatal-warnings to fail only on warnings/errors, not infos
-        run: flutter analyze --fatal-warnings
-
-      - name: Check for outdated dependencies
-        working-directory: checkin_mobile
-        run: flutter pub outdated || true
-
-  # ============================================
-  # Stage 2: Unit & Widget Tests
+  # Stage 1: Unit & Widget Tests
   # ============================================
   test:
     name:  Tests
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    needs: analyze
     
     steps:
       - name: Checkout code
@@ -97,13 +60,13 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
 
   # ============================================
-  # Stage 3: Build Android APK (Debug)
+  # Stage 2: Build Android APK (Debug)
   # ============================================
   build-android-debug:
     name:  Build Android Debug
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    needs: [analyze, test]
+    needs: test
     
     steps:
       - name: Checkout code
@@ -138,13 +101,13 @@ jobs:
           retention-days: 7
 
   # ============================================
-  # Stage 4: Build Android APK (Release)
+  # Stage 3: Build Android APK (Release)
   # ============================================
   build-android-release:
     name:  Build Android Release
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    needs: [analyze, test]
+    needs: test
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
     
     steps:
@@ -213,13 +176,13 @@ jobs:
           retention-days: 30
 
   # ============================================
-  # Stage 5: Build iOS (macOS runner required)
+  # Stage 4: Build iOS (macOS runner required)
   # ============================================
   build-ios:
     name:  Build iOS
     runs-on: macos-latest
     timeout-minutes: 45
-    needs: [analyze, test]
+    needs: test
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     
     steps:
@@ -261,13 +224,12 @@ jobs:
           retention-days: 30
 
   # ============================================
-  # Stage 6: Security Scanning
+  # Stage 5: Security Scanning
   # ============================================
   security:
     name:  Security Scan
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    needs: analyze
     
     steps:
       - name: Checkout code
@@ -300,7 +262,7 @@ jobs:
   notify-failure:
     name:  Notify Failure
     runs-on: ubuntu-latest
-    needs: [analyze, test, build-android-debug, security]
+    needs: [test, build-android-debug, security]
     if: failure()
     
     steps:

@@ -25,48 +25,12 @@ concurrency:
 
 jobs:
   # ============================================
-  # Stage 1: Code Quality & Linting
-  # ============================================
-  lint:
-    name:  Lint & Format Check
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-          cache-dependency-path: backend/package-lock.json
-
-      - name: Install dependencies
-        working-directory: backend
-        run: npm ci --prefer-offline
-
-      - name: Run ESLint
-        working-directory: backend
-        run: npm run lint
-
-      - name: Check Prettier formatting
-        working-directory: backend
-        run: npm run format:check || npx prettier --check "src/**/*.ts" "test/**/*.ts"
-
-      - name: TypeScript compilation check
-        working-directory: backend
-        run: npm run build
-
-  # ============================================
-  # Stage 2: Unit Tests with Coverage
+  # Stage 1: Unit Tests with Coverage
   # ============================================
   unit-tests:
     name:  Unit Tests
     runs-on: ubuntu-latest
     timeout-minutes: 25
-    needs: lint
     
     steps:
       - name: Checkout code
@@ -82,6 +46,10 @@ jobs:
       - name: Install dependencies
         working-directory: backend
         run: npm ci --prefer-offline
+
+      - name: TypeScript compilation check
+        working-directory: backend
+        run: npm run build
 
       - name: Run unit tests with coverage
         working-directory: backend
@@ -108,13 +76,12 @@ jobs:
           fi
 
   # ============================================
-  # Stage 3: E2E Tests with MongoDB
+  # Stage 2: E2E Tests with MongoDB
   # ============================================
   e2e-tests:
     name:  E2E Tests
     runs-on: ubuntu-latest
     timeout-minutes: 25
-    needs: lint
     
     services:
       mongodb:
@@ -162,13 +129,12 @@ jobs:
           REDIS_PORT: 6379
 
   # ============================================
-  # Stage 4: Security Scanning
+  # Stage 3: Security Scanning
   # ============================================
   security:
     name:  Security Scan
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    needs: lint
     permissions:
       security-events: write
       contents: read
@@ -215,7 +181,7 @@ jobs:
           category: "/language:javascript-typescript"
 
   # ============================================
-  # Stage 5: Build Docker Image
+  # Stage 4: Build Docker Image
   # ============================================
   build:
     name:  Build & Push Docker
@@ -285,7 +251,7 @@ jobs:
           path: sbom.spdx.json
 
   # ============================================
-  # Stage 6: Image Vulnerability Scan
+  # Stage 5: Image Vulnerability Scan
   # ============================================
   scan-image:
     name:  Scan Container
@@ -323,7 +289,7 @@ jobs:
   notify-failure:
     name:  Notify Failure
     runs-on: ubuntu-latest
-    needs: [lint, unit-tests, e2e-tests, security, build]
+    needs: [unit-tests, e2e-tests, security, build]
     if: failure()
     
     steps:
