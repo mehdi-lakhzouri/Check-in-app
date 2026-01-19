@@ -8,7 +8,7 @@
  * @author Senior Frontend Engineer
  */
 
-import { Variants, Transition, TargetAndTransition } from 'framer-motion';
+import { Variants, TargetAndTransition } from 'framer-motion';
 
 // =============================================================================
 // TIMING & EASING CONSTANTS
@@ -1243,10 +1243,12 @@ export const CSS_ANIMATIONS = {
   bounce: 'animate-bounce',
 } as const;
 
-export default {
+const animations = {
   TIMING,
   EASING,
   SPRING,
   PRESETS,
   CSS_ANIMATIONS,
 };
+
+export default animations;

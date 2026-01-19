@@ -20,7 +20,7 @@ import {
 import { PaginatedResult } from '../../../common/dto';
 import { CheckInsService } from '../../checkins/services';
 import { RegistrationsService } from '../../registrations/services';
-import { PinoLoggerService, getCurrentRequestId } from '../../../common/logger';
+import { PinoLoggerService } from '../../../common/logger';
 
 // Environment-prefixed cache keys to prevent collisions across environments
 const ENV_PREFIX = process.env.NODE_ENV || 'development';

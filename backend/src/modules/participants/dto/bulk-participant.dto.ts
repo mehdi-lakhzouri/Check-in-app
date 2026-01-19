@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsArray, IsBoolean, IsMongoId, IsOptional, ValidateNested } from 'class-validator';
+import { IsArray, IsBoolean, IsMongoId, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class BulkParticipantItemDto {

@@ -326,7 +326,7 @@ export function useUpdateParticipant(
         );
       }
     },
-    onSettled: (data, error, { id }) => {
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.participants.all });
       queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.all });
     },

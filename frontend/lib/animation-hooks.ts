@@ -12,9 +12,7 @@ import {
   useAnimation, 
   useInView, 
   useReducedMotion,
-  MotionValue,
   useMotionValue,
-  useTransform,
   useSpring,
   animate,
 } from 'framer-motion';
@@ -108,7 +106,7 @@ export function useCountUp(options: UseCountUpOptions) {
     const controls = animate(from, to, {
       duration,
       delay,
-      ease: EASING.easeOut as any,
+      ease: EASING.easeOut as unknown as [number, number, number, number],
       onUpdate: (value) => {
         setDisplayValue(formatter(value));
       },
@@ -167,23 +165,37 @@ export function usePress() {
 export function useDelayedRender(delay: number, show: boolean = true) {
   const [shouldRender, setShouldRender] = useState(false);
   const prefersReducedMotion = useReducedMotion();
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Use callback-based setTimeout to avoid direct setState in effect body
   useEffect(() => {
     if (!show) {
-      setShouldRender(false);
-      return;
+      // Clear any pending timer and reset
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+        timerRef.current = null;
+      }
+      // Schedule the state update via callback
+      timerRef.current = setTimeout(() => setShouldRender(false), 0);
+      return () => {
+        if (timerRef.current) clearTimeout(timerRef.current);
+      };
     }
 
     if (prefersReducedMotion) {
-      setShouldRender(true);
-      return;
+      timerRef.current = setTimeout(() => setShouldRender(true), 0);
+      return () => {
+        if (timerRef.current) clearTimeout(timerRef.current);
+      };
     }
 
-    const timer = setTimeout(() => {
+    timerRef.current = setTimeout(() => {
       setShouldRender(true);
     }, delay * 1000);
 
-    return () => clearTimeout(timer);
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
   }, [delay, show, prefersReducedMotion]);
 
   return shouldRender;
@@ -257,8 +269,8 @@ export function useMousePosition(ref?: React.RefObject<HTMLElement>) {
       }
     };
 
-    element.addEventListener('mousemove', handleMouseMove as any);
-    return () => element.removeEventListener('mousemove', handleMouseMove as any);
+    element.addEventListener('mousemove', handleMouseMove as EventListener);
+    return () => element.removeEventListener('mousemove', handleMouseMove as EventListener);
   }, [ref]);
 
   return position;
@@ -509,16 +521,29 @@ type AnimationState = 'idle' | 'entering' | 'entered' | 'exiting' | 'exited';
 
 export function useAnimationState(isVisible: boolean) {
   const [state, setState] = useState<AnimationState>(isVisible ? 'entered' : 'exited');
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
+    // Clear any existing timer
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+    }
+
     if (isVisible) {
-      setState('entering');
-      const timer = setTimeout(() => setState('entered'), TIMING.normal * 1000);
-      return () => clearTimeout(timer);
+      // Use setTimeout to schedule state updates
+      timerRef.current = setTimeout(() => setState('entering'), 0);
+      const enteredTimer = setTimeout(() => setState('entered'), TIMING.normal * 1000);
+      return () => {
+        if (timerRef.current) clearTimeout(timerRef.current);
+        clearTimeout(enteredTimer);
+      };
     } else {
-      setState('exiting');
-      const timer = setTimeout(() => setState('exited'), TIMING.normal * 1000);
-      return () => clearTimeout(timer);
+      timerRef.current = setTimeout(() => setState('exiting'), 0);
+      const exitedTimer = setTimeout(() => setState('exited'), TIMING.normal * 1000);
+      return () => {
+        if (timerRef.current) clearTimeout(timerRef.current);
+        clearTimeout(exitedTimer);
+      };
     }
   }, [isVisible]);
 
@@ -536,7 +561,7 @@ export function useAnimationState(isVisible: boolean) {
 // Exports
 // =============================================================================
 
-export default {
+const animationHooks = {
   useAnimateOnView,
   useStaggerAnimation,
   useCountUp,
@@ -555,3 +580,5 @@ export default {
   useDragConstraints,
   useAnimationState,
 };
+
+export default animationHooks;

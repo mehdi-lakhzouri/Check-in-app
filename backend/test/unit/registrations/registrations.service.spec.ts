@@ -7,7 +7,10 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { Types } from 'mongoose';
 import { RegistrationsService } from '../../../src/modules/registrations/services/registrations.service';
 import { RegistrationRepository } from '../../../src/modules/registrations/repositories/registration.repository';
-import { EntityNotFoundException, EntityExistsException } from '../../../src/common/exceptions';
+import {
+  EntityNotFoundException,
+  EntityExistsException,
+} from '../../../src/common/exceptions';
 import { createMockRegistrationRepository } from '../../utils/mock-factories';
 import { mockData, generateObjectId } from '../../utils/test-utils';
 import { RegistrationStatus } from '../../../src/modules/registrations/schemas';
@@ -40,8 +43,14 @@ describe('RegistrationsService', () => {
     it('should create a registration successfully', async () => {
       const participantId = generateObjectId();
       const sessionId = generateObjectId();
-      const createDto = mockData.createRegistrationDto(participantId, sessionId);
-      const expectedRegistration = mockData.registration(participantId, sessionId);
+      const createDto = mockData.createRegistrationDto(
+        participantId,
+        sessionId,
+      );
+      const expectedRegistration = mockData.registration(
+        participantId,
+        sessionId,
+      );
 
       repository.findByParticipantAndSession.mockResolvedValue(null);
       repository.create.mockResolvedValue(expectedRegistration as any);
@@ -49,26 +58,45 @@ describe('RegistrationsService', () => {
       const result = await service.create(createDto);
 
       expect(result).toEqual(expectedRegistration);
-      expect(repository.findByParticipantAndSession).toHaveBeenCalledWith(participantId, sessionId);
+      expect(repository.findByParticipantAndSession).toHaveBeenCalledWith(
+        participantId,
+        sessionId,
+      );
       expect(repository.create).toHaveBeenCalled();
     });
 
     it('should throw EntityExistsException when registration already exists', async () => {
       const participantId = generateObjectId();
       const sessionId = generateObjectId();
-      const createDto = mockData.createRegistrationDto(participantId, sessionId);
-      const existingRegistration = mockData.registration(participantId, sessionId);
+      const createDto = mockData.createRegistrationDto(
+        participantId,
+        sessionId,
+      );
+      const existingRegistration = mockData.registration(
+        participantId,
+        sessionId,
+      );
 
-      repository.findByParticipantAndSession.mockResolvedValue(existingRegistration as any);
+      repository.findByParticipantAndSession.mockResolvedValue(
+        existingRegistration as any,
+      );
 
-      await expect(service.create(createDto)).rejects.toThrow(EntityExistsException);
+      await expect(service.create(createDto)).rejects.toThrow(
+        EntityExistsException,
+      );
     });
 
     it('should convert string IDs to ObjectIds', async () => {
       const participantId = generateObjectId();
       const sessionId = generateObjectId();
-      const createDto = mockData.createRegistrationDto(participantId, sessionId);
-      const expectedRegistration = mockData.registration(participantId, sessionId);
+      const createDto = mockData.createRegistrationDto(
+        participantId,
+        sessionId,
+      );
+      const expectedRegistration = mockData.registration(
+        participantId,
+        sessionId,
+      );
 
       repository.findByParticipantAndSession.mockResolvedValue(null);
       repository.create.mockResolvedValue(expectedRegistration as any);
@@ -100,12 +128,19 @@ describe('RegistrationsService', () => {
       const result = await service.findAll({ page: 1, limit: 10 });
 
       expect(result).toEqual(paginatedResult);
-      expect(repository.findWithFilters).toHaveBeenCalledWith({ page: 1, limit: 10 });
+      expect(repository.findWithFilters).toHaveBeenCalledWith({
+        page: 1,
+        limit: 10,
+      });
     });
 
     it('should filter by status', async () => {
       const paginatedResult = {
-        data: [mockData.registration(undefined, undefined, { status: RegistrationStatus.CONFIRMED })],
+        data: [
+          mockData.registration(undefined, undefined, {
+            status: RegistrationStatus.CONFIRMED,
+          }),
+        ],
         total: 1,
         page: 1,
         limit: 10,
@@ -114,9 +149,13 @@ describe('RegistrationsService', () => {
 
       repository.findWithFilters.mockResolvedValue(paginatedResult);
 
-      const result = await service.findAll({ status: RegistrationStatus.CONFIRMED });
+      const _result = await service.findAll({
+        status: RegistrationStatus.CONFIRMED,
+      });
 
-      expect(repository.findWithFilters).toHaveBeenCalledWith({ status: RegistrationStatus.CONFIRMED });
+      expect(repository.findWithFilters).toHaveBeenCalledWith({
+        status: RegistrationStatus.CONFIRMED,
+      });
     });
 
     it('should filter by sessionId', async () => {
@@ -131,7 +170,7 @@ describe('RegistrationsService', () => {
 
       repository.findWithFilters.mockResolvedValue(paginatedResult);
 
-      const result = await service.findAll({ sessionId });
+      const _result = await service.findAll({ sessionId });
 
       expect(repository.findWithFilters).toHaveBeenCalledWith({ sessionId });
     });
@@ -142,7 +181,9 @@ describe('RegistrationsService', () => {
       const registrationId = generateObjectId();
       const expectedRegistration = mockData.registration();
 
-      repository.findWithPopulate.mockResolvedValue(expectedRegistration as any);
+      repository.findWithPopulate.mockResolvedValue(
+        expectedRegistration as any,
+      );
 
       const result = await service.findOne(registrationId);
 
@@ -154,7 +195,9 @@ describe('RegistrationsService', () => {
       const registrationId = generateObjectId();
       repository.findWithPopulate.mockResolvedValue(null);
 
-      await expect(service.findOne(registrationId)).rejects.toThrow(EntityNotFoundException);
+      await expect(service.findOne(registrationId)).rejects.toThrow(
+        EntityNotFoundException,
+      );
     });
   });
 
@@ -196,23 +239,32 @@ describe('RegistrationsService', () => {
     it('should update a registration successfully', async () => {
       const registrationId = generateObjectId();
       const updateDto = { status: RegistrationStatus.CANCELLED };
-      const updatedRegistration = mockData.registration(undefined, undefined, updateDto);
+      const updatedRegistration = mockData.registration(
+        undefined,
+        undefined,
+        updateDto,
+      );
 
       repository.updateById.mockResolvedValue(updatedRegistration as any);
 
       const result = await service.update(registrationId, updateDto);
 
       expect(result.status).toBe(RegistrationStatus.CANCELLED);
-      expect(repository.updateById).toHaveBeenCalledWith(registrationId, updateDto);
+      expect(repository.updateById).toHaveBeenCalledWith(
+        registrationId,
+        updateDto,
+      );
     });
 
     it('should throw EntityNotFoundException when updating non-existent registration', async () => {
       const registrationId = generateObjectId();
       repository.updateById.mockResolvedValue(null);
 
-      await expect(service.update(registrationId, { status: RegistrationStatus.CANCELLED })).rejects.toThrow(
-        EntityNotFoundException,
-      );
+      await expect(
+        service.update(registrationId, {
+          status: RegistrationStatus.CANCELLED,
+        }),
+      ).rejects.toThrow(EntityNotFoundException);
     });
   });
 
@@ -233,7 +285,9 @@ describe('RegistrationsService', () => {
       const registrationId = generateObjectId();
       repository.deleteById.mockResolvedValue(null);
 
-      await expect(service.remove(registrationId)).rejects.toThrow(EntityNotFoundException);
+      await expect(service.remove(registrationId)).rejects.toThrow(
+        EntityNotFoundException,
+      );
     });
   });
 
@@ -266,7 +320,9 @@ describe('RegistrationsService', () => {
       const result = await service.removeByParticipant(participantId);
 
       expect(result).toBe(3);
-      expect(repository.deleteByParticipant).toHaveBeenCalledWith(participantId);
+      expect(repository.deleteByParticipant).toHaveBeenCalledWith(
+        participantId,
+      );
     });
   });
 

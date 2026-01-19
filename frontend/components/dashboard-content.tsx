@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
-import { motion, AnimatePresence, useInView } from 'framer-motion';
-import { Users, Calendar, UserCheck, ClipboardCheck, RefreshCw, TrendingUp } from 'lucide-react';
+import { useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Users, Calendar, UserCheck, ClipboardCheck, RefreshCw } from 'lucide-react';
 import { StatsCard } from '@/components/stats-card';
 import { SessionOverview } from '@/components/session-overview';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -27,8 +27,7 @@ import {
   tableRowVariants,
   pageTransition,
   TIMING,
-  EASING,
-  SPRING
+  EASING
 } from '@/lib/animations';
 
 export function DashboardContent() {

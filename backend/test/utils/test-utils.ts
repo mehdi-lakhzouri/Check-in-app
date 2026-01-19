@@ -3,12 +3,7 @@
  * Common utilities and helper functions for tests
  */
 
-import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication, ValidationPipe, VersioningType } from '@nestjs/common';
-import { MongoMemoryServer } from 'mongodb-memory-server';
-import { MongooseModule, getModelToken } from '@nestjs/mongoose';
-import { ConfigModule } from '@nestjs/config';
-import mongoose, { Model, Types } from 'mongoose';
+import { Types } from 'mongoose';
 import { ParticipantStatus } from '../../src/modules/participants/schemas';
 import { CheckInMethod } from '../../src/modules/checkins/schemas';
 import { RegistrationStatus } from '../../src/modules/registrations/schemas';
@@ -69,7 +64,11 @@ export const mockData = {
   /**
    * Generate a mock check-in
    */
-  checkIn: (participantId?: string, sessionId?: string, overrides: Record<string, any> = {}) => ({
+  checkIn: (
+    participantId?: string,
+    sessionId?: string,
+    overrides: Record<string, any> = {},
+  ) => ({
     _id: generateObjectId(),
     participantId: participantId || generateObjectId(),
     sessionId: sessionId || generateObjectId(),
@@ -84,7 +83,11 @@ export const mockData = {
   /**
    * Generate a mock registration
    */
-  registration: (participantId?: string, sessionId?: string, overrides: Record<string, any> = {}) => ({
+  registration: (
+    participantId?: string,
+    sessionId?: string,
+    overrides: Record<string, any> = {},
+  ) => ({
     _id: generateObjectId(),
     participantId: participantId || generateObjectId(),
     sessionId: sessionId || generateObjectId(),
@@ -112,7 +115,9 @@ export const mockData = {
   /**
    * Generate CreateParticipantDto - returns properly typed DTO
    */
-  createParticipantDto: (overrides: Partial<CreateParticipantDto> = {}): CreateParticipantDto => ({
+  createParticipantDto: (
+    overrides: Partial<CreateParticipantDto> = {},
+  ): CreateParticipantDto => ({
     name: 'Test Participant',
     email: `test-${Date.now()}@example.com`,
     organization: 'Test Org',
@@ -125,7 +130,11 @@ export const mockData = {
   /**
    * Generate CreateCheckInDto - returns properly typed DTO
    */
-  createCheckInDto: (participantId: string, sessionId: string, overrides: Partial<CreateCheckInDto> = {}): CreateCheckInDto => ({
+  createCheckInDto: (
+    participantId: string,
+    sessionId: string,
+    overrides: Partial<CreateCheckInDto> = {},
+  ): CreateCheckInDto => ({
     participantId,
     sessionId,
     method: CheckInMethod.MANUAL,
@@ -135,7 +144,11 @@ export const mockData = {
   /**
    * Generate CreateRegistrationDto - returns properly typed DTO
    */
-  createRegistrationDto: (participantId: string, sessionId: string, overrides: Partial<CreateRegistrationDto> = {}): CreateRegistrationDto => ({
+  createRegistrationDto: (
+    participantId: string,
+    sessionId: string,
+    overrides: Partial<CreateRegistrationDto> = {},
+  ): CreateRegistrationDto => ({
     participantId,
     sessionId,
     status: RegistrationStatus.CONFIRMED,
@@ -146,7 +159,7 @@ export const mockData = {
 /**
  * Create a mock repository with common methods
  */
-export function createMockRepository<T>() {
+export function createMockRepository() {
   return {
     create: jest.fn(),
     findById: jest.fn(),
@@ -176,7 +189,7 @@ export function createMockService() {
  * Wait for a specified time (useful in async tests)
  */
 export function wait(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms));
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 /**

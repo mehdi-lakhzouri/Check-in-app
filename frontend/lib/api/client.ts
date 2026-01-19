@@ -2,8 +2,6 @@
  * Production-grade API client with error handling, retry logic, and type safety
  */
 
-import { ApiError as ApiErrorType } from '@/lib/schemas';
-
 // ============================================================================
 // Configuration
 // ============================================================================

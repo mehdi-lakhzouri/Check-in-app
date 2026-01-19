@@ -108,7 +108,7 @@ export const participantsApi = {
     return { message: res.message };
   },
   bulkUpload: async (participants: Array<{ name: string; email: string; organization?: string }>) => {
-    const res = await fetchApi<{ status: string; data: any }>('/participants/bulk', {
+    const res = await fetchApi<{ status: string; data: { created: number; failed: number; errors?: string[] } }>('/participants/bulk', {
       method: 'POST',
       body: JSON.stringify({ participants }),
     });

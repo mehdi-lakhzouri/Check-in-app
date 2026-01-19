@@ -12,7 +12,7 @@ import { sessionsService } from '@/lib/api/services/sessions';
 import { participantsService } from '@/lib/api/services/participants';
 import { checkInsService } from '@/lib/api/services/checkins';
 import { registrationsService } from '@/lib/api/services/registrations';
-import type { Session, Participant, CheckIn, Registration } from '@/lib/schemas';
+import type { Session, CheckIn } from '@/lib/schemas';
 import { ApiError } from '@/lib/api/client';
 
 // ============================================================================

@@ -23,7 +23,7 @@ import {
 import { mockData, generateObjectId } from '../../utils/test-utils';
 
 // Mock Excel file buffer
-const createMockExcelFile = (rows: any[]): Express.Multer.File => {
+const createMockExcelFile = (_rows: any[]): Express.Multer.File => {
   // Simulating an Excel buffer - in real tests, use xlsx package
   return {
     fieldname: 'file',

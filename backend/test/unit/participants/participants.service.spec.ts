@@ -4,18 +4,42 @@
  */
 
 import { Test, TestingModule } from '@nestjs/testing';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { ConfigService } from '@nestjs/config';
 import { ParticipantsService } from '../../../src/modules/participants/services/participants.service';
 import { ParticipantRepository } from '../../../src/modules/participants/repositories/participant.repository';
-import { EntityNotFoundException, EntityExistsException } from '../../../src/common/exceptions';
-import { createMockParticipantRepository } from '../../utils/mock-factories';
+import { CheckInsService } from '../../../src/modules/checkins/services/checkins.service';
+import { RegistrationsService } from '../../../src/modules/registrations/services/registrations.service';
+import {
+  EntityNotFoundException,
+  EntityExistsException,
+} from '../../../src/common/exceptions';
+import {
+  createMockParticipantRepository,
+  createMockConfigService,
+  createMockCheckInsService,
+  createMockRegistrationsService,
+} from '../../utils/mock-factories';
 import { mockData, generateObjectId } from '../../utils/test-utils';
 
 describe('ParticipantsService', () => {
   let service: ParticipantsService;
   let repository: ReturnType<typeof createMockParticipantRepository>;
+  let configService: ReturnType<typeof createMockConfigService>;
+  let checkInsService: ReturnType<typeof createMockCheckInsService>;
+  let registrationsService: ReturnType<typeof createMockRegistrationsService>;
+
+  const mockCacheManager = {
+    get: jest.fn(),
+    set: jest.fn(),
+    del: jest.fn(),
+  };
 
   beforeEach(async () => {
     repository = createMockParticipantRepository();
+    configService = createMockConfigService();
+    checkInsService = createMockCheckInsService();
+    registrationsService = createMockRegistrationsService();
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -23,6 +47,22 @@ describe('ParticipantsService', () => {
         {
           provide: ParticipantRepository,
           useValue: repository,
+        },
+        {
+          provide: CACHE_MANAGER,
+          useValue: mockCacheManager,
+        },
+        {
+          provide: ConfigService,
+          useValue: configService,
+        },
+        {
+          provide: CheckInsService,
+          useValue: checkInsService,
+        },
+        {
+          provide: RegistrationsService,
+          useValue: registrationsService,
         },
       ],
     }).compile();
@@ -37,7 +77,7 @@ describe('ParticipantsService', () => {
   describe('create', () => {
     it('should create a participant successfully', async () => {
       const createDto = mockData.createParticipantDto();
-      const expectedParticipant = mockData.participant({ 
+      const expectedParticipant = mockData.participant({
         name: createDto.name,
         email: createDto.email,
       });
@@ -55,24 +95,30 @@ describe('ParticipantsService', () => {
 
     it('should throw EntityExistsException when email already exists', async () => {
       const createDto = mockData.createParticipantDto();
-      const existingParticipant = mockData.participant({ email: createDto.email });
+      const existingParticipant = mockData.participant({
+        email: createDto.email,
+      });
 
       repository.findByEmail.mockResolvedValue(existingParticipant);
 
-      await expect(service.create(createDto)).rejects.toThrow(EntityExistsException);
+      await expect(service.create(createDto)).rejects.toThrow(
+        EntityExistsException,
+      );
     });
 
     it('should throw EntityExistsException when provided qrCode already exists', async () => {
       const qrCode = 'QR-EXISTING123';
       const createDto = mockData.createParticipantDto();
       (createDto as any).qrCode = qrCode;
-      
+
       const existingParticipant = mockData.participant({ qrCode });
 
       repository.findByEmail.mockResolvedValue(null);
       repository.findByQrCode.mockResolvedValue(existingParticipant);
 
-      await expect(service.create(createDto)).rejects.toThrow(EntityExistsException);
+      await expect(service.create(createDto)).rejects.toThrow(
+        EntityExistsException,
+      );
     });
 
     it('should generate unique QR code when not provided', async () => {
@@ -98,7 +144,10 @@ describe('ParticipantsService', () => {
 
   describe('findAll', () => {
     it('should return paginated participants', async () => {
-      const participants = [mockData.participant(), mockData.participant({ name: 'Jane Doe' })];
+      const participants = [
+        mockData.participant(),
+        mockData.participant({ name: 'Jane Doe' }),
+      ];
       const paginatedResult = {
         data: participants,
         total: 2,
@@ -112,7 +161,10 @@ describe('ParticipantsService', () => {
       const result = await service.findAll({ page: 1, limit: 10 });
 
       expect(result).toEqual(paginatedResult);
-      expect(repository.findWithFilters).toHaveBeenCalledWith({ page: 1, limit: 10 });
+      expect(repository.findWithFilters).toHaveBeenCalledWith({
+        page: 1,
+        limit: 10,
+      });
     });
 
     it('should filter by search term', async () => {
@@ -129,7 +181,9 @@ describe('ParticipantsService', () => {
       const result = await service.findAll({ search: 'John' });
 
       expect(result.data).toHaveLength(1);
-      expect(repository.findWithFilters).toHaveBeenCalledWith({ search: 'John' });
+      expect(repository.findWithFilters).toHaveBeenCalledWith({
+        search: 'John',
+      });
     });
   });
 
@@ -150,7 +204,9 @@ describe('ParticipantsService', () => {
       const participantId = generateObjectId();
       repository.findById.mockResolvedValue(null);
 
-      await expect(service.findOne(participantId)).rejects.toThrow(EntityNotFoundException);
+      await expect(service.findOne(participantId)).rejects.toThrow(
+        EntityNotFoundException,
+      );
     });
   });
 
@@ -171,7 +227,9 @@ describe('ParticipantsService', () => {
       const qrCode = 'QR-NONEXISTENT';
       repository.findByQrCode.mockResolvedValue(null);
 
-      await expect(service.findByQrCode(qrCode)).rejects.toThrow(EntityNotFoundException);
+      await expect(service.findByQrCode(qrCode)).rejects.toThrow(
+        EntityNotFoundException,
+      );
     });
   });
 
@@ -200,53 +258,70 @@ describe('ParticipantsService', () => {
     it('should update a participant successfully', async () => {
       const participantId = generateObjectId();
       const updateDto = { name: 'Updated Name' };
-      const updatedParticipant = mockData.participant({ _id: participantId, ...updateDto });
+      const existingParticipant = mockData.participant({ _id: participantId });
+      const updatedParticipant = mockData.participant({
+        _id: participantId,
+        ...updateDto,
+      });
 
+      repository.findById.mockResolvedValue(existingParticipant);
       repository.findByEmail.mockResolvedValue(null);
       repository.updateById.mockResolvedValue(updatedParticipant);
 
       const result = await service.update(participantId, updateDto);
 
       expect(result.name).toBe('Updated Name');
-      expect(repository.updateById).toHaveBeenCalledWith(participantId, updateDto);
+      expect(repository.updateById).toHaveBeenCalledWith(
+        participantId,
+        updateDto,
+      );
     });
 
     it('should throw EntityNotFoundException when updating non-existent participant', async () => {
       const participantId = generateObjectId();
+      repository.findById.mockResolvedValue(null);
       repository.findByEmail.mockResolvedValue(null);
       repository.updateById.mockResolvedValue(null);
 
-      await expect(service.update(participantId, { name: 'New Name' })).rejects.toThrow(
-        EntityNotFoundException,
-      );
+      await expect(
+        service.update(participantId, { name: 'New Name' }),
+      ).rejects.toThrow(EntityNotFoundException);
     });
 
     it('should throw EntityExistsException when updating email to existing email', async () => {
       const participantId = generateObjectId();
       const existingParticipantId = generateObjectId();
       const updateDto = { email: 'existing@example.com' };
-      
-      const existingParticipant = mockData.participant({ 
+
+      const currentParticipant = mockData.participant({ _id: participantId });
+      const existingParticipant = mockData.participant({
         _id: existingParticipantId,
         email: updateDto.email,
       });
 
+      repository.findById.mockResolvedValue(currentParticipant);
       repository.findByEmail.mockResolvedValue(existingParticipant);
 
-      await expect(service.update(participantId, updateDto)).rejects.toThrow(EntityExistsException);
+      await expect(service.update(participantId, updateDto)).rejects.toThrow(
+        EntityExistsException,
+      );
     });
 
     it('should allow updating to same email if same participant', async () => {
       const participantId = generateObjectId();
       const updateDto = { email: 'same@example.com', name: 'Updated' };
-      
-      const sameParticipant = mockData.participant({ 
+
+      const sameParticipant = mockData.participant({
         _id: participantId,
         email: updateDto.email,
       });
 
+      repository.findById.mockResolvedValue(sameParticipant);
       repository.findByEmail.mockResolvedValue(sameParticipant);
-      repository.updateById.mockResolvedValue({ ...sameParticipant, name: 'Updated' });
+      repository.updateById.mockResolvedValue({
+        ...sameParticipant,
+        name: 'Updated',
+      });
 
       const result = await service.update(participantId, updateDto);
 
@@ -271,7 +346,9 @@ describe('ParticipantsService', () => {
       const participantId = generateObjectId();
       repository.deleteById.mockResolvedValue(null);
 
-      await expect(service.remove(participantId)).rejects.toThrow(EntityNotFoundException);
+      await expect(service.remove(participantId)).rejects.toThrow(
+        EntityNotFoundException,
+      );
     });
   });
 

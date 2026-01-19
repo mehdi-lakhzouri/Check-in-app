@@ -17,7 +17,6 @@ import {
   Hash,
   ChevronsUpDown,
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import {
   Dialog,
@@ -32,7 +31,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Select,
   SelectContent,
@@ -244,6 +242,7 @@ export function BulkRegistrationDialog({
     return items;
   }, [participantsByOrg, expandedOrgs, expandAll]);
 
+  // eslint-disable-next-line react-hooks/incompatible-library -- TanStack Virtual is designed this way
   const virtualizer = useVirtualizer({
     count: flatItems.length,
     getScrollElement: () => scrollContainerRef.current,
@@ -280,7 +279,7 @@ export function BulkRegistrationDialog({
       );
       setExpandedOrgs(initialExpanded);
     }
-  }, [selectedSessionId, participantsByOrg.length]);
+  }, [selectedSessionId, participantsByOrg]);
 
   // Focus search input when session is selected
   useEffect(() => {
@@ -405,7 +404,7 @@ export function BulkRegistrationDialog({
     return selectedCount > 0 && selectedCount < org.participants.length;
   };
 
-  const renderVirtualItem = (item: typeof flatItems[number], index: number) => {
+  const renderVirtualItem = (item: typeof flatItems[number]) => {
     if (item.type === 'org-header') {
       const org = item.org;
       const isExpanded = expandAll || expandedOrgs.has(org.organization);
@@ -495,7 +494,7 @@ export function BulkRegistrationDialog({
     }
 
     // Participant Row
-    const { participant, orgName } = item;
+    const { participant } = item;
     const isRegistered = registeredParticipantIds.has(participant._id);
     const isSelected = selectedParticipants.has(participant._id);
 
@@ -841,7 +840,7 @@ export function BulkRegistrationDialog({
                             transform: `translateY(${virtualItem.start}px)`,
                           }}
                         >
-                          {renderVirtualItem(item, virtualItem.index)}
+                          {renderVirtualItem(item)}
                         </div>
                       );
                     })}

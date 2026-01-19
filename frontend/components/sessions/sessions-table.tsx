@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   CalendarDays,
@@ -135,10 +135,17 @@ export function SessionsTable({
     return paginatedSessions.some(s => selectedIds.has(s._id)) && !allOnPageSelected;
   }, [paginatedSessions, selectedIds, allOnPageSelected]);
 
-  // Reset selection when page changes
-  useEffect(() => {
-    setSelectedIds(new Set());
-  }, [currentPage, itemsPerPage]);
+  // Reset selection when page changes - use useEffect with setTimeout
+  const selectionResetKey = `${currentPage}-${itemsPerPage}`;
+  const prevSelectionResetKeyRef = React.useRef(selectionResetKey);
+  React.useEffect(() => {
+    if (prevSelectionResetKeyRef.current !== selectionResetKey) {
+      prevSelectionResetKeyRef.current = selectionResetKey;
+      if (selectedIds.size > 0) {
+        setTimeout(() => setSelectedIds(new Set()), 0);
+      }
+    }
+  }, [selectionResetKey, selectedIds.size]);
 
   const handleSelectAll = useCallback((checked: boolean) => {
     if (checked) {
@@ -195,8 +202,8 @@ export function SessionsTable({
     setSelectedIds(new Set());
   };
 
-  // Sort indicator component
-  const SortIndicator = ({ field }: { field: SortField }) => {
+  // Sort indicator render function
+  const renderSortIndicator = (field: SortField) => {
     if (sortConfig.field !== field) {
       return <ArrowUpDown className="ml-1 h-3 w-3 opacity-50" aria-hidden="true" />;
     }
@@ -284,7 +291,7 @@ export function SessionsTable({
                     aria-label="Sort by name"
                   >
                     Name
-                    <SortIndicator field="name" />
+                    {renderSortIndicator('name')}
                   </button>
                 </TableHead>
                 <TableHead className="text-center" scope="col">
@@ -294,7 +301,7 @@ export function SessionsTable({
                     aria-label="Sort by start time"
                   >
                     Start Time
-                    <SortIndicator field="startTime" />
+                    {renderSortIndicator('startTime')}
                   </button>
                 </TableHead>
                 <TableHead className="text-center" scope="col">
@@ -304,7 +311,7 @@ export function SessionsTable({
                     aria-label="Sort by end time"
                   >
                     End Time
-                    <SortIndicator field="endTime" />
+                    {renderSortIndicator('endTime')}
                   </button>
                 </TableHead>
                 <TableHead className="text-center" scope="col">Location</TableHead>
@@ -315,7 +322,7 @@ export function SessionsTable({
                     aria-label="Sort by status"
                   >
                     Status
-                    <SortIndicator field="isOpen" />
+                    {renderSortIndicator('isOpen')}
                   </button>
                 </TableHead>
                 <TableHead className="text-center" scope="col">
@@ -325,7 +332,7 @@ export function SessionsTable({
                     aria-label="Sort by check-ins"
                   >
                     Check-ins
-                    <SortIndicator field="checkInsCount" />
+                    {renderSortIndicator('checkInsCount')}
                   </button>
                 </TableHead>
                 <TableHead className="text-center w-[140px]" scope="col">Actions</TableHead>

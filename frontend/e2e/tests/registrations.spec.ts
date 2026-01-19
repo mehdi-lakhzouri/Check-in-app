@@ -14,6 +14,7 @@
 import { test, expect, Page } from '@playwright/test';
 
 // Test data generators
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const generateTestRegistration = () => ({
   participantId: `participant_${Date.now()}`,
   sessionId: `session_${Date.now()}`,

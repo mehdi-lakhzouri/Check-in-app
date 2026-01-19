@@ -282,7 +282,7 @@ export function useUpdateSession(
         );
       }
     },
-    onSettled: (data, error, { id }) => {
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.sessions.all });
       queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.all });
     },

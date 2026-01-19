@@ -67,20 +67,23 @@ export function SessionFormDialog({
   // Initialize form when dialog opens or session changes
   useEffect(() => {
     if (isOpen) {
-      if (session) {
-        setFormData({
-          name: session.name,
-          description: session.description || '',
-          startTime: formatDateTimeForInput(session.startTime),
-          endTime: formatDateTimeForInput(session.endTime),
-          location: session.location || '',
-          isOpen: session.isOpen,
-          capacity: session.capacity,
-        });
-      } else {
-        setFormData(getDefaultFormData());
-      }
-      setFormErrors({});
+      // Schedule state updates via setTimeout to avoid React Compiler cascade warning
+      setTimeout(() => {
+        if (session) {
+          setFormData({
+            name: session.name,
+            description: session.description || '',
+            startTime: formatDateTimeForInput(session.startTime),
+            endTime: formatDateTimeForInput(session.endTime),
+            location: session.location || '',
+            isOpen: session.isOpen,
+            capacity: session.capacity,
+          });
+        } else {
+          setFormData(getDefaultFormData());
+        }
+        setFormErrors({});
+      }, 0);
     }
   }, [isOpen, session]);
 

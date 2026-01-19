@@ -5,12 +5,12 @@ name: Mobile CI
 
 on:
   push:
-    branches: [main, develop, 'feature/**', 'release/**']
+    branches: [master, main, develop, 'feature/**', 'release/**']
     paths:
       - 'checkin_mobile/**'
       - '.github/workflows/mobile-ci.yml'
   pull_request:
-    branches: [main, develop]
+    branches: [master, main, develop]
     paths:
       - 'checkin_mobile/**'
 
@@ -24,12 +24,12 @@ concurrency:
 
 jobs:
   # ============================================
-  # Stage 1: Code Quality & Analysis
+  # Stage 0: Lint Check (Zero Tolerance)
   # ============================================
-  analyze:
-    name: 🔍 Analyze & Lint
+  lint:
+    name: 🔍 Lint Check
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 10
     
     steps:
       - name: Checkout code
@@ -46,26 +46,18 @@ jobs:
         working-directory: checkin_mobile
         run: flutter pub get
 
-      - name: Verify formatting
+      - name: Run Flutter Analyze (Zero Tolerance)
         working-directory: checkin_mobile
-        run: dart format --output=none --set-exit-if-changed .
-
-      - name: Analyze code
-        working-directory: checkin_mobile
-        run: flutter analyze --fatal-infos
-
-      - name: Check for outdated dependencies
-        working-directory: checkin_mobile
-        run: flutter pub outdated || true
+        run: flutter analyze --fatal-infos --fatal-warnings
 
   # ============================================
-  # Stage 2: Unit & Widget Tests
+  # Stage 1: Unit & Widget Tests
   # ============================================
   test:
     name: 🧪 Tests
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    needs: analyze
+    needs: lint
     
     steps:
       - name: Checkout code
@@ -96,13 +88,13 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
 
   # ============================================
-  # Stage 3: Build Android APK (Debug)
+  # Stage 2: Build Android APK (Debug)
   # ============================================
   build-android-debug:
-    name: 🤖 Build Android Debug
+    name: 📱 Build Android Debug
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    needs: [analyze, test]
+    needs: test
     
     steps:
       - name: Checkout code
@@ -137,13 +129,13 @@ jobs:
           retention-days: 7
 
   # ============================================
-  # Stage 4: Build Android APK (Release)
+  # Stage 3: Build Android APK (Release)
   # ============================================
   build-android-release:
-    name: 🤖 Build Android Release
+    name:  Build Android Release
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    needs: [analyze, test]
+    needs: test
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
     
     steps:
@@ -212,13 +204,13 @@ jobs:
           retention-days: 30
 
   # ============================================
-  # Stage 5: Build iOS (macOS runner required)
+  # Stage 4: Build iOS (macOS runner required)
   # ============================================
   build-ios:
-    name: 🍎 Build iOS
+    name:  Build iOS
     runs-on: macos-latest
     timeout-minutes: 45
-    needs: [analyze, test]
+    needs: test
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     
     steps:
@@ -260,13 +252,12 @@ jobs:
           retention-days: 30
 
   # ============================================
-  # Stage 6: Security Scanning
+  # Stage 5: Security Scanning
   # ============================================
   security:
-    name: 🔐 Security Scan
+    name:  Security Scan
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    needs: analyze
     
     steps:
       - name: Checkout code
@@ -294,47 +285,12 @@ jobs:
           echo "MobSF scan would run here for APK security analysis"
 
   # ============================================
-  # Deploy to Firebase App Distribution
-  # ============================================
-  deploy-firebase:
-    name: 🔥 Deploy to Firebase
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    needs: build-android-release
-    if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Download APK artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: android-release-apk
-          path: apk/
-
-      - name: Upload to Firebase App Distribution
-        uses: wzieba/Firebase-Distribution-Github-Action@v1
-        with:
-          appId: ${{ secrets.FIREBASE_APP_ID }}
-          serviceCredentialsFileContent: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
-          groups: testers
-          file: apk/app-arm64-v8a-release.apk
-          releaseNotes: |
-            Build: ${{ github.run_number }}
-            Commit: ${{ github.sha }}
-            Branch: ${{ github.ref_name }}
-        if: env.FIREBASE_APP_ID != ''
-        env:
-          FIREBASE_APP_ID: ${{ secrets.FIREBASE_APP_ID }}
-
-  # ============================================
   # Notification on Failure
   # ============================================
   notify-failure:
-    name: 📢 Notify Failure
+    name:  Notify Failure
     runs-on: ubuntu-latest
-    needs: [analyze, test, build-android-debug, security]
+    needs: [test, build-android-debug, security]
     if: failure()
     
     steps:

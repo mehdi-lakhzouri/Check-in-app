@@ -4,18 +4,49 @@
  */
 
 import { Test, TestingModule } from '@nestjs/testing';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { ConfigService } from '@nestjs/config';
 import { SessionsService } from '../../../src/modules/sessions/services/sessions.service';
+import { SessionSchedulerService } from '../../../src/modules/sessions/services/session-scheduler.service';
 import { SessionRepository } from '../../../src/modules/sessions/repositories/session.repository';
-import { EntityNotFoundException, ValidationException } from '../../../src/common/exceptions';
-import { createMockSessionRepository } from '../../utils/mock-factories';
+import { REDIS_CLIENT } from '../../../src/common/redis';
+import {
+  EntityNotFoundException,
+  ValidationException,
+} from '../../../src/common/exceptions';
+import {
+  createMockSessionRepository,
+  createMockConfigService,
+} from '../../utils/mock-factories';
 import { mockData, generateObjectId } from '../../utils/test-utils';
 
 describe('SessionsService', () => {
   let service: SessionsService;
   let repository: ReturnType<typeof createMockSessionRepository>;
+  let configService: ReturnType<typeof createMockConfigService>;
+
+  const mockCacheManager = {
+    get: jest.fn(),
+    set: jest.fn(),
+    del: jest.fn(),
+  };
+
+  const mockRedisClient = {
+    get: jest.fn(),
+    set: jest.fn(),
+    del: jest.fn(),
+    eval: jest.fn(),
+  };
+
+  const mockSchedulerService = {
+    registerStatusUpdateCallback: jest.fn(),
+    unregisterStatusUpdateCallback: jest.fn(),
+    manualStatusUpdate: jest.fn(),
+  };
 
   beforeEach(async () => {
     repository = createMockSessionRepository();
+    configService = createMockConfigService();
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -23,6 +54,22 @@ describe('SessionsService', () => {
         {
           provide: SessionRepository,
           useValue: repository,
+        },
+        {
+          provide: CACHE_MANAGER,
+          useValue: mockCacheManager,
+        },
+        {
+          provide: ConfigService,
+          useValue: configService,
+        },
+        {
+          provide: SessionSchedulerService,
+          useValue: mockSchedulerService,
+        },
+        {
+          provide: REDIS_CLIENT,
+          useValue: mockRedisClient,
         },
       ],
     }).compile();
@@ -57,7 +104,9 @@ describe('SessionsService', () => {
         endTime: '2026-01-15T09:00:00Z', // Before start time
       });
 
-      await expect(service.create(createDto)).rejects.toThrow(ValidationException);
+      await expect(service.create(createDto)).rejects.toThrow(
+        ValidationException,
+      );
     });
 
     it('should throw ValidationException when endTime equals startTime', async () => {
@@ -67,13 +116,18 @@ describe('SessionsService', () => {
         endTime: sameTime,
       });
 
-      await expect(service.create(createDto)).rejects.toThrow(ValidationException);
+      await expect(service.create(createDto)).rejects.toThrow(
+        ValidationException,
+      );
     });
   });
 
   describe('findAll', () => {
     it('should return paginated sessions', async () => {
-      const sessions = [mockData.session(), mockData.session({ name: 'Session 2' })];
+      const sessions = [
+        mockData.session(),
+        mockData.session({ name: 'Session 2' }),
+      ];
       const paginatedResult = {
         data: sessions,
         meta: {
@@ -91,7 +145,10 @@ describe('SessionsService', () => {
       const result = await service.findAll({ page: 1, limit: 10 });
 
       expect(result).toEqual(paginatedResult);
-      expect(repository.findWithFilters).toHaveBeenCalledWith({ page: 1, limit: 10 });
+      expect(repository.findWithFilters).toHaveBeenCalledWith({
+        page: 1,
+        limit: 10,
+      });
     });
 
     it('should return empty array when no sessions exist', async () => {
@@ -133,7 +190,9 @@ describe('SessionsService', () => {
       const sessionId = generateObjectId();
       repository.findById.mockResolvedValue(null);
 
-      await expect(service.findOne(sessionId)).rejects.toThrow(EntityNotFoundException);
+      await expect(service.findOne(sessionId)).rejects.toThrow(
+        EntityNotFoundException,
+      );
     });
   });
 
@@ -141,8 +200,10 @@ describe('SessionsService', () => {
     it('should update a session successfully', async () => {
       const sessionId = generateObjectId();
       const updateDto = { name: 'Updated Session Name' };
+      const existingSession = mockData.session({ _id: sessionId });
       const updatedSession = mockData.session({ _id: sessionId, ...updateDto });
 
+      repository.findById.mockResolvedValue(existingSession);
       repository.updateById.mockResolvedValue(updatedSession);
 
       const result = await service.update(sessionId, updateDto);
@@ -156,21 +217,27 @@ describe('SessionsService', () => {
 
     it('should throw EntityNotFoundException when updating non-existent session', async () => {
       const sessionId = generateObjectId();
+      repository.findById.mockResolvedValue(null);
       repository.updateById.mockResolvedValue(null);
 
-      await expect(service.update(sessionId, { name: 'New Name' })).rejects.toThrow(
-        EntityNotFoundException,
-      );
+      await expect(
+        service.update(sessionId, { name: 'New Name' }),
+      ).rejects.toThrow(EntityNotFoundException);
     });
 
     it('should throw ValidationException when updating with invalid date range', async () => {
       const sessionId = generateObjectId();
+      const existingSession = mockData.session({ _id: sessionId });
       const updateDto = {
         startTime: '2026-01-15T10:00:00Z',
         endTime: '2026-01-15T09:00:00Z',
       };
 
-      await expect(service.update(sessionId, updateDto)).rejects.toThrow(ValidationException);
+      repository.findById.mockResolvedValue(existingSession);
+
+      await expect(service.update(sessionId, updateDto)).rejects.toThrow(
+        ValidationException,
+      );
     });
   });
 
@@ -191,7 +258,9 @@ describe('SessionsService', () => {
       const sessionId = generateObjectId();
       repository.deleteById.mockResolvedValue(null);
 
-      await expect(service.remove(sessionId)).rejects.toThrow(EntityNotFoundException);
+      await expect(service.remove(sessionId)).rejects.toThrow(
+        EntityNotFoundException,
+      );
     });
   });
 
@@ -205,12 +274,17 @@ describe('SessionsService', () => {
       const result = await service.toggleOpen(sessionId, true);
 
       expect(result.isOpen).toBe(true);
-      expect(repository.updateById).toHaveBeenCalledWith(sessionId, { isOpen: true });
+      expect(repository.updateById).toHaveBeenCalledWith(sessionId, {
+        isOpen: true,
+      });
     });
 
     it('should toggle session open status to false', async () => {
       const sessionId = generateObjectId();
-      const updatedSession = mockData.session({ _id: sessionId, isOpen: false });
+      const updatedSession = mockData.session({
+        _id: sessionId,
+        isOpen: false,
+      });
 
       repository.updateById.mockResolvedValue(updatedSession);
 
@@ -223,7 +297,9 @@ describe('SessionsService', () => {
       const sessionId = generateObjectId();
       repository.updateById.mockResolvedValue(null);
 
-      await expect(service.toggleOpen(sessionId, true)).rejects.toThrow(EntityNotFoundException);
+      await expect(service.toggleOpen(sessionId, true)).rejects.toThrow(
+        EntityNotFoundException,
+      );
     });
   });
 

@@ -145,7 +145,7 @@ describe('API Integration Tests', () => {
 
       mockSessionsService.create.mockResolvedValue(createdSession);
 
-      const response = await request(app.getHttpServer())
+      const _response = await request(app.getHttpServer())
         .post('/api/v1/sessions')
         .send(sessionData)
         .expect(HttpStatus.CREATED);
@@ -163,7 +163,7 @@ describe('API Integration Tests', () => {
         location: 'Test Location',
       };
 
-      const response = await request(app.getHttpServer())
+      const _response = await request(app.getHttpServer())
         .post('/api/v1/sessions')
         .send(invalidSession)
         .expect(HttpStatus.BAD_REQUEST);
@@ -180,7 +180,7 @@ describe('API Integration Tests', () => {
         capacity: -10,
       };
 
-      const response = await request(app.getHttpServer())
+      const _response = await request(app.getHttpServer())
         .post('/api/v1/sessions')
         .send(invalidSession)
         .expect(HttpStatus.BAD_REQUEST);
@@ -196,7 +196,7 @@ describe('API Integration Tests', () => {
         limit: 10,
       });
 
-      const response = await request(app.getHttpServer())
+      const _response = await request(app.getHttpServer())
         .get('/api/v1/sessions')
         .expect(HttpStatus.OK);
 
@@ -214,7 +214,7 @@ describe('API Integration Tests', () => {
 
       mockSessionsService.findOne.mockResolvedValue(session);
 
-      const response = await request(app.getHttpServer())
+      const _response = await request(app.getHttpServer())
         .get(`/api/v1/sessions/${validSessionId}`)
         .expect(HttpStatus.OK);
 
@@ -245,7 +245,7 @@ describe('API Integration Tests', () => {
 
       mockParticipantsService.create.mockResolvedValue(createdParticipant);
 
-      const response = await request(app.getHttpServer())
+      const _response = await request(app.getHttpServer())
         .post('/api/v1/participants')
         .send(participantData)
         .expect(HttpStatus.CREATED);
@@ -262,7 +262,7 @@ describe('API Integration Tests', () => {
         role: ParticipantRole.ATTENDEE,
       };
 
-      const response = await request(app.getHttpServer())
+      const _response = await request(app.getHttpServer())
         .post('/api/v1/participants')
         .send(invalidParticipant)
         .expect(HttpStatus.BAD_REQUEST);
@@ -277,7 +277,7 @@ describe('API Integration Tests', () => {
         role: ParticipantRole.ATTENDEE,
       };
 
-      const response = await request(app.getHttpServer())
+      const _response = await request(app.getHttpServer())
         .post('/api/v1/participants')
         .send(invalidParticipant)
         .expect(HttpStatus.BAD_REQUEST);
@@ -292,7 +292,7 @@ describe('API Integration Tests', () => {
         role: 'INVALID_ROLE',
       };
 
-      const response = await request(app.getHttpServer())
+      const _response = await request(app.getHttpServer())
         .post('/api/v1/participants')
         .send(invalidParticipant)
         .expect(HttpStatus.BAD_REQUEST);
@@ -308,7 +308,7 @@ describe('API Integration Tests', () => {
         limit: 10,
       });
 
-      const response = await request(app.getHttpServer())
+      const _response = await request(app.getHttpServer())
         .get('/api/v1/participants')
         .expect(HttpStatus.OK);
 
@@ -338,7 +338,7 @@ describe('API Integration Tests', () => {
 
       mockRegistrationsService.create.mockResolvedValue(createdRegistration);
 
-      const response = await request(app.getHttpServer())
+      const _response = await request(app.getHttpServer())
         .post('/api/v1/registrations')
         .send(registrationData)
         .expect(HttpStatus.CREATED);
@@ -354,7 +354,7 @@ describe('API Integration Tests', () => {
         participantId: validParticipantId,
       };
 
-      const response = await request(app.getHttpServer())
+      const _response = await request(app.getHttpServer())
         .post('/api/v1/registrations')
         .send(invalidRegistration)
         .expect(HttpStatus.BAD_REQUEST);
@@ -368,7 +368,7 @@ describe('API Integration Tests', () => {
         participantId: 'invalid-id',
       };
 
-      const response = await request(app.getHttpServer())
+      const _response = await request(app.getHttpServer())
         .post('/api/v1/registrations')
         .send(invalidRegistration)
         .expect(HttpStatus.BAD_REQUEST);
@@ -400,7 +400,7 @@ describe('API Integration Tests', () => {
 
       mockCheckInsService.create.mockResolvedValue(createdCheckIn);
 
-      const response = await request(app.getHttpServer())
+      const _response = await request(app.getHttpServer())
         .post('/api/v1/checkin')
         .send(checkInData)
         .expect(HttpStatus.CREATED);
@@ -416,7 +416,7 @@ describe('API Integration Tests', () => {
         participantId: validParticipantId,
       };
 
-      const response = await request(app.getHttpServer())
+      const _response = await request(app.getHttpServer())
         .post('/api/v1/checkin')
         .send(invalidCheckIn)
         .expect(HttpStatus.BAD_REQUEST);
@@ -431,7 +431,7 @@ describe('API Integration Tests', () => {
         extraField: 'should-not-be-here',
       };
 
-      const response = await request(app.getHttpServer())
+      const _response = await request(app.getHttpServer())
         .post('/api/v1/checkin')
         .send(invalidCheckIn)
         .expect(HttpStatus.BAD_REQUEST);
@@ -447,7 +447,7 @@ describe('API Integration Tests', () => {
         isRegistered: true,
       });
 
-      const response = await request(app.getHttpServer())
+      const _response = await request(app.getHttpServer())
         .post('/api/v1/checkin/verify-qr')
         .send({ qrCode, sessionId: validSessionId })
         .expect(HttpStatus.OK);
@@ -465,7 +465,7 @@ describe('API Integration Tests', () => {
     it('should return 404 for non-existent session', async () => {
       mockSessionsService.findOne.mockResolvedValue(null);
 
-      const response = await request(app.getHttpServer())
+      const _response = await request(app.getHttpServer())
         .get(`/api/v1/sessions/${nonExistentId}`)
         .expect(HttpStatus.OK); // Returns null, controller decides
 
@@ -475,7 +475,7 @@ describe('API Integration Tests', () => {
     it('should return 404 for non-existent participant', async () => {
       mockParticipantsService.findOne.mockResolvedValue(null);
 
-      const response = await request(app.getHttpServer())
+      const _response = await request(app.getHttpServer())
         .get(`/api/v1/participants/${nonExistentId}`)
         .expect(HttpStatus.OK);
 
@@ -497,7 +497,7 @@ describe('API Integration Tests', () => {
         limit: 10,
       });
 
-      const response = await request(app.getHttpServer())
+      const _response = await request(app.getHttpServer())
         .get('/api/v1/sessions?page=1&limit=10')
         .expect(HttpStatus.OK);
 

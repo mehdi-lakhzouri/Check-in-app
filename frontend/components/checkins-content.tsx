@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { tableRowVariants, staggerContainer, pageTransition, TIMING, EASING } from '@/lib/animations';
+import { tableRowVariants } from '@/lib/animations';
 import {
   Search,
   Filter,
@@ -134,9 +134,16 @@ export function CheckInsContent() {
   }, [filteredCheckIns, currentPage, itemsPerPage]);
 
   // Reset to page 1 when filters change
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchQuery, sessionFilter, statusFilter, methodFilter]);
+  const filtersKey = `${searchQuery}-${sessionFilter}-${statusFilter}-${methodFilter}`;
+  const prevFiltersKeyRef = React.useRef(filtersKey);
+  React.useEffect(() => {
+    if (prevFiltersKeyRef.current !== filtersKey) {
+      prevFiltersKeyRef.current = filtersKey;
+      if (currentPage !== 1) {
+        setTimeout(() => setCurrentPage(1), 0);
+      }
+    }
+  }, [filtersKey, currentPage]);
 
   const hasActiveFilters = sessionFilter !== 'all' || statusFilter !== 'all' || methodFilter !== 'all';
 

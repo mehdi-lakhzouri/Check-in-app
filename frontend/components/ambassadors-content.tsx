@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { staggerContainer, cardVariants, tableRowVariants, pageTransition, TIMING, EASING } from '@/lib/animations';
+import { staggerContainer, cardVariants } from '@/lib/animations';
 
 // Aliases for backwards compatibility
 const containerVariants = staggerContainer;
@@ -23,7 +23,6 @@ import {
   ArrowUpDown,
   Plus,
   CheckCircle2,
-  Clock,
   X,
   Wifi,
   WifiOff,
@@ -89,7 +88,6 @@ import {
 import { StatsCard } from '@/components/stats-card';
 import { ErrorState } from '@/components/ui/error-state';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { queryKeys } from '@/lib/api/query-keys';
 import { api } from '@/lib/api/client';
 import { toast } from 'sonner';
 import { useAmbassadorRealtime, type AmbassadorPointsUpdate } from '@/lib/hooks';
@@ -296,7 +294,7 @@ export function AmbassadorsContent() {
     staleTime: 30000,
   });
 
-  const { data: ambassadorDetails, isLoading: isLoadingDetails, refetch: refetchDetails } = useQuery({
+  const { data: ambassadorDetails, isLoading: isLoadingDetails } = useQuery({
     queryKey: ['ambassador', 'details', selectedAmbassador],
     queryFn: () => ambassadorApi.getDetails(selectedAmbassador!),
     enabled: !!selectedAmbassador && isDetailOpen,
@@ -322,7 +320,7 @@ export function AmbassadorsContent() {
       setIsDetailOpen(false);
       setSelectedAmbassador(null);
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast.error(error.message || 'Failed to demote ambassador');
     },
   });
@@ -338,7 +336,7 @@ export function AmbassadorsContent() {
       setIsAddReferralOpen(false);
       setReferralSearch('');
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast.error(error.message || 'Failed to add referral');
     },
   });
@@ -354,7 +352,7 @@ export function AmbassadorsContent() {
       await queryClient.invalidateQueries({ queryKey: ['ambassador', 'details', selectedAmbassador] });
       await queryClient.invalidateQueries({ queryKey: ['ambassadors'] });
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast.error(error.message || 'Failed to remove referral');
       setIsRemoveReferralDialogOpen(false);
       setReferralToRemove(null);
@@ -368,7 +366,7 @@ export function AmbassadorsContent() {
       await queryClient.invalidateQueries({ queryKey: ['ambassadors'] });
       await queryClient.invalidateQueries({ queryKey: ['ambassador', 'details', selectedAmbassador] });
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast.error(error.message || 'Failed to calculate points');
     },
   });
@@ -380,7 +378,7 @@ export function AmbassadorsContent() {
       await queryClient.invalidateQueries({ queryKey: ['ambassadors'] });
       await queryClient.invalidateQueries({ queryKey: ['ambassador', 'details', selectedAmbassador] });
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast.error(error.message || 'Failed to sync referrals');
     },
   });
@@ -392,7 +390,7 @@ export function AmbassadorsContent() {
       await queryClient.invalidateQueries({ queryKey: ['ambassadors'] });
       await queryClient.invalidateQueries({ queryKey: ['ambassador', 'details'] });
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast.error(error.message || 'Failed to sync all referrals');
     },
   });
@@ -406,15 +404,16 @@ export function AmbassadorsContent() {
   };
 
   // Selection handlers
+  const ambassadorsData = ambassadors?.data;
   const handleSelectAll = useCallback((checked: boolean) => {
-    if (checked && ambassadors?.data) {
+    if (checked && ambassadorsData) {
       const newSelected = new Set<string>();
-      ambassadors.data.forEach(a => newSelected.add(a._id));
+      ambassadorsData.forEach(a => newSelected.add(a._id));
       setSelectedIds(newSelected);
     } else {
       setSelectedIds(new Set());
     }
-  }, [ambassadors?.data]);
+  }, [ambassadorsData]);
 
   const handleSelectOne = useCallback((id: string, checked: boolean) => {
     const newSelected = new Set(selectedIds);
@@ -427,12 +426,12 @@ export function AmbassadorsContent() {
   }, [selectedIds]);
 
   const allSelected = useMemo(() => {
-    return ambassadors?.data && ambassadors.data.length > 0 && ambassadors.data.every(a => selectedIds.has(a._id));
-  }, [ambassadors?.data, selectedIds]);
+    return ambassadorsData && ambassadorsData.length > 0 && ambassadorsData.every(a => selectedIds.has(a._id));
+  }, [ambassadorsData, selectedIds]);
 
   const someSelected = useMemo(() => {
-    return ambassadors?.data && ambassadors.data.some(a => selectedIds.has(a._id)) && !allSelected;
-  }, [ambassadors?.data, selectedIds, allSelected]);
+    return ambassadorsData && ambassadorsData.some(a => selectedIds.has(a._id)) && !allSelected;
+  }, [ambassadorsData, selectedIds, allSelected]);
 
   const handleBulkDemote = async () => {
     setIsBulkDemoting(true);

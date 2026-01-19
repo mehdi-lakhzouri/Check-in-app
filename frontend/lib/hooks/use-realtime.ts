@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useCallback, useState } from 'react';
+import { useEffect, useRef, useCallback, useState, useMemo } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { io, Socket } from 'socket.io-client';
 import { queryKeys } from '@/lib/api/query-keys';
@@ -92,19 +92,36 @@ export function useRealtime(options: UseRealtimeOptions = {}) {
   const [isConnected, setIsConnected] = useState(false);
   const [connectionError, setConnectionError] = useState<Error | null>(null);
   
+  // Memoize rooms to prevent unnecessary reconnections
+  const roomsKey = rooms.sort().join(',');
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- Intentionally using roomsKey for stable comparison
+  const stableRooms = useMemo(() => rooms, [roomsKey]);
+  
+  // Stable callback refs to prevent reconnections
+  const onConnectRef = useRef(onConnect);
+  const onDisconnectRef = useRef(onDisconnect);
+  const onErrorRef = useRef(onError);
+  
+  // Update refs when callbacks change
+  useEffect(() => {
+    onConnectRef.current = onConnect;
+    onDisconnectRef.current = onDisconnect;
+    onErrorRef.current = onError;
+  }, [onConnect, onDisconnect, onError]);
+  
   // Event callbacks registry
-  const eventCallbacks = useRef<Map<string, Set<EventCallback<any>>>>(new Map());
+  const eventCallbacks = useRef<Map<string, Set<EventCallback<unknown>>>>(new Map());
 
   // Subscribe to events
   const subscribe = useCallback(<T>(event: string, callback: EventCallback<T>) => {
     if (!eventCallbacks.current.has(event)) {
       eventCallbacks.current.set(event, new Set());
     }
-    eventCallbacks.current.get(event)!.add(callback);
+    eventCallbacks.current.get(event)!.add(callback as EventCallback<unknown>);
 
     // Return unsubscribe function
     return () => {
-      eventCallbacks.current.get(event)?.delete(callback);
+      eventCallbacks.current.get(event)?.delete(callback as EventCallback<unknown>);
     };
   }, []);
 
@@ -172,10 +189,10 @@ export function useRealtime(options: UseRealtimeOptions = {}) {
       console.log('[WebSocket] Connected to server');
       setIsConnected(true);
       setConnectionError(null);
-      onConnect?.();
+      onConnectRef.current?.();
       
       // Subscribe to rooms using the backend's expected event format
-      rooms.forEach(room => {
+      stableRooms.forEach(room => {
         console.log(`[WebSocket] Subscribing to room: ${room}`);
         // Backend expects 'subscribe:roomName' format
         socket.emit(`subscribe:${room}`);
@@ -184,12 +201,12 @@ export function useRealtime(options: UseRealtimeOptions = {}) {
 
     socket.on('disconnect', () => {
       setIsConnected(false);
-      onDisconnect?.();
+      onDisconnectRef.current?.();
     });
 
     socket.on('connect_error', (error) => {
       setConnectionError(error);
-      onError?.(error);
+      onErrorRef.current?.(error);
     });
 
     // Listen for events and dispatch to registered callbacks
@@ -226,14 +243,14 @@ export function useRealtime(options: UseRealtimeOptions = {}) {
       socket.disconnect();
       socketRef.current = null;
     };
-  }, [enabled, onConnect, onDisconnect, onError]);
+  }, [enabled, stableRooms]);
 
   // Re-subscribe to rooms when connection is re-established
   useEffect(() => {
     if (isConnected && socketRef.current) {
-      rooms.forEach(room => socketRef.current?.emit(`subscribe:${room}`));
+      stableRooms.forEach(room => socketRef.current?.emit(`subscribe:${room}`));
     }
-  }, [isConnected, rooms]);
+  }, [isConnected, stableRooms]);
 
   return {
     isConnected,

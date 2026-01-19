@@ -557,7 +557,7 @@ export function DataTableSkeleton({
   showCheckbox = false,
   className,
 }: DataTableSkeletonProps) {
-  const totalColumns = columns + (showCheckbox ? 1 : 0);
+  // totalColumns available for future use: columns + (showCheckbox ? 1 : 0)
 
   return (
     <div className={cn('rounded-lg border bg-card', className)}>

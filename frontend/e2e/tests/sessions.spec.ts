@@ -142,8 +142,6 @@ test.describe('Sessions Page', () => {
     });
 
     test('should show validation error for negative capacity', async ({ page }) => {
-      const session = generateSession();
-      
       await sessionsPage.gotoCreate();
       await page.fill('[data-testid="session-capacity"]', '-10');
       await sessionsPage.submitForm();

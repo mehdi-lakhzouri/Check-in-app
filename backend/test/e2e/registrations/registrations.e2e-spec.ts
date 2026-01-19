@@ -1,79 +1,39 @@
 /**
  * Registrations E2E Tests
  * End-to-end tests for the Registrations API endpoints
- * 
+ *
  * Route: /api/v1/registrations
  * Uses PATCH for updates, stats at /stats/overview
  */
 
-import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication, ValidationPipe, VersioningType } from '@nestjs/common';
+import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
-import { MongoMemoryServer } from 'mongodb-memory-server';
-import { MongooseModule, getConnectionToken } from '@nestjs/mongoose';
-import { ConfigModule } from '@nestjs/config';
-import { Connection } from 'mongoose';
-import { RegistrationsModule } from '../../../src/modules/registrations/registrations.module';
-import { SessionsModule } from '../../../src/modules/sessions/sessions.module';
-import { ParticipantsModule } from '../../../src/modules/participants/participants.module';
+import {
+  createE2ETestApp,
+  closeE2ETestApp,
+  clearE2ETestData,
+  E2ETestContext,
+} from '../../utils/e2e-test-setup';
 import { mockData } from '../../utils/test-utils';
 import { RegistrationStatus } from '../../../src/modules/registrations/schemas';
 
 describe('Registrations (e2e)', () => {
+  let context: E2ETestContext;
   let app: INestApplication;
-  let mongoServer: MongoMemoryServer;
-  let connection: Connection;
   let sessionId: string;
   let participantId: string;
 
   beforeAll(async () => {
-    mongoServer = await MongoMemoryServer.create();
-    const mongoUri = mongoServer.getUri();
-
-    const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [
-        ConfigModule.forRoot({
-          isGlobal: true,
-        }),
-        MongooseModule.forRoot(mongoUri),
-        SessionsModule,
-        ParticipantsModule,
-        RegistrationsModule,
-      ],
-    }).compile();
-
-    app = moduleFixture.createNestApplication();
-
-    app.enableVersioning({
-      type: VersioningType.URI,
-      prefix: 'api/v',
-      defaultVersion: '1',
-    });
-
-    app.useGlobalPipes(
-      new ValidationPipe({
-        whitelist: true,
-        forbidNonWhitelisted: true,
-        transform: true,
-      }),
-    );
-
-    await app.init();
-    connection = moduleFixture.get<Connection>(getConnectionToken());
-  });
+    context = await createE2ETestApp();
+    app = context.app;
+  }, 60000);
 
   afterAll(async () => {
-    await connection.close();
-    await mongoServer.stop();
-    await app.close();
+    await closeE2ETestApp(context);
   });
 
   beforeEach(async () => {
-    // Clean up collections
-    const collections = connection.collections;
-    for (const key in collections) {
-      await collections[key].deleteMany({});
-    }
+    await clearE2ETestData(context);
 
     // Create a session
     const sessionResponse = await request(app.getHttpServer())
@@ -170,14 +130,16 @@ describe('Registrations (e2e)', () => {
       for (let i = 0; i < 3; i++) {
         const pResponse = await request(app.getHttpServer())
           .post('/api/v1/participants')
-          .send(mockData.createParticipantDto({ email: `reg-test${i}@example.com` }));
-        
-        await request(app.getHttpServer())
-          .post('/api/v1/registrations')
-          .send({
-            participantId: pResponse.body.data._id,
-            sessionId,
-          });
+          .send(
+            mockData.createParticipantDto({
+              email: `reg-test${i}@example.com`,
+            }),
+          );
+
+        await request(app.getHttpServer()).post('/api/v1/registrations').send({
+          participantId: pResponse.body.data._id,
+          sessionId,
+        });
       }
     });
 
@@ -196,9 +158,12 @@ describe('Registrations (e2e)', () => {
         .query({ sessionId })
         .expect(200);
 
-      expect(response.body.data.every((r: any) => 
-        r.sessionId === sessionId || r.sessionId?._id === sessionId
-      )).toBe(true);
+      expect(
+        response.body.data.every(
+          (r: any) =>
+            r.sessionId === sessionId || r.sessionId?._id === sessionId,
+        ),
+      ).toBe(true);
     });
 
     it('should filter by participantId', async () => {
@@ -219,22 +184,26 @@ describe('Registrations (e2e)', () => {
       // Create a confirmed registration
       const pResponse = await request(app.getHttpServer())
         .post('/api/v1/participants')
-        .send(mockData.createParticipantDto({ email: 'confirmed@example.com' }));
-      
-      await request(app.getHttpServer())
-        .post('/api/v1/registrations')
-        .send({
-          participantId: pResponse.body.data._id,
-          sessionId,
-          status: RegistrationStatus.CONFIRMED,
-        });
+        .send(
+          mockData.createParticipantDto({ email: 'confirmed@example.com' }),
+        );
+
+      await request(app.getHttpServer()).post('/api/v1/registrations').send({
+        participantId: pResponse.body.data._id,
+        sessionId,
+        status: RegistrationStatus.CONFIRMED,
+      });
 
       const response = await request(app.getHttpServer())
         .get('/api/v1/registrations')
         .query({ status: RegistrationStatus.CONFIRMED })
         .expect(200);
 
-      expect(response.body.data.every((r: any) => r.status === RegistrationStatus.CONFIRMED)).toBe(true);
+      expect(
+        response.body.data.every(
+          (r: any) => r.status === RegistrationStatus.CONFIRMED,
+        ),
+      ).toBe(true);
     });
 
     it('should return paginated results', async () => {
@@ -255,7 +224,7 @@ describe('Registrations (e2e)', () => {
       const response = await request(app.getHttpServer())
         .post('/api/v1/registrations')
         .send({ participantId, sessionId });
-      
+
       registrationId = response.body.data._id;
     });
 
@@ -290,7 +259,7 @@ describe('Registrations (e2e)', () => {
       const response = await request(app.getHttpServer())
         .post('/api/v1/registrations')
         .send({ participantId, sessionId });
-      
+
       registrationId = response.body.data._id;
     });
 
@@ -336,7 +305,7 @@ describe('Registrations (e2e)', () => {
       const response = await request(app.getHttpServer())
         .post('/api/v1/registrations')
         .send({ participantId, sessionId });
-      
+
       registrationId = response.body.data._id;
     });
 
@@ -366,28 +335,26 @@ describe('Registrations (e2e)', () => {
       for (let i = 0; i < 2; i++) {
         const pResponse = await request(app.getHttpServer())
           .post('/api/v1/participants')
-          .send(mockData.createParticipantDto({ email: `stats${i}@example.com` }));
-        
-        await request(app.getHttpServer())
-          .post('/api/v1/registrations')
-          .send({
-            participantId: pResponse.body.data._id,
-            sessionId,
-            status: RegistrationStatus.CONFIRMED,
-          });
+          .send(
+            mockData.createParticipantDto({ email: `stats${i}@example.com` }),
+          );
+
+        await request(app.getHttpServer()).post('/api/v1/registrations').send({
+          participantId: pResponse.body.data._id,
+          sessionId,
+          status: RegistrationStatus.CONFIRMED,
+        });
       }
 
       const pResponse = await request(app.getHttpServer())
         .post('/api/v1/participants')
         .send(mockData.createParticipantDto({ email: 'pending@example.com' }));
-      
-      await request(app.getHttpServer())
-        .post('/api/v1/registrations')
-        .send({
-          participantId: pResponse.body.data._id,
-          sessionId,
-          status: RegistrationStatus.PENDING,
-        });
+
+      await request(app.getHttpServer()).post('/api/v1/registrations').send({
+        participantId: pResponse.body.data._id,
+        sessionId,
+        status: RegistrationStatus.PENDING,
+      });
     });
 
     it('should return registration statistics', async () => {

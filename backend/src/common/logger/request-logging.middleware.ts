@@ -116,7 +116,7 @@ export class HttpLoggingMiddleware implements NestMiddleware {
     res.on('finish', () => {
       const duration = Date.now() - startTime;
       const { statusCode } = res;
-      const contentLength = res.get('content-length');
+      const _contentLength = res.get('content-length');
 
       // Always log errors, skip health checks in prod
       if (shouldLogRequest || statusCode >= 400) {

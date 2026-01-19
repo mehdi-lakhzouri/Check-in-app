@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useMemo, useEffect } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import {
   Plus,
   Pencil,
@@ -34,7 +34,7 @@ import {
   AlertTriangle,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { tableRowVariants, staggerContainer, pageTransition, TIMING, EASING } from '@/lib/animations';
+import { tableRowVariants } from '@/lib/animations';
 import { useDropzone } from 'react-dropzone';
 import QRCodeGenerator from 'qrcode';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -115,7 +115,7 @@ import {
   downloadParticipantQRCodes,
   downloadParticipantTemplate,
 } from '@/lib/hooks';
-import type { Participant, CreateParticipantDto, ParticipantDetails } from '@/lib/schemas';
+import type { Participant, CreateParticipantDto } from '@/lib/schemas';
 
 // Types for multi-step form
 interface ParticipantFormData extends CreateParticipantDto {
@@ -123,6 +123,7 @@ interface ParticipantFormData extends CreateParticipantDto {
   qrCodeDataUrl?: string;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface QRCodeCache {
   qrCode: string;
   qrCodeDataUrl: string;
@@ -142,7 +143,7 @@ const formatDateTime = (value?: string) => {
   if (!value) return '—';
   try {
     return new Date(value).toLocaleString();
-  } catch (error) {
+  } catch {
     return value;
   }
 };
@@ -193,6 +194,7 @@ function ParticipantTableRow({
                 className="block rounded-md border border-transparent hover:border-primary/30 hover:shadow-sm transition-all p-0.5"
               >
                 {tableQRCodes[participant.qrCode] ? (
+                  /* eslint-disable-next-line @next/next/no-img-element */
                   <img
                     src={tableQRCodes[participant.qrCode]}
                     alt={`QR: ${participant.qrCode}`}
@@ -376,6 +378,7 @@ export function ParticipantsContent() {
     refetch,
   } = useParticipants();
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { data: preGeneratedQR, refetch: refetchQR } = useGenerateQRCode({
     enabled: isDialogOpen && !editingParticipant,
   });
@@ -538,9 +541,14 @@ export function ParticipantsContent() {
   }, [processedParticipants, currentPage, itemsPerPage, groupBy]);
 
   // Reset to page 1 when filters change
+  const filtersKey = `${searchQuery}-${statusFilter}-${organizationFilter}-${sortConfig.field}-${sortConfig.direction}-${itemsPerPage}`;
+  const prevFiltersKeyRef = React.useRef(filtersKey);
   useEffect(() => {
-    setCurrentPage(1);
-  }, [searchQuery, statusFilter, organizationFilter, sortConfig, itemsPerPage]);
+    if (prevFiltersKeyRef.current !== filtersKey) {
+      prevFiltersKeyRef.current = filtersKey;
+      setCurrentPage(1);
+    }
+  }, [filtersKey]);
 
   // Handle sort
   const handleSort = (field: SortField) => {
@@ -550,8 +558,8 @@ export function ParticipantsContent() {
     }));
   };
 
-  // Sort indicator component
-  const SortIndicator = ({ field }: { field: SortField }) => {
+  // Sort indicator render function
+  const renderSortIndicator = (field: SortField) => {
     if (sortConfig.field !== field) {
       return <ArrowUpDown className="ml-1 h-3 w-3 opacity-50" />;
     }
@@ -599,15 +607,12 @@ export function ParticipantsContent() {
   const handleBulkDelete = async () => {
     setIsBulkDeleting(true);
     const ids = Array.from(selectedIds);
-    let successCount = 0;
-    let errorCount = 0;
 
     for (const id of ids) {
       try {
         await deleteMutation.mutateAsync(id);
-        successCount++;
       } catch {
-        errorCount++;
+        // Continue deleting other items even if one fails
       }
     }
 
@@ -617,9 +622,14 @@ export function ParticipantsContent() {
   };
 
   // Reset selection when page/filters change
+  const selectionResetKey = `${currentPage}-${itemsPerPage}-${searchQuery}-${statusFilter}-${organizationFilter}`;
+  const prevSelectionResetKeyRef = React.useRef(selectionResetKey);
   useEffect(() => {
-    setSelectedIds(new Set());
-  }, [currentPage, itemsPerPage, searchQuery, statusFilter, organizationFilter]);
+    if (prevSelectionResetKeyRef.current !== selectionResetKey) {
+      prevSelectionResetKeyRef.current = selectionResetKey;
+      setSelectedIds(new Set());
+    }
+  }, [selectionResetKey]);
 
   // Generate QR codes for table display
   useEffect(() => {
@@ -634,7 +644,7 @@ export function ParticipantsContent() {
               color: { dark: '#000000', light: '#FFFFFF' },
             });
             newQRCodes[participant.qrCode] = dataUrl;
-          } catch (error) {
+          } catch {
             console.error('Failed to generate QR code for:', participant.qrCode);
           }
         }
@@ -646,6 +656,7 @@ export function ParticipantsContent() {
     if (participants.length > 0) {
       generateTableQRCodes();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [participants]);
 
   // Multi-step form: Generate QR codes for each participant form
@@ -871,12 +882,12 @@ export function ParticipantsContent() {
   const detailIsTravelGrant = participantDetails?.scores?.type === 'travel_grant';
   const detailSessions = participantDetails
     ? (participantDetails.registrations || []).map((reg) => {
-        const session = reg.sessionId as any;
+        const session = reg.sessionId as { _id?: string; name?: string } | string | undefined;
         return {
           id: (typeof session === 'object' && session?._id) || reg._id,
           name: (typeof session === 'object' && session?.name) || 'Session',
           status: reg.status,
-          registeredAt: reg.createdAt || (reg as any).registeredAt,
+          registeredAt: reg.createdAt || (reg as { registeredAt?: string }).registeredAt,
         };
       })
     : [];
@@ -1394,6 +1405,7 @@ export function ParticipantsContent() {
                           <div className="flex items-center gap-4 p-4 border-2 border-dashed rounded-xl bg-muted/30">
                             <div className="shrink-0">
                               {participantForms[currentFormIndex].qrCodeDataUrl ? (
+                                /* eslint-disable-next-line @next/next/no-img-element */
                                 <img
                                   src={participantForms[currentFormIndex].qrCodeDataUrl}
                                   alt="QR Code"
@@ -1793,7 +1805,7 @@ export function ParticipantsContent() {
                             aria-label="Sort by name"
                           >
                             Name
-                            <SortIndicator field="name" />
+                            {renderSortIndicator('name')}
                           </button>
                         </TableHead>
                         <TableHead className="text-center" scope="col">
@@ -1803,7 +1815,7 @@ export function ParticipantsContent() {
                             aria-label="Sort by email"
                           >
                             Email
-                            <SortIndicator field="email" />
+                            {renderSortIndicator('email')}
                           </button>
                         </TableHead>
                         {groupBy !== 'organization' && (
@@ -1814,7 +1826,7 @@ export function ParticipantsContent() {
                               aria-label="Sort by organization"
                             >
                               Organization
-                              <SortIndicator field="organization" />
+                              {renderSortIndicator('organization')}
                             </button>
                           </TableHead>
                         )}
@@ -1826,7 +1838,7 @@ export function ParticipantsContent() {
                               aria-label="Sort by status"
                             >
                               Status
-                              <SortIndicator field="status" />
+                              {renderSortIndicator('status')}
                             </button>
                           </TableHead>
                         )}
@@ -1880,7 +1892,7 @@ export function ParticipantsContent() {
                         aria-label="Sort by name"
                       >
                         Name
-                        <SortIndicator field="name" />
+                        {renderSortIndicator('name')}
                       </button>
                     </TableHead>
                     <TableHead className="text-center" scope="col">
@@ -1890,7 +1902,7 @@ export function ParticipantsContent() {
                         aria-label="Sort by email"
                       >
                         Email
-                        <SortIndicator field="email" />
+                        {renderSortIndicator('email')}
                       </button>
                     </TableHead>
                     <TableHead className="text-center" scope="col">
@@ -1900,7 +1912,7 @@ export function ParticipantsContent() {
                         aria-label="Sort by organization"
                       >
                         Organization
-                        <SortIndicator field="organization" />
+                        {renderSortIndicator('organization')}
                       </button>
                     </TableHead>
                     <TableHead className="text-center" scope="col">
@@ -1910,7 +1922,7 @@ export function ParticipantsContent() {
                         aria-label="Sort by status"
                       >
                         Status
-                        <SortIndicator field="status" />
+                        {renderSortIndicator('status')}
                       </button>
                     </TableHead>
                     <TableHead className="text-center w-[140px]" scope="col">Actions</TableHead>
@@ -1948,6 +1960,7 @@ export function ParticipantsContent() {
                                       className="block rounded-md border border-transparent hover:border-primary/30 hover:shadow-sm transition-all p-0.5"
                                     >
                                       {tableQRCodes[participant.qrCode] ? (
+                                        /* eslint-disable-next-line @next/next/no-img-element */
                                         <img
                                           src={tableQRCodes[participant.qrCode]}
                                           alt={`QR: ${participant.qrCode}`}
@@ -2163,6 +2176,7 @@ export function ParticipantsContent() {
                 animate={{ scale: 1, opacity: 1 }}
                 className="border-2 border-muted rounded-lg p-4 bg-white"
               >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={qrCodeDataUrl}
                   alt="QR Code"
@@ -2386,10 +2400,10 @@ export function ParticipantsContent() {
                     {detailCheckIns.length ? (
                       <div className="space-y-3">
                         {detailCheckIns.slice(0, 6).map((checkIn) => {
-                          const session = checkIn.sessionId as any;
+                          const session = checkIn.sessionId as { _id?: string; name?: string } | string | undefined;
                           const sessionName = (typeof session === 'object' && session?.name) || 'Session';
                           const checkInTime =
-                            checkIn.createdAt || (checkIn as any).checkedInAt || (checkIn as any).checkInTime;
+                            checkIn.createdAt || (checkIn as { checkedInAt?: string; checkInTime?: string }).checkedInAt || (checkIn as { checkedInAt?: string; checkInTime?: string }).checkInTime;
                           return (
                             <div
                               key={checkIn._id}

@@ -1,6 +1,5 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { IsOptional, IsEnum, IsMongoId } from 'class-validator';
-import { Transform } from 'class-transformer';
 import { PaginationDto } from '../../../common/dto';
 import { AttemptStatus } from '../schemas';
 

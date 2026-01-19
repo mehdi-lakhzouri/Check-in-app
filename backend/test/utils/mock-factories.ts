@@ -23,7 +23,7 @@ export function createMockDocument<T extends Record<string, any>>(data: T) {
 /**
  * Creates a mock Mongoose Model
  */
-export function createMockModel<T>() {
+export function createMockModel() {
   return {
     new: jest.fn(),
     constructor: jest.fn(),

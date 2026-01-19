@@ -103,4 +103,4 @@ async function bootstrap() {
     console.log(`🔗 API Base URL: http://localhost:${port}/api/v1\n`);
   }
 }
-bootstrap();
+void bootstrap();

@@ -1,18 +1,65 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useSyncExternalStore } from 'react';
 import { motion, useInView, AnimatePresence } from 'framer-motion';
 import { LucideIcon } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { 
   statsCardVariants, 
-  cardHover, 
-  cardTap, 
-  TIMING, 
-  EASING,
-  SPRING 
+  SPRING,
+  TIMING 
 } from '@/lib/animations';
+
+// Custom hook for animated counter that avoids React Compiler issues
+function useAnimatedValue(
+  value: string | number, 
+  isInView: boolean, 
+  duration: number = 1500
+): string | number {
+  const hasAnimatedRef = useRef(false);
+  const animatedValueRef = useRef<number>(0);
+  const subscribersRef = useRef(new Set<() => void>());
+  
+  const subscribe = (callback: () => void) => {
+    subscribersRef.current.add(callback);
+    return () => subscribersRef.current.delete(callback);
+  };
+  
+  const getSnapshot = () => {
+    if (typeof value === 'string') return value;
+    return animatedValueRef.current;
+  };
+  
+  useEffect(() => {
+    if (typeof value === 'string') return;
+    
+    if (isInView && !hasAnimatedRef.current && typeof value === 'number') {
+      hasAnimatedRef.current = true;
+      const startTime = Date.now();
+      const startValue = 0;
+      const endValue = value;
+
+      const animate = () => {
+        const elapsed = Date.now() - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const easeOutQuart = 1 - Math.pow(1 - progress, 4);
+        const current = Math.round(startValue + (endValue - startValue) * easeOutQuart);
+        
+        animatedValueRef.current = current;
+        subscribersRef.current.forEach(cb => cb());
+        
+        if (progress < 1) {
+          requestAnimationFrame(animate);
+        }
+      };
+
+      requestAnimationFrame(animate);
+    }
+  }, [isInView, value, duration]);
+  
+  return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
+}
 
 interface StatsCardProps {
   title: string;
@@ -40,38 +87,9 @@ export function StatsCard({
 }: StatsCardProps) {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, amount: 0.3 });
-  const [displayValue, setDisplayValue] = useState<string | number>(0);
-  const [hasAnimated, setHasAnimated] = useState(false);
-
-  // Animate number count-up
-  useEffect(() => {
-    if (isInView && !hasAnimated && typeof value === 'number') {
-      setHasAnimated(true);
-      const duration = 1500;
-      const startTime = Date.now();
-      const startValue = 0;
-      const endValue = value;
-
-      const animate = () => {
-        const elapsed = Date.now() - startTime;
-        const progress = Math.min(elapsed / duration, 1);
-        
-        // Easing function for smooth deceleration
-        const easeOutQuart = 1 - Math.pow(1 - progress, 4);
-        const current = Math.round(startValue + (endValue - startValue) * easeOutQuart);
-        
-        setDisplayValue(current);
-        
-        if (progress < 1) {
-          requestAnimationFrame(animate);
-        }
-      };
-
-      requestAnimationFrame(animate);
-    } else if (typeof value === 'string') {
-      setDisplayValue(value);
-    }
-  }, [isInView, value, hasAnimated]);
+  
+  // Use custom hook for animated value
+  const displayValue = useAnimatedValue(value, isInView);
 
   return (
     <motion.div

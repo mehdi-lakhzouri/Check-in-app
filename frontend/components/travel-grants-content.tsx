@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { staggerContainer, cardVariants, tableRowVariants, pageTransition, TIMING, EASING } from '@/lib/animations';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { motion } from 'framer-motion';
+import { staggerContainer, cardVariants } from '@/lib/animations';
 
 // Aliases for backwards compatibility
 const containerVariants = staggerContainer;
@@ -20,11 +20,9 @@ import {
   ChevronRight,
   ArrowUpDown,
   FileCheck,
-  FileX,
   Filter,
   Users,
   AlertCircle,
-  TrendingUp,
   Wifi,
   WifiOff,
   Calendar,
@@ -79,7 +77,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { StatsCard } from '@/components/stats-card';
 import { ErrorState } from '@/components/ui/error-state';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -298,10 +295,17 @@ export function TravelGrantsContent() {
     return () => clearTimeout(timer);
   }, [search]);
 
-  // Reset page when filters change
-  useEffect(() => {
-    setPage(1);
-  }, [debouncedSearch, statusFilter]);
+  // Reset page when filters change - use useEffect with setTimeout
+  const filtersKey = `${debouncedSearch}-${statusFilter}`;
+  const prevFiltersKeyRef = React.useRef(filtersKey);
+  React.useEffect(() => {
+    if (prevFiltersKeyRef.current !== filtersKey) {
+      prevFiltersKeyRef.current = filtersKey;
+      if (page !== 1) {
+        setTimeout(() => setPage(1), 0);
+      }
+    }
+  }, [filtersKey, page]);
 
   // Queries
   const { data: travelGrants, isLoading, isError, error, refetch } = useQuery({
@@ -344,7 +348,7 @@ export function TravelGrantsContent() {
       queryClient.invalidateQueries({ queryKey: queryKeys.admin.travelGrants.all() });
       setActionDialog({ open: false, type: 'approve', participant: null });
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast.error(error.message || 'Failed to approve travel grant');
     },
   });
@@ -356,7 +360,7 @@ export function TravelGrantsContent() {
       queryClient.invalidateQueries({ queryKey: queryKeys.admin.travelGrants.all() });
       setActionDialog({ open: false, type: 'reject', participant: null });
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast.error(error.message || 'Failed to reject travel grant');
     },
   });

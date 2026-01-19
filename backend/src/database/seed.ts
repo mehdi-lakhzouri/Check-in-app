@@ -13,8 +13,8 @@
 
 import { NestFactory } from '@nestjs/core';
 import { Module } from '@nestjs/common';
-import { MongooseModule, InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
+import { MongooseModule } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
 import { ConfigModule } from '@nestjs/config';
 import { 
   Participant, 

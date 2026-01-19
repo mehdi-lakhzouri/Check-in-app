@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { cardVariants, staggerContainer, TIMING, EASING } from '@/lib/animations';
+import { cardVariants } from '@/lib/animations';
 import { 
   Users, 
   Clock, 
@@ -18,6 +18,13 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
 import type { Session, CheckIn } from '@/lib/schemas';
+
+// Extended session type for properties that may exist on session objects
+interface ExtendedSession extends Omit<Session, 'capacityEnforced' | 'requiresRegistration' | 'day'> {
+  day?: number;
+  requiresRegistration?: boolean;
+  capacityEnforced?: boolean;
+}
 
 interface SessionOverviewProps {
   sessions: Session[];
@@ -86,7 +93,6 @@ export function SessionOverview({ sessions, checkIns }: SessionOverviewProps) {
 
   // Calculate overall stats
   const totalOpenSessions = sessions.filter(s => s.isOpen).length;
-  const totalClosedSessions = sessions.filter(s => !s.isOpen).length;
   const sessionsNearCapacity = sessionsWithCapacity.filter(s => s.isNearCapacity && !s.isAtCapacity).length;
   const sessionsAtCapacity = sessionsWithCapacity.filter(s => s.isAtCapacity).length;
   const totalTodayCheckIns = checkIns.length;
@@ -97,7 +103,7 @@ export function SessionOverview({ sessions, checkIns }: SessionOverviewProps) {
 
   // Group sessions by day
   const sessionsByDay = sessions.reduce((acc, session) => {
-    const day = (session as any).day || 1;
+    const day = (session as ExtendedSession).day || 1;
     if (!acc[day]) acc[day] = [];
     acc[day].push(session);
     return acc;
@@ -221,13 +227,13 @@ export function SessionOverview({ sessions, checkIns }: SessionOverviewProps) {
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
                         <h4 className="font-medium">{item.session.name}</h4>
-                        {(item.session as any).requiresRegistration && (
+                        {(item.session as ExtendedSession).requiresRegistration && (
                           <Badge variant="outline" className="text-xs">
                             <Lock className="h-3 w-3 mr-1" />
                             Invite Only
                           </Badge>
                         )}
-                        {(item.session as any).capacityEnforced === false && (
+                        {(item.session as ExtendedSession).capacityEnforced === false && (
                           <Badge variant="secondary" className="text-xs">
                             <Shield className="h-3 w-3 mr-1" />
                             Soft Cap

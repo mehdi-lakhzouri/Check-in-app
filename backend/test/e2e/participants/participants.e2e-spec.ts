@@ -3,67 +3,32 @@
  * End-to-end tests for the Participants API endpoints
  */
 
-import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication, ValidationPipe, VersioningType } from '@nestjs/common';
+import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
-import { MongoMemoryServer } from 'mongodb-memory-server';
-import { MongooseModule, getConnectionToken } from '@nestjs/mongoose';
-import { ConfigModule } from '@nestjs/config';
-import { Connection } from 'mongoose';
-import { ParticipantsModule } from '../../../src/modules/participants/participants.module';
+import {
+  createE2ETestApp,
+  closeE2ETestApp,
+  clearE2ETestData,
+  E2ETestContext,
+} from '../../utils/e2e-test-setup';
 import { mockData } from '../../utils/test-utils';
 import { ParticipantStatus } from '../../../src/modules/participants/schemas';
 
 describe('Participants (e2e)', () => {
+  let context: E2ETestContext;
   let app: INestApplication;
-  let mongoServer: MongoMemoryServer;
-  let connection: Connection;
 
   beforeAll(async () => {
-    mongoServer = await MongoMemoryServer.create();
-    const mongoUri = mongoServer.getUri();
-
-    const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [
-        ConfigModule.forRoot({
-          isGlobal: true,
-        }),
-        MongooseModule.forRoot(mongoUri),
-        ParticipantsModule,
-      ],
-    }).compile();
-
-    app = moduleFixture.createNestApplication();
-
-    app.enableVersioning({
-      type: VersioningType.URI,
-      prefix: 'api/v',
-      defaultVersion: '1',
-    });
-
-    app.useGlobalPipes(
-      new ValidationPipe({
-        whitelist: true,
-        forbidNonWhitelisted: true,
-        transform: true,
-      }),
-    );
-
-    await app.init();
-    connection = moduleFixture.get<Connection>(getConnectionToken());
-  });
+    context = await createE2ETestApp();
+    app = context.app;
+  }, 60000);
 
   afterAll(async () => {
-    await connection.close();
-    await mongoServer.stop();
-    await app.close();
+    await closeE2ETestApp(context);
   });
 
   afterEach(async () => {
-    const collections = connection.collections;
-    for (const key in collections) {
-      await collections[key].deleteMany({});
-    }
+    await clearE2ETestData(context);
   });
 
   describe('POST /api/v1/participants', () => {
@@ -106,7 +71,9 @@ describe('Participants (e2e)', () => {
     });
 
     it('should return 409 for duplicate email', async () => {
-      const createDto = mockData.createParticipantDto({ email: 'duplicate@example.com' });
+      const createDto = mockData.createParticipantDto({
+        email: 'duplicate@example.com',
+      });
 
       await request(app.getHttpServer())
         .post('/api/v1/participants')
@@ -131,7 +98,7 @@ describe('Participants (e2e)', () => {
     });
 
     it('should create participant with different statuses', async () => {
-      const ambassadorDto = mockData.createParticipantDto({ 
+      const ambassadorDto = mockData.createParticipantDto({
         status: ParticipantStatus.AMBASSADOR,
         email: 'ambassador@example.com',
       });
@@ -148,9 +115,18 @@ describe('Participants (e2e)', () => {
   describe('GET /api/v1/participants', () => {
     beforeEach(async () => {
       const participants = [
-        mockData.createParticipantDto({ name: 'Alice Smith', email: 'alice@example.com' }),
-        mockData.createParticipantDto({ name: 'Bob Johnson', email: 'bob@example.com' }),
-        mockData.createParticipantDto({ name: 'Charlie Brown', email: 'charlie@example.com' }),
+        mockData.createParticipantDto({
+          name: 'Alice Smith',
+          email: 'alice@example.com',
+        }),
+        mockData.createParticipantDto({
+          name: 'Bob Johnson',
+          email: 'bob@example.com',
+        }),
+        mockData.createParticipantDto({
+          name: 'Charlie Brown',
+          email: 'charlie@example.com',
+        }),
       ];
 
       for (const participant of participants) {
@@ -192,17 +168,23 @@ describe('Participants (e2e)', () => {
     it('should filter by status', async () => {
       await request(app.getHttpServer())
         .post('/api/v1/participants')
-        .send(mockData.createParticipantDto({ 
-          status: ParticipantStatus.AMBASSADOR,
-          email: 'ambassador@example.com',
-        }));
+        .send(
+          mockData.createParticipantDto({
+            status: ParticipantStatus.AMBASSADOR,
+            email: 'ambassador@example.com',
+          }),
+        );
 
       const response = await request(app.getHttpServer())
         .get('/api/v1/participants')
         .query({ status: ParticipantStatus.AMBASSADOR })
         .expect(200);
 
-      expect(response.body.data.every((p: any) => p.status === ParticipantStatus.AMBASSADOR)).toBe(true);
+      expect(
+        response.body.data.every(
+          (p: any) => p.status === ParticipantStatus.AMBASSADOR,
+        ),
+      ).toBe(true);
     });
   });
 
@@ -213,7 +195,7 @@ describe('Participants (e2e)', () => {
       const response = await request(app.getHttpServer())
         .post('/api/v1/participants')
         .send(mockData.createParticipantDto({ name: 'Test Participant' }));
-      
+
       participantId = response.body.data._id;
     });
 
@@ -249,7 +231,7 @@ describe('Participants (e2e)', () => {
       const response = await request(app.getHttpServer())
         .post('/api/v1/participants')
         .send(mockData.createParticipantDto({ name: 'QR Test Participant' }));
-      
+
       participantQrCode = response.body.data.qrCode;
     });
 
@@ -277,7 +259,7 @@ describe('Participants (e2e)', () => {
       const response = await request(app.getHttpServer())
         .post('/api/v1/participants')
         .send(mockData.createParticipantDto({ name: 'Original Name' }));
-      
+
       participantId = response.body.data._id;
     });
 
@@ -320,7 +302,7 @@ describe('Participants (e2e)', () => {
       const response = await request(app.getHttpServer())
         .post('/api/v1/participants')
         .send(mockData.createParticipantDto());
-      
+
       participantId = response.body.data._id;
     });
 
@@ -347,17 +329,21 @@ describe('Participants (e2e)', () => {
     beforeEach(async () => {
       await request(app.getHttpServer())
         .post('/api/v1/participants')
-        .send(mockData.createParticipantDto({ 
-          status: ParticipantStatus.REGULAR,
-          email: 'regular1@example.com',
-        }));
-      
+        .send(
+          mockData.createParticipantDto({
+            status: ParticipantStatus.REGULAR,
+            email: 'regular1@example.com',
+          }),
+        );
+
       await request(app.getHttpServer())
         .post('/api/v1/participants')
-        .send(mockData.createParticipantDto({ 
-          status: ParticipantStatus.AMBASSADOR,
-          email: 'ambassador1@example.com',
-        }));
+        .send(
+          mockData.createParticipantDto({
+            status: ParticipantStatus.AMBASSADOR,
+            email: 'ambassador1@example.com',
+          }),
+        );
     });
 
     it('should return participant statistics', async () => {

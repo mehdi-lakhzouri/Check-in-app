@@ -3,67 +3,31 @@
  * End-to-end tests for the Sessions API endpoints
  */
 
-import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication, ValidationPipe, VersioningType } from '@nestjs/common';
 import request from 'supertest';
-import { MongoMemoryServer } from 'mongodb-memory-server';
-import { MongooseModule, getConnectionToken } from '@nestjs/mongoose';
-import { ConfigModule } from '@nestjs/config';
-import { Connection } from 'mongoose';
-import { SessionsModule } from '../../../src/modules/sessions/sessions.module';
+import { INestApplication } from '@nestjs/common';
+import {
+  createE2ETestApp,
+  closeE2ETestApp,
+  clearE2ETestData,
+  E2ETestContext,
+} from '../../utils/e2e-test-setup';
 import { mockData } from '../../utils/test-utils';
 
 describe('Sessions (e2e)', () => {
+  let context: E2ETestContext;
   let app: INestApplication;
-  let mongoServer: MongoMemoryServer;
-  let connection: Connection;
 
   beforeAll(async () => {
-    mongoServer = await MongoMemoryServer.create();
-    const mongoUri = mongoServer.getUri();
-
-    const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [
-        ConfigModule.forRoot({
-          isGlobal: true,
-          load: [() => ({ app: { checkinLateThresholdMinutes: 10 } })],
-        }),
-        MongooseModule.forRoot(mongoUri),
-        SessionsModule,
-      ],
-    }).compile();
-
-    app = moduleFixture.createNestApplication();
-
-    app.enableVersioning({
-      type: VersioningType.URI,
-      prefix: 'api/v',
-      defaultVersion: '1',
-    });
-
-    app.useGlobalPipes(
-      new ValidationPipe({
-        whitelist: true,
-        forbidNonWhitelisted: true,
-        transform: true,
-      }),
-    );
-
-    await app.init();
-    connection = moduleFixture.get<Connection>(getConnectionToken());
-  });
+    context = await createE2ETestApp();
+    app = context.app;
+  }, 60000); // Increase timeout for MongoDB memory server
 
   afterAll(async () => {
-    await connection.close();
-    await mongoServer.stop();
-    await app.close();
+    await closeE2ETestApp(context);
   });
 
   afterEach(async () => {
-    const collections = connection.collections;
-    for (const key in collections) {
-      await collections[key].deleteMany({});
-    }
+    await clearE2ETestData(context);
   });
 
   describe('POST /api/v1/sessions', () => {
@@ -105,7 +69,6 @@ describe('Sessions (e2e)', () => {
         .send(invalidDto)
         .expect(400);
 
-      // The message might be in different formats
       expect(response.body.message).toBeDefined();
     });
 
@@ -165,14 +128,18 @@ describe('Sessions (e2e)', () => {
     it('should filter by isOpen status', async () => {
       await request(app.getHttpServer())
         .post('/api/v1/sessions')
-        .send(mockData.createSessionDto({ name: 'Open Session', isOpen: true }));
+        .send(
+          mockData.createSessionDto({ name: 'Open Session', isOpen: true }),
+        );
 
       const response = await request(app.getHttpServer())
         .get('/api/v1/sessions')
         .query({ isOpen: true })
         .expect(200);
 
-      expect(response.body.data.every((s: any) => s.isOpen === true)).toBe(true);
+      expect(response.body.data.every((s: any) => s.isOpen === true)).toBe(
+        true,
+      );
     });
   });
 
@@ -183,7 +150,7 @@ describe('Sessions (e2e)', () => {
       const response = await request(app.getHttpServer())
         .post('/api/v1/sessions')
         .send(mockData.createSessionDto({ name: 'Test Session' }));
-      
+
       sessionId = response.body.data._id;
     });
 
@@ -219,7 +186,7 @@ describe('Sessions (e2e)', () => {
       const response = await request(app.getHttpServer())
         .post('/api/v1/sessions')
         .send(mockData.createSessionDto({ name: 'Original Name' }));
-      
+
       sessionId = response.body.data._id;
     });
 
@@ -263,7 +230,7 @@ describe('Sessions (e2e)', () => {
       const response = await request(app.getHttpServer())
         .post('/api/v1/sessions')
         .send(mockData.createSessionDto());
-      
+
       sessionId = response.body.data._id;
     });
 
@@ -293,7 +260,7 @@ describe('Sessions (e2e)', () => {
       const response = await request(app.getHttpServer())
         .post('/api/v1/sessions')
         .send(mockData.createSessionDto({ isOpen: false }));
-      
+
       sessionId = response.body.data._id;
     });
 
@@ -323,18 +290,20 @@ describe('Sessions (e2e)', () => {
   describe('GET /api/v1/sessions/upcoming', () => {
     beforeEach(async () => {
       const futureDate = new Date(Date.now() + 86400000 * 7);
-      
+
       for (let i = 0; i < 3; i++) {
         const startTime = new Date(futureDate.getTime() + i * 3600000);
         const endTime = new Date(startTime.getTime() + 3600000);
-        
+
         await request(app.getHttpServer())
           .post('/api/v1/sessions')
-          .send(mockData.createSessionDto({
-            name: `Future Session ${i + 1}`,
-            startTime: startTime.toISOString(),
-            endTime: endTime.toISOString(),
-          }));
+          .send(
+            mockData.createSessionDto({
+              name: `Future Session ${i + 1}`,
+              startTime: startTime.toISOString(),
+              endTime: endTime.toISOString(),
+            }),
+          );
       }
     });
 
@@ -361,11 +330,15 @@ describe('Sessions (e2e)', () => {
     beforeEach(async () => {
       await request(app.getHttpServer())
         .post('/api/v1/sessions')
-        .send(mockData.createSessionDto({ name: 'Open Session', isOpen: true }));
-      
+        .send(
+          mockData.createSessionDto({ name: 'Open Session', isOpen: true }),
+        );
+
       await request(app.getHttpServer())
         .post('/api/v1/sessions')
-        .send(mockData.createSessionDto({ name: 'Closed Session', isOpen: false }));
+        .send(
+          mockData.createSessionDto({ name: 'Closed Session', isOpen: false }),
+        );
     });
 
     it('should return session statistics', async () => {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { format } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -244,11 +244,11 @@ export function BulkCreateWizard() {
     },
   });
 
-  const steps: { key: WizardStep; label: string }[] = [
+  const steps = useMemo<{ key: WizardStep; label: string }[]>(() => [
     { key: 'method', label: 'Choose Method' },
     { key: 'entries', label: 'Add Sessions' },
     { key: 'review', label: 'Review & Create' },
-  ];
+  ], []);
 
   const handleClose = () => {
     setIsOpen(false);
@@ -261,12 +261,12 @@ export function BulkCreateWizard() {
     setValidationErrors([]);
   };
 
-  const goToStep = (step: WizardStep) => {
+  const goToStep = useCallback((step: WizardStep) => {
     const currentIndex = steps.findIndex(s => s.key === currentStep);
     const nextIndex = steps.findIndex(s => s.key === step);
     setDirection(nextIndex > currentIndex ? 1 : -1);
     setCurrentStep(step);
-  };
+  }, [currentStep, steps]);
 
   const handleNext = () => {
     if (currentStep === 'method' && method) {
@@ -346,7 +346,7 @@ export function BulkCreateWizard() {
     };
 
     reader.readAsText(file);
-  }, []);
+  }, [goToStep]);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
