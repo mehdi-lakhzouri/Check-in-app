@@ -2,14 +2,19 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, QueryFilter, Types } from 'mongoose';
 import { BaseRepository } from '../../../common/repositories';
-import { CheckInAttempt, CheckInAttemptDocument, AttemptStatus } from '../schemas';
+import {
+  CheckInAttempt,
+  CheckInAttemptDocument,
+  AttemptStatus,
+} from '../schemas';
 import { CheckInAttemptFilterDto } from '../dto';
 import { PaginatedResult } from '../../../common/dto';
 
 @Injectable()
 export class CheckInAttemptRepository extends BaseRepository<CheckInAttemptDocument> {
   constructor(
-    @InjectModel(CheckInAttempt.name) private attemptModel: Model<CheckInAttemptDocument>,
+    @InjectModel(CheckInAttempt.name)
+    private attemptModel: Model<CheckInAttemptDocument>,
   ) {
     super(attemptModel);
   }
@@ -96,17 +101,25 @@ export class CheckInAttemptRepository extends BaseRepository<CheckInAttemptDocum
     return this.count({ sessionId: new Types.ObjectId(sessionId) });
   }
 
-  async countBySessionAndStatus(sessionId: string, status: AttemptStatus): Promise<number> {
-    return this.count({ 
+  async countBySessionAndStatus(
+    sessionId: string,
+    status: AttemptStatus,
+  ): Promise<number> {
+    return this.count({
       sessionId: new Types.ObjectId(sessionId),
       status,
     });
   }
 
-  async getRecentAttempts(limit = 10, sessionId?: string): Promise<CheckInAttemptDocument[]> {
+  async getRecentAttempts(
+    limit = 10,
+    sessionId?: string,
+  ): Promise<CheckInAttemptDocument[]> {
     const filter: QueryFilter<CheckInAttemptDocument> = sessionId
-      ? { sessionId: new Types.ObjectId(sessionId) } as QueryFilter<CheckInAttemptDocument>
-      : {} as QueryFilter<CheckInAttemptDocument>;
+      ? ({
+          sessionId: new Types.ObjectId(sessionId),
+        } as QueryFilter<CheckInAttemptDocument>)
+      : ({} as QueryFilter<CheckInAttemptDocument>);
 
     return this.attemptModel
       .find(filter)
@@ -123,8 +136,10 @@ export class CheckInAttemptRepository extends BaseRepository<CheckInAttemptDocum
     failed: number;
   }> {
     const filter: QueryFilter<CheckInAttemptDocument> = sessionId
-      ? { sessionId: new Types.ObjectId(sessionId) } as QueryFilter<CheckInAttemptDocument>
-      : {} as QueryFilter<CheckInAttemptDocument>;
+      ? ({
+          sessionId: new Types.ObjectId(sessionId),
+        } as QueryFilter<CheckInAttemptDocument>)
+      : ({} as QueryFilter<CheckInAttemptDocument>);
 
     const results = await this.attemptModel.aggregate([
       { $match: filter },

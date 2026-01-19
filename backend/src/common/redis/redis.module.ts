@@ -93,13 +93,20 @@ class NullRedisClient {
     return [];
   }
 
-  async *scanIterator(_options?: { MATCH?: string; COUNT?: number }): AsyncIterableIterator<string> {
-    this.logger.verbose('NullRedisClient.scanIterator called - yielding nothing');
+  async *scanIterator(_options?: {
+    MATCH?: string;
+    COUNT?: number;
+  }): AsyncIterableIterator<string> {
+    this.logger.verbose(
+      'NullRedisClient.scanIterator called - yielding nothing',
+    );
     // Yield nothing - empty iterator
   }
 
   async eval(_script: string, _options: any): Promise<any> {
-    this.logger.verbose('NullRedisClient.eval called - returning -1 (fallback behavior)');
+    this.logger.verbose(
+      'NullRedisClient.eval called - returning -1 (fallback behavior)',
+    );
     return -1; // Signals to use MongoDB fallback for capacity checks
   }
 
@@ -108,7 +115,9 @@ class NullRedisClient {
   }
 
   async connect(): Promise<void> {
-    this.logger.warn('NullRedisClient.connect called - already in fallback mode');
+    this.logger.warn(
+      'NullRedisClient.connect called - already in fallback mode',
+    );
   }
 
   async disconnect(): Promise<void> {
@@ -122,12 +131,12 @@ class NullRedisClient {
 
 /**
  * Redis Module
- * 
+ *
  * Provides:
  * 1. Cache Manager - for simple key-value caching with TTL (falls back to in-memory)
  * 2. Raw Redis Client - for advanced operations (falls back to NullRedisClient)
  * 3. Redis Status - for health checks and monitoring
- * 
+ *
  * Features:
  * - Connection resilience with retry strategy
  * - Graceful fallback to in-memory cache if Redis unavailable
@@ -136,7 +145,7 @@ class NullRedisClient {
  * - Event logging for connection status
  * - Redis Cluster support (via REDIS_CLUSTER_NODES env var)
  * - Redis Sentinel support (via REDIS_SENTINELS env var)
- * 
+ *
  * Environment Variables:
  * - REDIS_HOST: Single node host (default: localhost)
  * - REDIS_PORT: Single node port (default: 6379)
@@ -144,7 +153,7 @@ class NullRedisClient {
  * - REDIS_CLUSTER_NODES: Comma-separated cluster nodes (e.g., "host1:6379,host2:6379")
  * - REDIS_SENTINELS: Comma-separated sentinel addresses (e.g., "host1:26379,host2:26379")
  * - REDIS_SENTINEL_NAME: Sentinel master name (default: mymaster)
- * 
+ *
  * Usage:
  * - Inject CACHE_MANAGER for simple caching
  * - Inject REDIS_CLIENT for raw Redis operations
@@ -154,9 +163,11 @@ class NullRedisClient {
 /**
  * Parse Redis cluster/sentinel configuration from environment
  */
-function parseRedisNodes(nodesStr: string | undefined): { host: string; port: number }[] {
+function parseRedisNodes(
+  nodesStr: string | undefined,
+): { host: string; port: number }[] {
   if (!nodesStr) return [];
-  return nodesStr.split(',').map(node => {
+  return nodesStr.split(',').map((node) => {
     const [host, portStr] = node.trim().split(':');
     return { host, port: parseInt(portStr || '6379', 10) };
   });
@@ -180,7 +191,9 @@ function parseRedisNodes(nodesStr: string | undefined): { host: string; port: nu
               reconnectStrategy: (retries) => {
                 redisStatus.reconnectAttempts = retries;
                 if (retries > 10) {
-                  logger.error('Redis Cache max retries reached - switching to in-memory fallback');
+                  logger.error(
+                    'Redis Cache max retries reached - switching to in-memory fallback',
+                  );
                   redisStatus.cacheConnected = false;
                   redisStatus.lastError = 'Max retries reached';
                   redisStatus.lastErrorTime = new Date();
@@ -188,7 +201,9 @@ function parseRedisNodes(nodesStr: string | undefined): { host: string; port: nu
                   return new Error('Redis Cache max retries reached');
                 }
                 const delay = Math.min(retries * 100, 3000);
-                logger.warn(`Redis Cache reconnecting in ${delay}ms (attempt ${retries})`);
+                logger.warn(
+                  `Redis Cache reconnecting in ${delay}ms (attempt ${retries})`,
+                );
                 return delay;
               },
               connectTimeout: 5000, // Reduced timeout for faster fallback
@@ -205,14 +220,16 @@ function parseRedisNodes(nodesStr: string | undefined): { host: string; port: nu
           };
         } catch (error) {
           // GRACEFUL FALLBACK: Use in-memory cache instead of crashing
-          logger.error(`Failed to initialize Redis Cache store: ${error.message}`);
+          logger.error(
+            `Failed to initialize Redis Cache store: ${error.message}`,
+          );
           logger.warn('⚠️ Falling back to in-memory cache - LIMITED CAPACITY');
-          
+
           redisStatus.cacheConnected = false;
           redisStatus.lastError = error.message;
           redisStatus.lastErrorTime = new Date();
           redisStatus.usingFallback = true;
-          
+
           // Return in-memory cache configuration
           return {
             store: 'memory',
@@ -234,25 +251,32 @@ function parseRedisNodes(nodesStr: string | undefined): { host: string; port: nu
     // Supports: Single node, Cluster, and Sentinel modes
     {
       provide: REDIS_CLIENT,
-      useFactory: async (configService: ConfigService): Promise<RedisClientType | NullRedisClient> => {
+      useFactory: async (
+        configService: ConfigService,
+      ): Promise<RedisClientType | NullRedisClient> => {
         const host = configService.get<string>('redis.host', 'localhost');
         const port = configService.get<number>('redis.port', 6379);
         const password = configService.get<string>('redis.password');
-        
+
         // Check for cluster/sentinel configuration
         const clusterNodes = configService.get<string>('REDIS_CLUSTER_NODES');
         const sentinels = configService.get<string>('REDIS_SENTINELS');
-        const sentinelName = configService.get<string>('REDIS_SENTINEL_NAME', 'mymaster');
-        
+        const sentinelName = configService.get<string>(
+          'REDIS_SENTINEL_NAME',
+          'mymaster',
+        );
+
         // Build client configuration based on mode
         let clientConfig: any;
-        
+
         if (clusterNodes) {
           // CLUSTER MODE
           const nodes = parseRedisNodes(clusterNodes);
           logger.log(`Redis Cluster mode enabled with ${nodes.length} nodes`);
           clientConfig = {
-            rootNodes: nodes.map(n => ({ url: `redis://${n.host}:${n.port}` })),
+            rootNodes: nodes.map((n) => ({
+              url: `redis://${n.host}:${n.port}`,
+            })),
             defaults: {
               password,
               socket: {
@@ -270,14 +294,21 @@ function parseRedisNodes(nodesStr: string | undefined): { host: string; port: nu
           };
           // Note: For cluster mode, use createCluster() instead of createClient()
           // This is a simplified example - full cluster support requires @redis/client cluster API
-          logger.warn('⚠️ Redis Cluster mode configured - ensure @redis/client cluster API is used');
+          logger.warn(
+            '⚠️ Redis Cluster mode configured - ensure @redis/client cluster API is used',
+          );
         } else if (sentinels) {
           // SENTINEL MODE
           const sentinelNodes = parseRedisNodes(sentinels);
-          logger.log(`Redis Sentinel mode enabled with ${sentinelNodes.length} sentinels, master: ${sentinelName}`);
+          logger.log(
+            `Redis Sentinel mode enabled with ${sentinelNodes.length} sentinels, master: ${sentinelName}`,
+          );
           clientConfig = {
             sentinel: {
-              rootNodes: sentinelNodes.map(n => ({ host: n.host, port: n.port })),
+              rootNodes: sentinelNodes.map((n) => ({
+                host: n.host,
+                port: n.port,
+              })),
               name: sentinelName,
             },
             ...(password ? { password } : {}),
@@ -303,14 +334,18 @@ function parseRedisNodes(nodesStr: string | undefined): { host: string; port: nu
               reconnectStrategy: (retries: number) => {
                 redisStatus.reconnectAttempts = retries;
                 if (retries > 10) {
-                  logger.error('Redis Client max retries reached - using NullRedisClient fallback');
+                  logger.error(
+                    'Redis Client max retries reached - using NullRedisClient fallback',
+                  );
                   redisStatus.clientConnected = false;
                   redisStatus.lastError = 'Redis Client max retries reached';
                   redisStatus.lastErrorTime = new Date();
                   return new Error('Redis Client max retries reached');
                 }
                 const delay = Math.min(retries * 100, 3000);
-                logger.warn(`Redis Client reconnecting in ${delay}ms (attempt ${retries})`);
+                logger.warn(
+                  `Redis Client reconnecting in ${delay}ms (attempt ${retries})`,
+                );
                 return delay;
               },
               connectTimeout: 5000,
@@ -355,13 +390,15 @@ function parseRedisNodes(nodesStr: string | undefined): { host: string; port: nu
         } catch (error) {
           // GRACEFUL FALLBACK: Return NullRedisClient instead of crashing
           logger.error(`Failed to connect Redis Client: ${error.message}`);
-          logger.warn('⚠️ Using NullRedisClient fallback - some features will use MongoDB directly');
-          
+          logger.warn(
+            '⚠️ Using NullRedisClient fallback - some features will use MongoDB directly',
+          );
+
           redisStatus.clientConnected = false;
           redisStatus.lastError = error.message;
           redisStatus.lastErrorTime = new Date();
           redisStatus.usingFallback = true;
-          
+
           return new NullRedisClient() as any;
         }
       },

@@ -6,7 +6,10 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { SessionsService } from '../../../src/modules/sessions/services/sessions.service';
 import { SessionRepository } from '../../../src/modules/sessions/repositories/session.repository';
-import { EntityNotFoundException, ValidationException } from '../../../src/common/exceptions';
+import {
+  EntityNotFoundException,
+  ValidationException,
+} from '../../../src/common/exceptions';
 import { createMockSessionRepository } from '../../utils/mock-factories';
 import { mockData, generateObjectId } from '../../utils/test-utils';
 
@@ -57,7 +60,9 @@ describe('SessionsService', () => {
         endTime: '2026-01-15T09:00:00Z', // Before start time
       });
 
-      await expect(service.create(createDto)).rejects.toThrow(ValidationException);
+      await expect(service.create(createDto)).rejects.toThrow(
+        ValidationException,
+      );
     });
 
     it('should throw ValidationException when endTime equals startTime', async () => {
@@ -67,13 +72,18 @@ describe('SessionsService', () => {
         endTime: sameTime,
       });
 
-      await expect(service.create(createDto)).rejects.toThrow(ValidationException);
+      await expect(service.create(createDto)).rejects.toThrow(
+        ValidationException,
+      );
     });
   });
 
   describe('findAll', () => {
     it('should return paginated sessions', async () => {
-      const sessions = [mockData.session(), mockData.session({ name: 'Session 2' })];
+      const sessions = [
+        mockData.session(),
+        mockData.session({ name: 'Session 2' }),
+      ];
       const paginatedResult = {
         data: sessions,
         meta: {
@@ -91,7 +101,10 @@ describe('SessionsService', () => {
       const result = await service.findAll({ page: 1, limit: 10 });
 
       expect(result).toEqual(paginatedResult);
-      expect(repository.findWithFilters).toHaveBeenCalledWith({ page: 1, limit: 10 });
+      expect(repository.findWithFilters).toHaveBeenCalledWith({
+        page: 1,
+        limit: 10,
+      });
     });
 
     it('should return empty array when no sessions exist', async () => {
@@ -133,7 +146,9 @@ describe('SessionsService', () => {
       const sessionId = generateObjectId();
       repository.findById.mockResolvedValue(null);
 
-      await expect(service.findOne(sessionId)).rejects.toThrow(EntityNotFoundException);
+      await expect(service.findOne(sessionId)).rejects.toThrow(
+        EntityNotFoundException,
+      );
     });
   });
 
@@ -158,9 +173,9 @@ describe('SessionsService', () => {
       const sessionId = generateObjectId();
       repository.updateById.mockResolvedValue(null);
 
-      await expect(service.update(sessionId, { name: 'New Name' })).rejects.toThrow(
-        EntityNotFoundException,
-      );
+      await expect(
+        service.update(sessionId, { name: 'New Name' }),
+      ).rejects.toThrow(EntityNotFoundException);
     });
 
     it('should throw ValidationException when updating with invalid date range', async () => {
@@ -170,7 +185,9 @@ describe('SessionsService', () => {
         endTime: '2026-01-15T09:00:00Z',
       };
 
-      await expect(service.update(sessionId, updateDto)).rejects.toThrow(ValidationException);
+      await expect(service.update(sessionId, updateDto)).rejects.toThrow(
+        ValidationException,
+      );
     });
   });
 
@@ -191,7 +208,9 @@ describe('SessionsService', () => {
       const sessionId = generateObjectId();
       repository.deleteById.mockResolvedValue(null);
 
-      await expect(service.remove(sessionId)).rejects.toThrow(EntityNotFoundException);
+      await expect(service.remove(sessionId)).rejects.toThrow(
+        EntityNotFoundException,
+      );
     });
   });
 
@@ -205,12 +224,17 @@ describe('SessionsService', () => {
       const result = await service.toggleOpen(sessionId, true);
 
       expect(result.isOpen).toBe(true);
-      expect(repository.updateById).toHaveBeenCalledWith(sessionId, { isOpen: true });
+      expect(repository.updateById).toHaveBeenCalledWith(sessionId, {
+        isOpen: true,
+      });
     });
 
     it('should toggle session open status to false', async () => {
       const sessionId = generateObjectId();
-      const updatedSession = mockData.session({ _id: sessionId, isOpen: false });
+      const updatedSession = mockData.session({
+        _id: sessionId,
+        isOpen: false,
+      });
 
       repository.updateById.mockResolvedValue(updatedSession);
 
@@ -223,7 +247,9 @@ describe('SessionsService', () => {
       const sessionId = generateObjectId();
       repository.updateById.mockResolvedValue(null);
 
-      await expect(service.toggleOpen(sessionId, true)).rejects.toThrow(EntityNotFoundException);
+      await expect(service.toggleOpen(sessionId, true)).rejects.toThrow(
+        EntityNotFoundException,
+      );
     });
   });
 

@@ -20,7 +20,11 @@ import {
 } from '@nestjs/swagger';
 import type { Response } from 'express';
 import { BulkService } from '../services';
-import { BulkAssignParticipantsDto, BulkUploadResultDto, BulkAssignResultDto } from '../dto';
+import {
+  BulkAssignParticipantsDto,
+  BulkUploadResultDto,
+  BulkAssignResultDto,
+} from '../dto';
 import { ParseMongoIdPipe } from '../../../common';
 
 @ApiTags('Bulk Operations')
@@ -31,10 +35,12 @@ export class BulkController {
   @Get('template/participants')
   @ApiOperation({ summary: 'Download participants template' })
   async getParticipantsTemplate(@Res() res: Response): Promise<void> {
-    const { buffer, filename } = this.bulkService.generateParticipantsTemplate();
+    const { buffer, filename } =
+      this.bulkService.generateParticipantsTemplate();
 
     res.set({
-      'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'Content-Type':
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       'Content-Disposition': `attachment; filename="${filename}"`,
       'Content-Length': buffer.length,
     });
@@ -69,7 +75,9 @@ export class BulkController {
   @Post('upload/sessions/:sessionId/participants')
   @HttpCode(HttpStatus.OK)
   @UseInterceptors(FileInterceptor('file'))
-  @ApiOperation({ summary: 'Bulk upload participants and register them to a session' })
+  @ApiOperation({
+    summary: 'Bulk upload participants and register them to a session',
+  })
   @ApiParam({ name: 'sessionId', description: 'Session ID' })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
@@ -100,20 +108,27 @@ export class BulkController {
     @Param('sessionId', ParseMongoIdPipe) sessionId: string,
     @Body() dto: BulkAssignParticipantsDto,
   ): Promise<BulkAssignResultDto> {
-    return this.bulkService.assignParticipantsToSession(sessionId, dto.participantIds);
+    return this.bulkService.assignParticipantsToSession(
+      sessionId,
+      dto.participantIds,
+    );
   }
 
   @Get('sessions/:sessionId/export')
-  @ApiOperation({ summary: 'Export session data (registrations and check-ins) to Excel' })
+  @ApiOperation({
+    summary: 'Export session data (registrations and check-ins) to Excel',
+  })
   @ApiParam({ name: 'sessionId', description: 'Session ID' })
   async exportSessionData(
     @Param('sessionId', ParseMongoIdPipe) sessionId: string,
     @Res() res: Response,
   ): Promise<void> {
-    const { buffer, filename } = await this.bulkService.exportSessionData(sessionId);
+    const { buffer, filename } =
+      await this.bulkService.exportSessionData(sessionId);
 
     res.set({
-      'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'Content-Type':
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       'Content-Disposition': `attachment; filename="${filename}"`,
       'Content-Length': buffer.length,
     });

@@ -79,14 +79,16 @@ export class CreateParticipantDto {
 
   @ApiPropertyOptional({
     example: 'QR-ABC123XYZ',
-    description: 'Pre-generated QR code. If not provided, will be auto-generated.',
+    description:
+      'Pre-generated QR code. If not provided, will be auto-generated.',
     maxLength: 50,
   })
   @IsOptional()
   @IsString()
   @MaxLength(50)
   @Matches(/^QR-[A-Z0-9-]+$/i, {
-    message: 'QR code must start with "QR-" followed by alphanumeric characters',
+    message:
+      'QR code must start with "QR-" followed by alphanumeric characters',
   })
   qrCode?: string;
 }

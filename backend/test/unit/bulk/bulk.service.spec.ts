@@ -1,7 +1,7 @@
 /**
  * Bulk Service Unit Tests
  * Comprehensive tests for the BulkService class
- * 
+ *
  * Test Coverage:
  * Normal cases (happy paths)
  * Edge/boundary conditions
@@ -29,7 +29,8 @@ const createMockExcelFile = (rows: any[]): Express.Multer.File => {
     fieldname: 'file',
     originalname: 'participants.xlsx',
     encoding: '7bit',
-    mimetype: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    mimetype:
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     buffer: Buffer.from('mock-excel-content'),
     size: 1024,
   } as Express.Multer.File;
@@ -110,8 +111,14 @@ describe('BulkService', () => {
       ]);
 
       // Mock the Excel parsing and creation
-      const participant1 = mockData.participant({ name: 'John Doe', email: 'john@example.com' });
-      const participant2 = mockData.participant({ name: 'Jane Doe', email: 'jane@example.com' });
+      const participant1 = mockData.participant({
+        name: 'John Doe',
+        email: 'john@example.com',
+      });
+      const participant2 = mockData.participant({
+        name: 'Jane Doe',
+        email: 'jane@example.com',
+      });
 
       participantsService.create
         .mockResolvedValueOnce(participant1)
@@ -141,7 +148,10 @@ describe('BulkService', () => {
         { name: 'Duplicate User', email: 'existing@example.com' },
       ]);
 
-      const validParticipant = mockData.participant({ name: 'Valid User', email: 'valid@example.com' });
+      const validParticipant = mockData.participant({
+        name: 'Valid User',
+        email: 'valid@example.com',
+      });
 
       participantsService.create
         .mockResolvedValueOnce(validParticipant)
@@ -162,8 +172,8 @@ describe('BulkService', () => {
       const mockFile = createMockExcelFile(manyRows);
 
       // Mock successful creation for all
-      participantsService.create.mockImplementation(async (dto) => 
-        mockData.participant({ name: dto.name, email: dto.email })
+      participantsService.create.mockImplementation(async (dto) =>
+        mockData.participant({ name: dto.name, email: dto.email }),
       );
 
       const result = await service.bulkUploadParticipants(mockFile);
@@ -190,7 +200,9 @@ describe('BulkService', () => {
         { name: 'John Doe' }, // Missing email
       ]);
 
-      const result = await service.bulkUploadParticipants(fileWithMissingColumns);
+      const result = await service.bulkUploadParticipants(
+        fileWithMissingColumns,
+      );
 
       expect(result.failed).toBeGreaterThanOrEqual(0);
     });
@@ -240,8 +252,9 @@ describe('BulkService', () => {
 
       sessionsService.findOne.mockRejectedValue(new Error('Session not found'));
 
-      await expect(service.bulkUploadToSession(fakeSessionId, mockFile))
-        .rejects.toThrow();
+      await expect(
+        service.bulkUploadToSession(fakeSessionId, mockFile),
+      ).rejects.toThrow();
     });
   });
 
@@ -257,13 +270,24 @@ describe('BulkService', () => {
 
       sessionsService.findOne.mockResolvedValue(session as any);
       participantsService.findOne
-        .mockResolvedValueOnce(mockData.participant({ _id: participantIds[0] }) as any)
-        .mockResolvedValueOnce(mockData.participant({ _id: participantIds[1] }) as any);
+        .mockResolvedValueOnce(
+          mockData.participant({ _id: participantIds[0] }) as any,
+        )
+        .mockResolvedValueOnce(
+          mockData.participant({ _id: participantIds[1] }) as any,
+        );
       registrationsService.create
-        .mockResolvedValueOnce(mockData.registration(participantIds[0], sessionId) as any)
-        .mockResolvedValueOnce(mockData.registration(participantIds[1], sessionId) as any);
+        .mockResolvedValueOnce(
+          mockData.registration(participantIds[0], sessionId) as any,
+        )
+        .mockResolvedValueOnce(
+          mockData.registration(participantIds[1], sessionId) as any,
+        );
 
-      const result = await service.assignParticipantsToSession(sessionId, participantIds);
+      const result = await service.assignParticipantsToSession(
+        sessionId,
+        participantIds,
+      );
 
       expect(result.assigned).toBe(2);
       expect(result.failed).toBe(0);
@@ -288,13 +312,17 @@ describe('BulkService', () => {
 
       sessionsService.findOne.mockResolvedValue(session as any);
       participantsService.findOne.mockResolvedValue(
-        mockData.participant({ _id: participantId }) as any
+        mockData.participant({ _id: participantId }) as any,
       );
       // Simulate duplicate registration error
-      registrationsService.create.mockRejectedValue(new Error('already exists'));
+      registrationsService.create.mockRejectedValue(
+        new Error('already exists'),
+      );
       registrationsService.isParticipantRegistered.mockResolvedValue(true);
 
-      const result = await service.assignParticipantsToSession(sessionId, [participantId]);
+      const result = await service.assignParticipantsToSession(sessionId, [
+        participantId,
+      ]);
 
       expect(result.skipped).toBeGreaterThanOrEqual(0);
     });
@@ -308,7 +336,9 @@ describe('BulkService', () => {
       sessionsService.findOne.mockResolvedValue(session as any);
       participantsService.findOne.mockRejectedValue(new Error('Not found'));
 
-      const result = await service.assignParticipantsToSession(sessionId, [fakeParticipantId]);
+      const result = await service.assignParticipantsToSession(sessionId, [
+        fakeParticipantId,
+      ]);
 
       expect(result.failed).toBeGreaterThanOrEqual(1);
       expect(result.errors).toHaveLength(1);

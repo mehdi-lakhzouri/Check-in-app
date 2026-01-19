@@ -26,16 +26,16 @@ const RELEASE_LOCK_SCRIPT = `
 
 /**
  * Distributed Lock Service
- * 
+ *
  * Provides Redis-based distributed locking for multi-instance safety.
  * Uses the Redlock algorithm pattern for reliable distributed locks.
- * 
+ *
  * Features:
  * - Atomic lock acquisition with TTL (auto-expiry)
  * - Safe release (only owner can release)
  * - Graceful fallback when Redis unavailable
  * - Lock ID tracking for ownership verification
- * 
+ *
  * Usage:
  * ```typescript
  * const lock = await this.lockService.acquireLock('myResource', 5000);
@@ -83,7 +83,7 @@ export class DistributedLockService implements OnModuleInit {
 
   /**
    * Acquire a distributed lock
-   * 
+   *
    * @param resource - The resource to lock (e.g., 'checkin:session:123')
    * @param ttlMs - Lock TTL in milliseconds (auto-expires after this time)
    * @param retryCount - Number of retry attempts (default: 3)
@@ -98,7 +98,9 @@ export class DistributedLockService implements OnModuleInit {
   ): Promise<LockResult> {
     // Graceful fallback when Redis unavailable
     if (!this.isRedisAvailable()) {
-      this.logger.debug(`Redis unavailable, skipping distributed lock for ${resource}`);
+      this.logger.debug(
+        `Redis unavailable, skipping distributed lock for ${resource}`,
+      );
       return {
         acquired: true, // Allow operation to proceed (single-instance mode)
         lockId: null,
@@ -131,7 +133,9 @@ export class DistributedLockService implements OnModuleInit {
           await this.sleep(retryDelayMs);
         }
       } catch (error) {
-        this.logger.warn(`Lock acquisition error for ${resource}: ${error.message}`);
+        this.logger.warn(
+          `Lock acquisition error for ${resource}: ${error.message}`,
+        );
         // On error, allow operation to proceed (degraded mode)
         if (attempt === retryCount - 1) {
           return {
@@ -144,7 +148,9 @@ export class DistributedLockService implements OnModuleInit {
     }
 
     // Failed to acquire lock after all retries
-    this.logger.warn(`Failed to acquire lock for ${resource} after ${retryCount} attempts`);
+    this.logger.warn(
+      `Failed to acquire lock for ${resource} after ${retryCount} attempts`,
+    );
     return {
       acquired: false,
       lockId: null,
@@ -182,7 +188,7 @@ export class DistributedLockService implements OnModuleInit {
   /**
    * Execute a function with a distributed lock
    * Automatically acquires and releases the lock
-   * 
+   *
    * @param resource - The resource to lock
    * @param fn - The function to execute within the lock
    * @param ttlMs - Lock TTL in milliseconds
@@ -196,7 +202,9 @@ export class DistributedLockService implements OnModuleInit {
     const lock = await this.acquireLock(resource, ttlMs);
 
     if (!lock.acquired) {
-      this.logger.warn(`Could not acquire lock for ${resource}, skipping operation`);
+      this.logger.warn(
+        `Could not acquire lock for ${resource}, skipping operation`,
+      );
       return null;
     }
 
@@ -208,6 +216,6 @@ export class DistributedLockService implements OnModuleInit {
   }
 
   private sleep(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 }

@@ -1,14 +1,18 @@
 /**
  * Health Check E2E Tests
  * End-to-end tests for the Health API endpoints
- * 
+ *
  * Route: /api/v1/health
- * 
+ *
  * Critical for production monitoring and load balancer health checks
  */
 
 import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication, ValidationPipe, VersioningType } from '@nestjs/common';
+import {
+  INestApplication,
+  ValidationPipe,
+  VersioningType,
+} from '@nestjs/common';
 import request from 'supertest';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { MongooseModule, getConnectionToken } from '@nestjs/mongoose';
@@ -123,13 +127,13 @@ describe('Health (e2e)', () => {
   describe('GET /api/v1/health/live', () => {
     it('should return liveness status quickly', async () => {
       const startTime = Date.now();
-      
+
       const response = await request(app.getHttpServer())
         .get('/api/v1/health/live')
         .expect(200);
 
       const duration = Date.now() - startTime;
-      
+
       expect(response.body.status).toBe('ok');
       // Liveness should respond within 100ms
       expect(duration).toBeLessThan(100);
@@ -164,12 +168,12 @@ describe('Health (e2e)', () => {
   describe('Health Check Performance', () => {
     it('should handle multiple concurrent health checks', async () => {
       const requests = Array.from({ length: 50 }, () =>
-        request(app.getHttpServer()).get('/api/v1/health')
+        request(app.getHttpServer()).get('/api/v1/health'),
       );
 
       const responses = await Promise.all(requests);
 
-      responses.forEach(response => {
+      responses.forEach((response) => {
         expect(response.status).toBe(200);
         expect(response.body.status).toBe('ok');
       });
@@ -184,7 +188,8 @@ describe('Health (e2e)', () => {
         responseTimes.push(Date.now() - startTime);
       }
 
-      const avgTime = responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length;
+      const avgTime =
+        responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length;
       const maxTime = Math.max(...responseTimes);
 
       // Average should be under 50ms

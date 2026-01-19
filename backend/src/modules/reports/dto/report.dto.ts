@@ -1,5 +1,11 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsMongoId, IsDateString, IsEnum, IsString } from 'class-validator';
+import {
+  IsOptional,
+  IsMongoId,
+  IsDateString,
+  IsEnum,
+  IsString,
+} from 'class-validator';
 import { PaginationDto } from '../../../common/dto';
 
 export enum ReportFormat {

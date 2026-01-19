@@ -31,6 +31,9 @@ enum SessionStatus {
   bool get isCheckInAllowed => this == SessionStatus.open;
 }
 
+/// SessionLifecycle is an alias for SessionStatus (for compatibility)
+typedef SessionLifecycle = SessionStatus;
+
 /// Check-in method enum
 enum CheckInMethod {
   qr,

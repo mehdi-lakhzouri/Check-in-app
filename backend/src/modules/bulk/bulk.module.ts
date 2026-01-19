@@ -24,7 +24,12 @@ import { CheckInsModule } from '../checkins';
         if (allowedMimes.includes(file.mimetype)) {
           callback(null, true);
         } else {
-          callback(new Error('Invalid file type. Only Excel and CSV files are allowed.'), false);
+          callback(
+            new Error(
+              'Invalid file type. Only Excel and CSV files are allowed.',
+            ),
+            false,
+          );
         }
       },
     }),

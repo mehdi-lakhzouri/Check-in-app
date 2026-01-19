@@ -1,12 +1,16 @@
 /**
  * Check-ins E2E Tests
  * End-to-end tests for the Check-ins API endpoints
- * 
+ *
  * Route: /api/v1/checkin (singular)
  */
 
 import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication, ValidationPipe, VersioningType } from '@nestjs/common';
+import {
+  INestApplication,
+  ValidationPipe,
+  VersioningType,
+} from '@nestjs/common';
 import request from 'supertest';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { MongooseModule, getConnectionToken } from '@nestjs/mongoose';
@@ -79,12 +83,14 @@ describe('CheckIns (e2e)', () => {
     // Create a session that is open
     const sessionResponse = await request(app.getHttpServer())
       .post('/api/v1/sessions')
-      .send(mockData.createSessionDto({ 
-        name: 'Test Session',
-        isOpen: true,
-        startTime: new Date().toISOString(),
-        endTime: new Date(Date.now() + 3600000).toISOString(),
-      }));
+      .send(
+        mockData.createSessionDto({
+          name: 'Test Session',
+          isOpen: true,
+          startTime: new Date().toISOString(),
+          endTime: new Date(Date.now() + 3600000).toISOString(),
+        }),
+      );
     sessionId = sessionResponse.body.data._id;
 
     // Create a participant
@@ -137,7 +143,9 @@ describe('CheckIns (e2e)', () => {
       // Create a closed session
       const closedSessionResponse = await request(app.getHttpServer())
         .post('/api/v1/sessions')
-        .send(mockData.createSessionDto({ name: 'Closed Session', isOpen: false }));
+        .send(
+          mockData.createSessionDto({ name: 'Closed Session', isOpen: false }),
+        );
       const closedSessionId = closedSessionResponse.body.data._id;
 
       await request(app.getHttpServer())
@@ -192,18 +200,24 @@ describe('CheckIns (e2e)', () => {
       const pastStartTime = new Date(Date.now() - 15 * 60 * 1000);
       const lateSessionResponse = await request(app.getHttpServer())
         .post('/api/v1/sessions')
-        .send(mockData.createSessionDto({
-          name: 'Late Session',
-          isOpen: true,
-          startTime: pastStartTime.toISOString(),
-          endTime: new Date(pastStartTime.getTime() + 3600000).toISOString(),
-        }));
+        .send(
+          mockData.createSessionDto({
+            name: 'Late Session',
+            isOpen: true,
+            startTime: pastStartTime.toISOString(),
+            endTime: new Date(pastStartTime.getTime() + 3600000).toISOString(),
+          }),
+        );
       const lateSessionId = lateSessionResponse.body.data._id;
 
       // Create a new participant for this test
       const lateParticipantResponse = await request(app.getHttpServer())
         .post('/api/v1/participants')
-        .send(mockData.createParticipantDto({ email: 'late-participant@example.com' }));
+        .send(
+          mockData.createParticipantDto({
+            email: 'late-participant@example.com',
+          }),
+        );
       const lateParticipantId = lateParticipantResponse.body.data._id;
 
       const response = await request(app.getHttpServer())
@@ -247,7 +261,9 @@ describe('CheckIns (e2e)', () => {
       // Create a closed session
       const closedSessionResponse = await request(app.getHttpServer())
         .post('/api/v1/sessions')
-        .send(mockData.createSessionDto({ name: 'Closed Session', isOpen: false }));
+        .send(
+          mockData.createSessionDto({ name: 'Closed Session', isOpen: false }),
+        );
       const closedSessionId = closedSessionResponse.body.data._id;
 
       await request(app.getHttpServer())
@@ -271,13 +287,11 @@ describe('CheckIns (e2e)', () => {
       const participant2Response = await request(app.getHttpServer())
         .post('/api/v1/participants')
         .send(mockData.createParticipantDto({ email: 'second@example.com' }));
-      
-      await request(app.getHttpServer())
-        .post('/api/v1/checkin')
-        .send({ 
-          participantId: participant2Response.body.data._id, 
-          sessionId 
-        });
+
+      await request(app.getHttpServer()).post('/api/v1/checkin').send({
+        participantId: participant2Response.body.data._id,
+        sessionId,
+      });
     });
 
     it('should return all check-ins', async () => {
@@ -295,9 +309,12 @@ describe('CheckIns (e2e)', () => {
         .query({ sessionId })
         .expect(200);
 
-      expect(response.body.data.every((c: any) => 
-        c.sessionId === sessionId || c.sessionId?._id === sessionId
-      )).toBe(true);
+      expect(
+        response.body.data.every(
+          (c: any) =>
+            c.sessionId === sessionId || c.sessionId?._id === sessionId,
+        ),
+      ).toBe(true);
     });
 
     it('should filter by participantId', async () => {
@@ -327,7 +344,7 @@ describe('CheckIns (e2e)', () => {
       const response = await request(app.getHttpServer())
         .post('/api/v1/checkin')
         .send({ participantId, sessionId });
-      
+
       checkInId = response.body.data._id;
     });
 
@@ -356,7 +373,7 @@ describe('CheckIns (e2e)', () => {
       const response = await request(app.getHttpServer())
         .post('/api/v1/checkin')
         .send({ participantId, sessionId });
-      
+
       checkInId = response.body.data._id;
     });
 
@@ -390,13 +407,11 @@ describe('CheckIns (e2e)', () => {
       const participant2Response = await request(app.getHttpServer())
         .post('/api/v1/participants')
         .send(mockData.createParticipantDto({ email: 'stats@example.com' }));
-      
-      await request(app.getHttpServer())
-        .post('/api/v1/checkin')
-        .send({ 
-          participantId: participant2Response.body.data._id, 
-          sessionId 
-        });
+
+      await request(app.getHttpServer()).post('/api/v1/checkin').send({
+        participantId: participant2Response.body.data._id,
+        sessionId,
+      });
     });
 
     it('should return check-in statistics', async () => {
@@ -430,13 +445,11 @@ describe('CheckIns (e2e)', () => {
       const participant2Response = await request(app.getHttpServer())
         .post('/api/v1/participants')
         .send(mockData.createParticipantDto({ email: 'recent@example.com' }));
-      
-      await request(app.getHttpServer())
-        .post('/api/v1/checkin')
-        .send({ 
-          participantId: participant2Response.body.data._id, 
-          sessionId 
-        });
+
+      await request(app.getHttpServer()).post('/api/v1/checkin').send({
+        participantId: participant2Response.body.data._id,
+        sessionId,
+      });
     });
 
     it('should return recent check-ins', async () => {

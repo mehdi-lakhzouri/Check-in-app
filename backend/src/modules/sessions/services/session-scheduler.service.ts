@@ -5,7 +5,10 @@ import { InjectQueue } from '@nestjs/bull';
 import { Model } from 'mongoose';
 import * as Bull from 'bull';
 import { Session, SessionDocument, SessionStatus } from '../schemas';
-import { SESSION_SCHEDULER_QUEUE, SessionSchedulerProcessor } from '../processors';
+import {
+  SESSION_SCHEDULER_QUEUE,
+  SessionSchedulerProcessor,
+} from '../processors';
 import { PinoLoggerService, getCurrentRequestId } from '../../../common/logger';
 
 /**
@@ -25,12 +28,12 @@ export interface SessionStatusUpdate {
 
 /**
  * Session Scheduler Service
- * 
+ *
  * Handles automatic session status management using Bull queue:
  * - Auto-opens sessions X minutes before start time
  * - Auto-ends sessions after their end time
  * - Emits events for real-time updates via WebSocket
- * 
+ *
  * Production-ready features:
  * - Distributed job processing with Redis (prevents duplicate runs)
  * - Survives server restarts
@@ -41,13 +44,15 @@ export interface SessionStatusUpdate {
 @Injectable()
 export class SessionSchedulerService implements OnModuleInit, OnModuleDestroy {
   private readonly logger: PinoLoggerService;
-  
+
   // Event emitter callback - set by RealtimeGateway
   private onStatusUpdate: ((update: SessionStatusUpdate) => void) | null = null;
 
   constructor(
-    @InjectModel(Session.name) private readonly sessionModel: Model<SessionDocument>,
-    @InjectQueue(SESSION_SCHEDULER_QUEUE) private readonly schedulerQueue: Bull.Queue,
+    @InjectModel(Session.name)
+    private readonly sessionModel: Model<SessionDocument>,
+    @InjectQueue(SESSION_SCHEDULER_QUEUE)
+    private readonly schedulerQueue: Bull.Queue,
     private readonly configService: ConfigService,
     private readonly processor: SessionSchedulerProcessor,
   ) {
@@ -58,7 +63,9 @@ export class SessionSchedulerService implements OnModuleInit, OnModuleDestroy {
   /**
    * Register callback for status updates (used by RealtimeGateway)
    */
-  registerStatusUpdateCallback(callback: (update: SessionStatusUpdate) => void): void {
+  registerStatusUpdateCallback(
+    callback: (update: SessionStatusUpdate) => void,
+  ): void {
     this.onStatusUpdate = callback;
     // Also register with the processor for distributed job processing
     this.processor.registerStatusUpdateCallback(callback);
@@ -86,10 +93,19 @@ export class SessionSchedulerService implements OnModuleInit, OnModuleDestroy {
    * This ensures only one instance processes jobs even with multiple servers
    */
   private async setupRecurringJobs(): Promise<void> {
-    const intervalMs = this.configService.get<number>('sessionScheduler.checkIntervalMs', 30000);
-    const autoOpenMinutes = this.configService.get<number>('sessionScheduler.autoOpenMinutesBefore', 10);
+    const intervalMs = this.configService.get<number>(
+      'sessionScheduler.checkIntervalMs',
+      30000,
+    );
+    const autoOpenMinutes = this.configService.get<number>(
+      'sessionScheduler.autoOpenMinutesBefore',
+      10,
+    );
 
-    this.logger.log('Setting up session scheduler jobs', { intervalMs, autoOpenMinutes });
+    this.logger.log('Setting up session scheduler jobs', {
+      intervalMs,
+      autoOpenMinutes,
+    });
 
     // Clean up any existing repeatable jobs first
     const existingJobs = await this.schedulerQueue.getRepeatableJobs();
@@ -106,13 +122,13 @@ export class SessionSchedulerService implements OnModuleInit, OnModuleDestroy {
           every: intervalMs,
         },
         removeOnComplete: 100, // Keep last 100 completed jobs for debugging
-        removeOnFail: 50,      // Keep last 50 failed jobs for debugging
-        attempts: 3,           // Retry up to 3 times on failure
+        removeOnFail: 50, // Keep last 50 failed jobs for debugging
+        attempts: 3, // Retry up to 3 times on failure
         backoff: {
           type: 'exponential',
-          delay: 5000,         // Start with 5 second delay
+          delay: 5000, // Start with 5 second delay
         },
-      }
+      },
     );
 
     // Add auto-end job with repeat
@@ -130,7 +146,7 @@ export class SessionSchedulerService implements OnModuleInit, OnModuleDestroy {
           type: 'exponential',
           delay: 5000,
         },
-      }
+      },
     );
 
     this.logger.log('Session scheduler jobs configured successfully');
@@ -158,7 +174,7 @@ export class SessionSchedulerService implements OnModuleInit, OnModuleDestroy {
     newStatus: SessionStatus,
     newIsOpen: boolean,
     previousStatus?: SessionStatus,
-    previousIsOpen?: boolean
+    previousIsOpen?: boolean,
   ): Promise<SessionStatusUpdate | null> {
     const session = await this.sessionModel.findById(sessionId).exec();
     if (!session) {
@@ -180,18 +196,21 @@ export class SessionSchedulerService implements OnModuleInit, OnModuleDestroy {
       timestamp: new Date(),
     };
 
-    this.logger.log('Session manually updated', { 
-      sessionId: session._id.toString(), 
-      sessionName: session.name, 
-      previousStatus: prevStatus, 
-      newStatus 
+    this.logger.log('Session manually updated', {
+      sessionId: session._id.toString(),
+      sessionName: session.name,
+      previousStatus: prevStatus,
+      newStatus,
     });
 
     // Emit real-time update
     if (this.onStatusUpdate) {
       this.onStatusUpdate(update);
     } else {
-      this.logger.warn('No status update callback registered - real-time update not sent', { sessionId: session._id.toString() });
+      this.logger.warn(
+        'No status update callback registered - real-time update not sent',
+        { sessionId: session._id.toString() },
+      );
     }
 
     return update;
@@ -200,22 +219,35 @@ export class SessionSchedulerService implements OnModuleInit, OnModuleDestroy {
   /**
    * Get sessions that will auto-open soon (for UI preview)
    */
-  async getUpcomingAutoOpen(): Promise<Array<{ session: SessionDocument; opensIn: number }>> {
-    const autoOpenMinutes = this.configService.get<number>('sessionScheduler.autoOpenMinutesBefore', 10);
+  async getUpcomingAutoOpen(): Promise<
+    Array<{ session: SessionDocument; opensIn: number }>
+  > {
+    const autoOpenMinutes = this.configService.get<number>(
+      'sessionScheduler.autoOpenMinutesBefore',
+      10,
+    );
     const now = new Date();
     const previewWindow = new Date(now.getTime() + 60 * 60 * 1000); // Next hour
 
-    const sessions = await this.sessionModel.find({
-      status: SessionStatus.SCHEDULED,
-      startTime: { 
-        $gt: new Date(now.getTime() + autoOpenMinutes * 60 * 1000), // After current auto-open window
-        $lte: new Date(previewWindow.getTime() + autoOpenMinutes * 60 * 1000), // Within preview window
-      },
-    }).sort({ startTime: 1 }).exec();
+    const sessions = await this.sessionModel
+      .find({
+        status: SessionStatus.SCHEDULED,
+        startTime: {
+          $gt: new Date(now.getTime() + autoOpenMinutes * 60 * 1000), // After current auto-open window
+          $lte: new Date(previewWindow.getTime() + autoOpenMinutes * 60 * 1000), // Within preview window
+        },
+      })
+      .sort({ startTime: 1 })
+      .exec();
 
-    return sessions.map(session => ({
+    return sessions.map((session) => ({
       session,
-      opensIn: Math.round((new Date(session.startTime).getTime() - autoOpenMinutes * 60 * 1000 - now.getTime()) / 60000),
+      opensIn: Math.round(
+        (new Date(session.startTime).getTime() -
+          autoOpenMinutes * 60 * 1000 -
+          now.getTime()) /
+          60000,
+      ),
     }));
   }
 
@@ -229,10 +261,22 @@ export class SessionSchedulerService implements OnModuleInit, OnModuleDestroy {
     autoEndGraceMinutes: number;
   } {
     return {
-      autoOpenMinutesBefore: this.configService.get<number>('sessionScheduler.autoOpenMinutesBefore', 10),
-      checkIntervalMs: this.configService.get<number>('sessionScheduler.checkIntervalMs', 30000),
-      autoEndEnabled: this.configService.get<boolean>('sessionScheduler.autoEndEnabled', true),
-      autoEndGraceMinutes: this.configService.get<number>('sessionScheduler.autoEndGraceMinutes', 0),
+      autoOpenMinutesBefore: this.configService.get<number>(
+        'sessionScheduler.autoOpenMinutesBefore',
+        10,
+      ),
+      checkIntervalMs: this.configService.get<number>(
+        'sessionScheduler.checkIntervalMs',
+        30000,
+      ),
+      autoEndEnabled: this.configService.get<boolean>(
+        'sessionScheduler.autoEndEnabled',
+        true,
+      ),
+      autoEndGraceMinutes: this.configService.get<number>(
+        'sessionScheduler.autoEndGraceMinutes',
+        0,
+      ),
     };
   }
 
@@ -244,13 +288,13 @@ export class SessionSchedulerService implements OnModuleInit, OnModuleDestroy {
     const autoOpenJob = await this.schedulerQueue.add(
       'auto-open-sessions',
       { type: 'auto-open' },
-      { removeOnComplete: true, removeOnFail: false }
+      { removeOnComplete: true, removeOnFail: false },
     );
 
     const autoEndJob = await this.schedulerQueue.add(
       'auto-end-sessions',
       { type: 'auto-end' },
-      { removeOnComplete: true, removeOnFail: false }
+      { removeOnComplete: true, removeOnFail: false },
     );
 
     return {
@@ -270,14 +314,15 @@ export class SessionSchedulerService implements OnModuleInit, OnModuleDestroy {
     delayed: number;
     paused: number;
   }> {
-    const [waiting, active, completed, failed, delayed, paused] = await Promise.all([
-      this.schedulerQueue.getWaitingCount(),
-      this.schedulerQueue.getActiveCount(),
-      this.schedulerQueue.getCompletedCount(),
-      this.schedulerQueue.getFailedCount(),
-      this.schedulerQueue.getDelayedCount(),
-      this.schedulerQueue.getPausedCount(),
-    ]);
+    const [waiting, active, completed, failed, delayed, paused] =
+      await Promise.all([
+        this.schedulerQueue.getWaitingCount(),
+        this.schedulerQueue.getActiveCount(),
+        this.schedulerQueue.getCompletedCount(),
+        this.schedulerQueue.getFailedCount(),
+        this.schedulerQueue.getDelayedCount(),
+        this.schedulerQueue.getPausedCount(),
+      ]);
 
     return { waiting, active, completed, failed, delayed, paused };
   }

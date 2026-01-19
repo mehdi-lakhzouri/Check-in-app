@@ -8,10 +8,10 @@ import { PinoLoggerService } from '../logger';
 
 /**
  * Redis IO Adapter for Socket.IO
- * 
+ *
  * Enables horizontal scaling of WebSocket connections across multiple
  * server instances by using Redis Pub/Sub for message broadcasting.
- * 
+ *
  * Features:
  * - Connection verification with ping before use
  * - Automatic reconnection with retry strategy
@@ -38,8 +38,8 @@ export class RedisIoAdapter extends IoAdapter {
 
     try {
       const pubClient = createClient({
-        socket: { 
-          host, 
+        socket: {
+          host,
           port,
           reconnectStrategy: (retries) => {
             if (retries > 5) {
@@ -52,7 +52,7 @@ export class RedisIoAdapter extends IoAdapter {
         },
         ...(password ? { password } : {}),
       });
-      
+
       const subClient = pubClient.duplicate();
 
       pubClient.on('error', (err) => {
@@ -77,17 +77,18 @@ export class RedisIoAdapter extends IoAdapter {
       await Promise.all([pubClient.connect(), subClient.connect()]);
 
       // Verify connections are ready with ping
-      await Promise.all([
-        pubClient.ping(),
-        subClient.ping()
-      ]);
+      await Promise.all([pubClient.ping(), subClient.ping()]);
 
       this.adapterConstructor = createAdapter(pubClient, subClient);
       this.isConnected = true;
-      this.logger.log('✅ Socket.IO Redis adapter connected - horizontal scaling enabled');
+      this.logger.log(
+        '✅ Socket.IO Redis adapter connected - horizontal scaling enabled',
+      );
     } catch (error) {
       this.logger.warn(`⚠️ Redis adapter connection failed: ${error.message}`);
-      this.logger.warn('Falling back to in-memory adapter (single instance mode)');
+      this.logger.warn(
+        'Falling back to in-memory adapter (single instance mode)',
+      );
       this.adapterConstructor = null;
       this.isConnected = false;
     }
@@ -97,19 +98,22 @@ export class RedisIoAdapter extends IoAdapter {
     const server = super.createIOServer(port, {
       ...options,
       cors: {
-        origin: process.env.CORS_ORIGIN?.split(',') || ['http://localhost:3000', 'http://localhost:3001'],
+        origin: process.env.CORS_ORIGIN?.split(',') || [
+          'http://localhost:3000',
+          'http://localhost:3001',
+        ],
         methods: ['GET', 'POST'],
         credentials: true,
       },
     });
-    
+
     if (this.adapterConstructor && this.isConnected) {
       server.adapter(this.adapterConstructor);
       this.logger.log('Socket.IO server using Redis adapter');
     } else {
       this.logger.warn('Socket.IO server using in-memory adapter');
     }
-    
+
     return server;
   }
 }

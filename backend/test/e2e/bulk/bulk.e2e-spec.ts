@@ -1,9 +1,9 @@
 /**
  * Bulk Operations E2E Tests
  * End-to-end tests for the Bulk API endpoints
- * 
+ *
  * Route: /api/v1/bulk
- * 
+ *
  * Test Coverage:
  * ✔️ Normal cases (happy paths)
  * ✔️ Edge/boundary conditions
@@ -11,7 +11,11 @@
  */
 
 import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication, ValidationPipe, VersioningType } from '@nestjs/common';
+import {
+  INestApplication,
+  ValidationPipe,
+  VersioningType,
+} from '@nestjs/common';
 import request from 'supertest';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { MongooseModule, getConnectionToken } from '@nestjs/mongoose';
@@ -94,11 +98,13 @@ describe('Bulk Operations (e2e)', () => {
     // Create a session for testing
     const sessionResponse = await request(app.getHttpServer())
       .post('/api/v1/sessions')
-      .send(mockData.createSessionDto({ 
-        name: 'Bulk Test Session',
-        isOpen: true,
-        capacity: 500,
-      }));
+      .send(
+        mockData.createSessionDto({
+          name: 'Bulk Test Session',
+          isOpen: true,
+          capacity: 500,
+        }),
+      );
     sessionId = sessionResponse.body.data._id;
   });
 
@@ -113,7 +119,7 @@ describe('Bulk Operations (e2e)', () => {
         .expect(200);
 
       expect(response.headers['content-type']).toContain(
-        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       );
       expect(response.headers['content-disposition']).toContain('attachment');
       expect(response.headers['content-disposition']).toContain('.xlsx');
@@ -127,10 +133,12 @@ describe('Bulk Operations (e2e)', () => {
       // Parse the Excel file to verify structure
       const workbook = xlsx.read(response.body, { type: 'buffer' });
       expect(workbook.SheetNames).toContain('Participants');
-      
+
       const worksheet = workbook.Sheets['Participants'];
-      const headers = xlsx.utils.sheet_to_json(worksheet, { header: 1 })[0] as string[];
-      
+      const headers = xlsx.utils.sheet_to_json(worksheet, {
+        header: 1,
+      })[0] as string[];
+
       // Verify required columns
       expect(headers).toContain('name');
       expect(headers).toContain('email');
@@ -145,9 +153,23 @@ describe('Bulk Operations (e2e)', () => {
     // HAPPY PATH
     it('should successfully upload participants from Excel', async () => {
       const participantsData = [
-        { name: 'John Doe', email: 'john@bulk.com', organization: 'Acme Corp', phone: '+1234567890' },
-        { name: 'Jane Smith', email: 'jane@bulk.com', organization: 'Tech Inc', phone: '+0987654321' },
-        { name: 'Bob Wilson', email: 'bob@bulk.com', organization: 'StartUp Ltd' },
+        {
+          name: 'John Doe',
+          email: 'john@bulk.com',
+          organization: 'Acme Corp',
+          phone: '+1234567890',
+        },
+        {
+          name: 'Jane Smith',
+          email: 'jane@bulk.com',
+          organization: 'Tech Inc',
+          phone: '+0987654321',
+        },
+        {
+          name: 'Bob Wilson',
+          email: 'bob@bulk.com',
+          organization: 'StartUp Ltd',
+        },
       ];
       const excelBuffer = createExcelBuffer(participantsData);
 
@@ -201,8 +223,16 @@ describe('Bulk Operations (e2e)', () => {
 
       const participantsData = [
         { name: 'New User', email: 'new@bulk.com', organization: 'New Org' },
-        { name: 'Duplicate', email: 'duplicate@bulk.com', organization: 'Dup Org' },
-        { name: 'Another New', email: 'another@bulk.com', organization: 'Another Org' },
+        {
+          name: 'Duplicate',
+          email: 'duplicate@bulk.com',
+          organization: 'Dup Org',
+        },
+        {
+          name: 'Another New',
+          email: 'another@bulk.com',
+          organization: 'Another Org',
+        },
       ];
       const excelBuffer = createExcelBuffer(participantsData);
 
@@ -234,7 +264,11 @@ describe('Bulk Operations (e2e)', () => {
 
     it('should trim whitespace from cell values', async () => {
       const participantsData = [
-        { name: '  Trimmed User  ', email: '  trim@bulk.com  ', organization: '  Trim Org  ' },
+        {
+          name: '  Trimmed User  ',
+          email: '  trim@bulk.com  ',
+          organization: '  Trim Org  ',
+        },
       ];
       const excelBuffer = createExcelBuffer(participantsData);
 
@@ -305,8 +339,16 @@ describe('Bulk Operations (e2e)', () => {
     // HAPPY PATH
     it('should upload participants and register to session', async () => {
       const participantsData = [
-        { name: 'Session User 1', email: 'session1@bulk.com', organization: 'Org A' },
-        { name: 'Session User 2', email: 'session2@bulk.com', organization: 'Org B' },
+        {
+          name: 'Session User 1',
+          email: 'session1@bulk.com',
+          organization: 'Org A',
+        },
+        {
+          name: 'Session User 2',
+          email: 'session2@bulk.com',
+          organization: 'Org B',
+        },
       ];
       const excelBuffer = createExcelBuffer(participantsData);
 
@@ -332,10 +374,12 @@ describe('Bulk Operations (e2e)', () => {
       const existingEmail = 'existing@bulk.com';
       await request(app.getHttpServer())
         .post('/api/v1/participants')
-        .send(mockData.createParticipantDto({ 
-          name: 'Existing User',
-          email: existingEmail,
-        }));
+        .send(
+          mockData.createParticipantDto({
+            name: 'Existing User',
+            email: existingEmail,
+          }),
+        );
 
       const participantsData = [
         { name: 'Existing User', email: existingEmail, organization: 'Org' },
@@ -379,10 +423,12 @@ describe('Bulk Operations (e2e)', () => {
       for (let i = 0; i < 5; i++) {
         const res = await request(app.getHttpServer())
           .post('/api/v1/participants')
-          .send(mockData.createParticipantDto({ 
-            email: `assign${i}@bulk.com`,
-            name: `Assign User ${i}`,
-          }));
+          .send(
+            mockData.createParticipantDto({
+              email: `assign${i}@bulk.com`,
+              name: `Assign User ${i}`,
+            }),
+          );
         participantIds.push(res.body.data._id);
       }
     });
@@ -441,10 +487,12 @@ describe('Bulk Operations (e2e)', () => {
       for (let i = 0; i < 100; i++) {
         const res = await request(app.getHttpServer())
           .post('/api/v1/participants')
-          .send(mockData.createParticipantDto({ 
-            email: `batch${i}@bulk.com`,
-            name: `Batch User ${i}`,
-          }));
+          .send(
+            mockData.createParticipantDto({
+              email: `batch${i}@bulk.com`,
+              name: `Batch User ${i}`,
+            }),
+          );
         moreParticipantIds.push(res.body.data._id);
       }
 

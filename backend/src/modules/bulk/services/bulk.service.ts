@@ -57,8 +57,13 @@ export class BulkService {
     };
   }
 
-  async bulkUploadParticipants(file: Express.Multer.File): Promise<BulkUploadResultDto> {
-    this.logger.log('Processing bulk upload', { filename: file.originalname, reqId: getCurrentRequestId() });
+  async bulkUploadParticipants(
+    file: Express.Multer.File,
+  ): Promise<BulkUploadResultDto> {
+    this.logger.log('Processing bulk upload', {
+      filename: file.originalname,
+      reqId: getCurrentRequestId(),
+    });
 
     const workbook = XLSX.read(file.buffer, { type: 'buffer' });
     const sheetName = workbook.SheetNames[0];
@@ -94,7 +99,9 @@ export class BulkService {
       }
     }
 
-    this.logger.log(`Bulk upload completed: ${created} created, ${errors.length} failed`);
+    this.logger.log(
+      `Bulk upload completed: ${created} created, ${errors.length} failed`,
+    );
 
     return {
       created,
@@ -125,7 +132,9 @@ export class BulkService {
 
     for (const row of rows) {
       try {
-        const participant = await this.participantsService.findByEmail(row.email?.trim());
+        const participant = await this.participantsService.findByEmail(
+          row.email?.trim(),
+        );
         if (participant) {
           await this.registrationsService.create({
             participantId: participant._id.toString(),
@@ -136,7 +145,9 @@ export class BulkService {
         }
       } catch (error) {
         // Registration might already exist, continue
-        this.logger.debug(`Registration skipped for ${row.email}: ${error.message}`);
+        this.logger.debug(
+          `Registration skipped for ${row.email}: ${error.message}`,
+        );
       }
     }
 
@@ -150,7 +161,9 @@ export class BulkService {
     sessionId: string,
     participantIds: string[],
   ): Promise<BulkAssignResultDto> {
-    this.logger.log(`Assigning ${participantIds.length} participants to session: ${sessionId}`);
+    this.logger.log(
+      `Assigning ${participantIds.length} participants to session: ${sessionId}`,
+    );
 
     // Verify session exists
     await this.sessionsService.findOne(sessionId);
@@ -195,12 +208,15 @@ export class BulkService {
     };
   }
 
-  async exportSessionData(sessionId: string): Promise<{ buffer: Buffer; filename: string }> {
+  async exportSessionData(
+    sessionId: string,
+  ): Promise<{ buffer: Buffer; filename: string }> {
     this.logger.log(`Exporting session data: ${sessionId}`);
 
     const session = await this.sessionsService.findOne(sessionId);
     const checkIns = await this.checkInsService.findBySession(sessionId);
-    const registrations = await this.registrationsService.findBySession(sessionId);
+    const registrations =
+      await this.registrationsService.findBySession(sessionId);
 
     // Create registrations sheet
     const registrationsData = registrations.map((reg) => ({
@@ -230,9 +246,13 @@ export class BulkService {
       { field: 'Location', value: session.location || 'N/A' },
       { field: 'Total Registrations', value: registrations.length },
       { field: 'Total Check-ins', value: checkIns.length },
-      { field: 'Attendance Rate', value: registrations.length > 0 
-          ? ((checkIns.length / registrations.length) * 100).toFixed(2) + '%'
-          : '0%' },
+      {
+        field: 'Attendance Rate',
+        value:
+          registrations.length > 0
+            ? ((checkIns.length / registrations.length) * 100).toFixed(2) + '%'
+            : '0%',
+      },
     ];
     const summarySheet = XLSX.utils.json_to_sheet(summaryData);
     XLSX.utils.book_append_sheet(workbook, summarySheet, 'Summary');

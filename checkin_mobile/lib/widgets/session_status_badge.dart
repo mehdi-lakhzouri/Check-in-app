@@ -140,6 +140,8 @@ class SessionLifecycleBadge extends StatelessWidget {
         return 'Session is open for check-in';
       case SessionLifecycle.ended:
         return 'Session has ended';
+      case SessionLifecycle.closed:
+        return 'Session has been closed';
       case SessionLifecycle.cancelled:
         return 'Session has been cancelled';
     }
@@ -177,6 +179,13 @@ class SessionLifecycleBadge extends StatelessWidget {
           text: const Color(0xFF424242), // Grey 800
           border: const Color(0xFFBDBDBD), // Grey 400
           dot: const Color(0xFF9E9E9E), // Grey 500
+        );
+      case SessionLifecycle.closed:
+        return _LifecycleColors(
+          background: const Color(0xFFFFF3E0), // Orange 50
+          text: const Color(0xFFE65100), // Orange 800
+          border: const Color(0xFFFFCC80), // Orange 200
+          dot: const Color(0xFFFF9800), // Orange 500
         );
       case SessionLifecycle.cancelled:
         return _LifecycleColors(
@@ -259,4 +268,34 @@ class _LifecycleColors {
     required this.border,
     required this.dot,
   });
+}
+
+/// Convenience widget that takes status instead of lifecycle
+/// (since SessionStatus and SessionLifecycle are the same)
+class SessionStatusBadge extends StatelessWidget {
+  final SessionStatus status;
+  final bool isOpen;
+  final double? fontSize;
+  final DateTime? startTime;
+  final DateTime? endTime;
+
+  const SessionStatusBadge({
+    super.key,
+    required this.status,
+    required this.isOpen,
+    this.fontSize,
+    this.startTime,
+    this.endTime,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SessionLifecycleBadge(
+      lifecycle: status, // SessionLifecycle is typedef of SessionStatus
+      isOpen: isOpen,
+      fontSize: fontSize,
+      startTime: startTime,
+      endTime: endTime,
+    );
+  }
 }

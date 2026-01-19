@@ -153,4 +153,7 @@ class Session {
     return now.isAfter(startTime!) && (endTime == null || now.isBefore(endTime!));
   }
   bool get hasEnded => endTime != null && DateTime.now().isAfter(endTime!);
+  
+  /// Lifecycle is an alias for status (for compatibility)
+  SessionStatus get lifecycle => status;
 }

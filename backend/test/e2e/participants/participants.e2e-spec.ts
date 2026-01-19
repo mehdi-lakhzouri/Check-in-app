@@ -4,7 +4,11 @@
  */
 
 import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication, ValidationPipe, VersioningType } from '@nestjs/common';
+import {
+  INestApplication,
+  ValidationPipe,
+  VersioningType,
+} from '@nestjs/common';
 import request from 'supertest';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { MongooseModule, getConnectionToken } from '@nestjs/mongoose';
@@ -106,7 +110,9 @@ describe('Participants (e2e)', () => {
     });
 
     it('should return 409 for duplicate email', async () => {
-      const createDto = mockData.createParticipantDto({ email: 'duplicate@example.com' });
+      const createDto = mockData.createParticipantDto({
+        email: 'duplicate@example.com',
+      });
 
       await request(app.getHttpServer())
         .post('/api/v1/participants')
@@ -131,7 +137,7 @@ describe('Participants (e2e)', () => {
     });
 
     it('should create participant with different statuses', async () => {
-      const ambassadorDto = mockData.createParticipantDto({ 
+      const ambassadorDto = mockData.createParticipantDto({
         status: ParticipantStatus.AMBASSADOR,
         email: 'ambassador@example.com',
       });
@@ -148,9 +154,18 @@ describe('Participants (e2e)', () => {
   describe('GET /api/v1/participants', () => {
     beforeEach(async () => {
       const participants = [
-        mockData.createParticipantDto({ name: 'Alice Smith', email: 'alice@example.com' }),
-        mockData.createParticipantDto({ name: 'Bob Johnson', email: 'bob@example.com' }),
-        mockData.createParticipantDto({ name: 'Charlie Brown', email: 'charlie@example.com' }),
+        mockData.createParticipantDto({
+          name: 'Alice Smith',
+          email: 'alice@example.com',
+        }),
+        mockData.createParticipantDto({
+          name: 'Bob Johnson',
+          email: 'bob@example.com',
+        }),
+        mockData.createParticipantDto({
+          name: 'Charlie Brown',
+          email: 'charlie@example.com',
+        }),
       ];
 
       for (const participant of participants) {
@@ -192,17 +207,23 @@ describe('Participants (e2e)', () => {
     it('should filter by status', async () => {
       await request(app.getHttpServer())
         .post('/api/v1/participants')
-        .send(mockData.createParticipantDto({ 
-          status: ParticipantStatus.AMBASSADOR,
-          email: 'ambassador@example.com',
-        }));
+        .send(
+          mockData.createParticipantDto({
+            status: ParticipantStatus.AMBASSADOR,
+            email: 'ambassador@example.com',
+          }),
+        );
 
       const response = await request(app.getHttpServer())
         .get('/api/v1/participants')
         .query({ status: ParticipantStatus.AMBASSADOR })
         .expect(200);
 
-      expect(response.body.data.every((p: any) => p.status === ParticipantStatus.AMBASSADOR)).toBe(true);
+      expect(
+        response.body.data.every(
+          (p: any) => p.status === ParticipantStatus.AMBASSADOR,
+        ),
+      ).toBe(true);
     });
   });
 
@@ -213,7 +234,7 @@ describe('Participants (e2e)', () => {
       const response = await request(app.getHttpServer())
         .post('/api/v1/participants')
         .send(mockData.createParticipantDto({ name: 'Test Participant' }));
-      
+
       participantId = response.body.data._id;
     });
 
@@ -249,7 +270,7 @@ describe('Participants (e2e)', () => {
       const response = await request(app.getHttpServer())
         .post('/api/v1/participants')
         .send(mockData.createParticipantDto({ name: 'QR Test Participant' }));
-      
+
       participantQrCode = response.body.data.qrCode;
     });
 
@@ -277,7 +298,7 @@ describe('Participants (e2e)', () => {
       const response = await request(app.getHttpServer())
         .post('/api/v1/participants')
         .send(mockData.createParticipantDto({ name: 'Original Name' }));
-      
+
       participantId = response.body.data._id;
     });
 
@@ -320,7 +341,7 @@ describe('Participants (e2e)', () => {
       const response = await request(app.getHttpServer())
         .post('/api/v1/participants')
         .send(mockData.createParticipantDto());
-      
+
       participantId = response.body.data._id;
     });
 
@@ -347,17 +368,21 @@ describe('Participants (e2e)', () => {
     beforeEach(async () => {
       await request(app.getHttpServer())
         .post('/api/v1/participants')
-        .send(mockData.createParticipantDto({ 
-          status: ParticipantStatus.REGULAR,
-          email: 'regular1@example.com',
-        }));
-      
+        .send(
+          mockData.createParticipantDto({
+            status: ParticipantStatus.REGULAR,
+            email: 'regular1@example.com',
+          }),
+        );
+
       await request(app.getHttpServer())
         .post('/api/v1/participants')
-        .send(mockData.createParticipantDto({ 
-          status: ParticipantStatus.AMBASSADOR,
-          email: 'ambassador1@example.com',
-        }));
+        .send(
+          mockData.createParticipantDto({
+            status: ParticipantStatus.AMBASSADOR,
+            email: 'ambassador1@example.com',
+          }),
+        );
     });
 
     it('should return participant statistics', async () => {

@@ -10,8 +10,15 @@ import { CheckInsService } from '../../../src/modules/checkins/services';
 import { CheckInRepository } from '../../../src/modules/checkins/repositories';
 import { ParticipantsService } from '../../../src/modules/participants/services/participants.service';
 import { SessionsService } from '../../../src/modules/sessions/services/sessions.service';
-import { EntityNotFoundException, EntityExistsException, ValidationException } from '../../../src/common/exceptions';
-import { createMockCheckInRepository, createMockConfigService } from '../../utils/mock-factories';
+import {
+  EntityNotFoundException,
+  EntityExistsException,
+  ValidationException,
+} from '../../../src/common/exceptions';
+import {
+  createMockCheckInRepository,
+  createMockConfigService,
+} from '../../utils/mock-factories';
 import { mockData, generateObjectId } from '../../utils/test-utils';
 import { CheckInMethod } from '../../../src/modules/checkins/schemas';
 
@@ -71,7 +78,7 @@ describe('CheckInsService', () => {
       const participantId = generateObjectId();
       const sessionId = generateObjectId();
       const createDto = mockData.createCheckInDto(participantId, sessionId);
-      
+
       const session = mockData.session({ _id: sessionId, isOpen: true });
       const participant = mockData.participant({ _id: participantId });
       const expectedCheckIn = mockData.checkIn(participantId, sessionId);
@@ -87,52 +94,65 @@ describe('CheckInsService', () => {
       expect(result).toEqual(expectedCheckIn);
       expect(sessionsService.findOne).toHaveBeenCalledWith(sessionId);
       expect(participantsService.findOne).toHaveBeenCalledWith(participantId);
-      expect(repository.findByParticipantAndSession).toHaveBeenCalledWith(participantId, sessionId);
-      expect(sessionsService.incrementCheckInCount).toHaveBeenCalledWith(sessionId);
+      expect(repository.findByParticipantAndSession).toHaveBeenCalledWith(
+        participantId,
+        sessionId,
+      );
+      expect(sessionsService.incrementCheckInCount).toHaveBeenCalledWith(
+        sessionId,
+      );
     });
 
     it('should throw ValidationException when session is not open', async () => {
       const participantId = generateObjectId();
       const sessionId = generateObjectId();
       const createDto = mockData.createCheckInDto(participantId, sessionId);
-      
+
       const closedSession = mockData.session({ _id: sessionId, isOpen: false });
 
       sessionsService.findOne.mockResolvedValue(closedSession as any);
 
-      await expect(service.create(createDto)).rejects.toThrow(ValidationException);
+      await expect(service.create(createDto)).rejects.toThrow(
+        ValidationException,
+      );
     });
 
     it('should throw EntityExistsException when participant already checked in', async () => {
       const participantId = generateObjectId();
       const sessionId = generateObjectId();
       const createDto = mockData.createCheckInDto(participantId, sessionId);
-      
+
       const session = mockData.session({ _id: sessionId, isOpen: true });
       const participant = mockData.participant({ _id: participantId });
       const existingCheckIn = mockData.checkIn(participantId, sessionId);
 
       sessionsService.findOne.mockResolvedValue(session as any);
       participantsService.findOne.mockResolvedValue(participant as any);
-      repository.findByParticipantAndSession.mockResolvedValue(existingCheckIn as any);
+      repository.findByParticipantAndSession.mockResolvedValue(
+        existingCheckIn as any,
+      );
 
-      await expect(service.create(createDto)).rejects.toThrow(EntityExistsException);
+      await expect(service.create(createDto)).rejects.toThrow(
+        EntityExistsException,
+      );
     });
 
     it('should mark check-in as late when after threshold', async () => {
       const participantId = generateObjectId();
       const sessionId = generateObjectId();
       const createDto = mockData.createCheckInDto(participantId, sessionId);
-      
+
       // Session started 15 minutes ago (threshold is 10 minutes)
       const pastStartTime = new Date(Date.now() - 15 * 60 * 1000);
-      const session = mockData.session({ 
-        _id: sessionId, 
+      const session = mockData.session({
+        _id: sessionId,
         isOpen: true,
         startTime: pastStartTime,
       });
       const participant = mockData.participant({ _id: participantId });
-      const lateCheckIn = mockData.checkIn(participantId, sessionId, { isLate: true });
+      const lateCheckIn = mockData.checkIn(participantId, sessionId, {
+        isLate: true,
+      });
 
       sessionsService.findOne.mockResolvedValue(session as any);
       participantsService.findOne.mockResolvedValue(participant as any);
@@ -153,16 +173,18 @@ describe('CheckInsService', () => {
       const participantId = generateObjectId();
       const sessionId = generateObjectId();
       const createDto = mockData.createCheckInDto(participantId, sessionId);
-      
+
       // Session started 5 minutes ago (threshold is 10 minutes)
       const recentStartTime = new Date(Date.now() - 5 * 60 * 1000);
-      const session = mockData.session({ 
-        _id: sessionId, 
+      const session = mockData.session({
+        _id: sessionId,
         isOpen: true,
         startTime: recentStartTime,
       });
       const participant = mockData.participant({ _id: participantId });
-      const onTimeCheckIn = mockData.checkIn(participantId, sessionId, { isLate: false });
+      const onTimeCheckIn = mockData.checkIn(participantId, sessionId, {
+        isLate: false,
+      });
 
       sessionsService.findOne.mockResolvedValue(session as any);
       participantsService.findOne.mockResolvedValue(participant as any);
@@ -185,10 +207,12 @@ describe('CheckInsService', () => {
       const participantId = generateObjectId();
       const sessionId = generateObjectId();
       const qrCode = 'QR-TEST123';
-      
+
       const session = mockData.session({ _id: sessionId, isOpen: true });
       const participant = mockData.participant({ _id: participantId, qrCode });
-      const expectedCheckIn = mockData.checkIn(participantId, sessionId, { method: 'qr' });
+      const expectedCheckIn = mockData.checkIn(participantId, sessionId, {
+        method: 'qr',
+      });
 
       participantsService.findByQrCode.mockResolvedValue(participant as any);
       sessionsService.findOne.mockResolvedValue(session as any);
@@ -269,7 +293,9 @@ describe('CheckInsService', () => {
       const checkInId = generateObjectId();
       repository.findWithPopulate.mockResolvedValue(null);
 
-      await expect(service.findOne(checkInId)).rejects.toThrow(EntityNotFoundException);
+      await expect(service.findOne(checkInId)).rejects.toThrow(
+        EntityNotFoundException,
+      );
     });
   });
 
@@ -311,7 +337,9 @@ describe('CheckInsService', () => {
     it('should delete a check-in successfully', async () => {
       const checkInId = generateObjectId();
       const sessionId = generateObjectId();
-      const checkIn = mockData.checkIn(undefined, sessionId, { _id: checkInId });
+      const checkIn = mockData.checkIn(undefined, sessionId, {
+        _id: checkInId,
+      });
 
       repository.findById.mockResolvedValue(checkIn as any);
       repository.deleteById.mockResolvedValue(checkIn as any);
@@ -320,14 +348,18 @@ describe('CheckInsService', () => {
       const result = await service.remove(checkInId);
 
       expect(result).toEqual(checkIn);
-      expect(sessionsService.decrementCheckInCount).toHaveBeenCalledWith(sessionId);
+      expect(sessionsService.decrementCheckInCount).toHaveBeenCalledWith(
+        sessionId,
+      );
     });
 
     it('should throw EntityNotFoundException when deleting non-existent check-in', async () => {
       const checkInId = generateObjectId();
       repository.findById.mockResolvedValue(null);
 
-      await expect(service.remove(checkInId)).rejects.toThrow(EntityNotFoundException);
+      await expect(service.remove(checkInId)).rejects.toThrow(
+        EntityNotFoundException,
+      );
     });
   });
 });

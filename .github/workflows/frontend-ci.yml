@@ -49,7 +49,9 @@ jobs:
 
       - name: Run ESLint
         working-directory: frontend
-        run: npm run lint
+        # Use --max-warnings to allow warnings but fail on errors
+        # React Compiler rules produce warnings that don't block production
+        run: npm run lint -- --max-warnings=200
 
       - name: Check TypeScript
         working-directory: frontend

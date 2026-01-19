@@ -45,7 +45,10 @@ export class MongoExceptionFilter implements ExceptionFilter {
       status = HttpStatus.NOT_FOUND;
       message = 'Document not found';
     } else if (exception.name === 'MongoServerError') {
-      const mongoError = exception as unknown as { code: number; keyPattern?: Record<string, unknown> };
+      const mongoError = exception as unknown as {
+        code: number;
+        keyPattern?: Record<string, unknown>;
+      };
       if (mongoError.code === 11000) {
         status = HttpStatus.CONFLICT;
         message = 'Duplicate entry';
@@ -56,9 +59,9 @@ export class MongoExceptionFilter implements ExceptionFilter {
       }
     }
 
-    this.logger.error('MongoDB Error', exception.stack, { 
+    this.logger.error('MongoDB Error', exception.stack, {
       reqId,
-      message, 
+      message,
       statusCode: status,
       path: request.url,
       method: request.method,

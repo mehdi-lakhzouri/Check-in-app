@@ -7,7 +7,9 @@ import { RegistrationsController } from './controllers';
 
 @Module({
   imports: [
-    MongooseModule.forFeature([{ name: Registration.name, schema: RegistrationSchema }]),
+    MongooseModule.forFeature([
+      { name: Registration.name, schema: RegistrationSchema },
+    ]),
   ],
   controllers: [RegistrationsController],
   providers: [RegistrationsService, RegistrationRepository],

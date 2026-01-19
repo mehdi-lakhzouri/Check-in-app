@@ -29,9 +29,9 @@ import {
   TimeoutInterceptor,
 } from './common';
 import { RedisModule } from './common/redis';
-import { 
-  LoggerModule, 
-  CorrelationIdMiddleware, 
+import {
+  LoggerModule,
+  CorrelationIdMiddleware,
   HttpLoggingMiddleware,
   RequestContextMiddleware,
 } from './common/logger';
@@ -51,7 +51,13 @@ import { RealtimeModule } from './modules/realtime';
     // Configuration
     ConfigModule.forRoot({
       isGlobal: true,
-      load: [appConfig, databaseConfig, throttleConfig, uploadConfig, redisConfig],
+      load: [
+        appConfig,
+        databaseConfig,
+        throttleConfig,
+        uploadConfig,
+        redisConfig,
+      ],
       envFilePath: ['.env.local', '.env'],
     }),
 
@@ -84,12 +90,16 @@ import { RealtimeModule } from './modules/realtime';
             maxRetriesPerRequest: 3,
             retryStrategy: (times: number) => {
               if (times > 10) {
-                logger.error('Bull Queue: Max retries reached for Redis connection');
+                logger.error(
+                  'Bull Queue: Max retries reached for Redis connection',
+                );
                 // Return null to stop retrying (Bull will work in degraded mode)
                 return null;
               }
               const delay = Math.min(times * 100, 3000);
-              logger.warn(`Bull Queue: Redis reconnecting in ${delay}ms (attempt ${times})`);
+              logger.warn(
+                `Bull Queue: Redis reconnecting in ${delay}ms (attempt ${times})`,
+              );
               return delay;
             },
             enableReadyCheck: false, // Don't block if Redis is slow

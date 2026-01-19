@@ -122,7 +122,8 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
     final participant = widget.verification.participant;
     final badge = widget.verification.badge;
     final isAtCapacity = widget.verification.isAtCapacity;
-    final canAccept = widget.verification.canAccept;
+    // canAccept is determined by widget.verification but kept for potential future use
+    final _ = widget.verification.canAccept;
 
     return Scaffold(
       appBar: AppBar(

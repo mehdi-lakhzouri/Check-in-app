@@ -1,7 +1,7 @@
 /**
  * Reports Service Unit Tests
  * Comprehensive tests for the ReportsService class
- * 
+ *
  * Test Coverage:
  * ✔️ Normal cases (happy paths)
  * ✔️ Edge/boundary conditions
@@ -73,7 +73,10 @@ describe('ReportsService', () => {
     // HAPPY PATH
     it('should generate attendance report in JSON format', async () => {
       const sessionId = generateObjectId();
-      const session = mockData.session({ _id: sessionId, name: 'Conference Day 1' });
+      const session = mockData.session({
+        _id: sessionId,
+        name: 'Conference Day 1',
+      });
       const checkIns = [
         mockData.checkIn(generateObjectId(), sessionId),
         mockData.checkIn(generateObjectId(), sessionId),
@@ -122,7 +125,10 @@ describe('ReportsService', () => {
     it('should handle session with no check-ins', async () => {
       const sessionId = generateObjectId();
 
-      checkInsService.findAll.mockResolvedValue({ data: [], meta: { total: 0, page: 1, limit: 100, totalPages: 0 } });
+      checkInsService.findAll.mockResolvedValue({
+        data: [],
+        meta: { total: 0, page: 1, limit: 100, totalPages: 0 },
+      });
 
       const result = await service.generateAttendanceReport({
         sessionId,
@@ -136,13 +142,13 @@ describe('ReportsService', () => {
 
     it('should handle session with many check-ins (1000+)', async () => {
       const sessionId = generateObjectId();
-      const manyCheckIns = Array.from({ length: 1000 }, () => 
-        mockData.checkIn(generateObjectId(), sessionId)
+      const manyCheckIns = Array.from({ length: 1000 }, () =>
+        mockData.checkIn(generateObjectId(), sessionId),
       );
 
-      checkInsService.findAll.mockResolvedValue({ 
-        data: manyCheckIns as any, 
-        meta: { total: 1000, page: 1, limit: 1000, totalPages: 1 } 
+      checkInsService.findAll.mockResolvedValue({
+        data: manyCheckIns as any,
+        meta: { total: 1000, page: 1, limit: 1000, totalPages: 1 },
       });
 
       const result = await service.generateAttendanceReport({
@@ -158,16 +164,14 @@ describe('ReportsService', () => {
     // ERROR CASES
     it('should throw error when checkInsService fails', async () => {
       const fakeSessionId = generateObjectId();
-      
-      checkInsService.findAll.mockRejectedValue(
-        new Error('Database error')
-      );
+
+      checkInsService.findAll.mockRejectedValue(new Error('Database error'));
 
       await expect(
         service.generateAttendanceReport({
           sessionId: fakeSessionId,
           format: ReportFormat.JSON,
-        })
+        }),
       ).rejects.toThrow();
     });
   });
@@ -179,24 +183,29 @@ describe('ReportsService', () => {
     // HAPPY PATH
     it('should generate detailed session report', async () => {
       const sessionId = generateObjectId();
-      const session = mockData.session({ 
-        _id: sessionId, 
+      const session = mockData.session({
+        _id: sessionId,
         name: 'Keynote',
         capacity: 100,
         checkInsCount: 75,
       });
-      const checkIns = Array.from({ length: 75 }, () => 
-        mockData.checkIn(generateObjectId(), sessionId)
+      const checkIns = Array.from({ length: 75 }, () =>
+        mockData.checkIn(generateObjectId(), sessionId),
       );
-      const registrations = Array.from({ length: 80 }, () => 
-        mockData.registration(generateObjectId(), sessionId)
+      const registrations = Array.from({ length: 80 }, () =>
+        mockData.registration(generateObjectId(), sessionId),
       );
 
       sessionsService.findOne.mockResolvedValue(session as any);
       checkInsService.findBySession.mockResolvedValue(checkIns as any);
-      registrationsService.findBySession.mockResolvedValue(registrations as any);
+      registrationsService.findBySession.mockResolvedValue(
+        registrations as any,
+      );
 
-      const result = await service.generateSessionReport(sessionId, ReportFormat.JSON);
+      const result = await service.generateSessionReport(
+        sessionId,
+        ReportFormat.JSON,
+      );
 
       expect(result).toHaveProperty('session');
       expect(result).toHaveProperty('statistics');
@@ -208,23 +217,28 @@ describe('ReportsService', () => {
     // EDGE CASES
     it('should calculate correct attendance rate', async () => {
       const sessionId = generateObjectId();
-      const session = mockData.session({ 
-        _id: sessionId, 
+      const session = mockData.session({
+        _id: sessionId,
         capacity: 100,
         checkInsCount: 50,
       });
-      const checkIns = Array.from({ length: 50 }, () => 
-        mockData.checkIn(generateObjectId(), sessionId)
+      const checkIns = Array.from({ length: 50 }, () =>
+        mockData.checkIn(generateObjectId(), sessionId),
       );
-      const registrations = Array.from({ length: 60 }, () => 
-        mockData.registration(generateObjectId(), sessionId)
+      const registrations = Array.from({ length: 60 }, () =>
+        mockData.registration(generateObjectId(), sessionId),
       );
 
       sessionsService.findOne.mockResolvedValue(session as any);
       checkInsService.findBySession.mockResolvedValue(checkIns as any);
-      registrationsService.findBySession.mockResolvedValue(registrations as any);
+      registrationsService.findBySession.mockResolvedValue(
+        registrations as any,
+      );
 
-      const result = await service.generateSessionReport(sessionId, ReportFormat.JSON);
+      const result = await service.generateSessionReport(
+        sessionId,
+        ReportFormat.JSON,
+      );
 
       // 50 check-ins / 60 registrations = 83.33% attendance
       if ('statistics' in result) {
@@ -234,23 +248,28 @@ describe('ReportsService', () => {
 
     it('should handle 100% capacity session', async () => {
       const sessionId = generateObjectId();
-      const session = mockData.session({ 
-        _id: sessionId, 
+      const session = mockData.session({
+        _id: sessionId,
         capacity: 50,
         checkInsCount: 50,
       });
-      const checkIns = Array.from({ length: 50 }, () => 
-        mockData.checkIn(generateObjectId(), sessionId)
+      const checkIns = Array.from({ length: 50 }, () =>
+        mockData.checkIn(generateObjectId(), sessionId),
       );
-      const registrations = Array.from({ length: 50 }, () => 
-        mockData.registration(generateObjectId(), sessionId)
+      const registrations = Array.from({ length: 50 }, () =>
+        mockData.registration(generateObjectId(), sessionId),
       );
 
       sessionsService.findOne.mockResolvedValue(session as any);
       checkInsService.findBySession.mockResolvedValue(checkIns as any);
-      registrationsService.findBySession.mockResolvedValue(registrations as any);
+      registrationsService.findBySession.mockResolvedValue(
+        registrations as any,
+      );
 
-      const result = await service.generateSessionReport(sessionId, ReportFormat.JSON);
+      const result = await service.generateSessionReport(
+        sessionId,
+        ReportFormat.JSON,
+      );
 
       // 50 check-ins / 50 registrations = 100% attendance
       if ('statistics' in result) {
@@ -291,7 +310,13 @@ describe('ReportsService', () => {
 
     // EDGE CASES
     it('should handle empty database', async () => {
-      const emptySessionStats = { total: 0, open: 0, closed: 0, upcoming: 0, totalCheckIns: 0 };
+      const emptySessionStats = {
+        total: 0,
+        open: 0,
+        closed: 0,
+        upcoming: 0,
+        totalCheckIns: 0,
+      };
       const emptyParticipantStats = { total: 0, active: 0, ambassadors: 0 };
 
       sessionsService.getStats.mockResolvedValue(emptySessionStats);

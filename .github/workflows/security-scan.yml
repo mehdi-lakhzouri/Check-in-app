@@ -110,7 +110,7 @@ jobs:
   # Container Security Scanning
   # ============================================
   container-scan:
-    name: 🐳 Container Scan
+    name:  Container Scan
     runs-on: ubuntu-latest
     timeout-minutes: 30
     if: ${{ github.event.inputs.scan_type == 'full' || github.event.inputs.scan_type == 'containers' || github.event_name == 'schedule' }}
@@ -169,7 +169,7 @@ jobs:
   # Static Code Analysis
   # ============================================
   code-scan:
-    name: 🔍 Code Analysis
+    name:  Code Analysis
     runs-on: ubuntu-latest
     timeout-minutes: 30
     if: ${{ github.event.inputs.scan_type == 'full' || github.event.inputs.scan_type == 'code' || github.event_name == 'schedule' }}
@@ -209,7 +209,7 @@ jobs:
   # Secret Scanning
   # ============================================
   secret-scan:
-    name: 🔐 Secret Scan
+    name:  Secret Scan
     runs-on: ubuntu-latest
     timeout-minutes: 15
     if: ${{ github.event.inputs.scan_type == 'full' || github.event_name == 'schedule' }}

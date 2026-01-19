@@ -78,7 +78,8 @@ export class CreateSessionDto {
 
   @ApiPropertyOptional({
     example: true,
-    description: 'Whether capacity is strictly enforced (false allows overflow)',
+    description:
+      'Whether capacity is strictly enforced (false allows overflow)',
     default: true,
   })
   @IsOptional()
@@ -87,7 +88,8 @@ export class CreateSessionDto {
 
   @ApiPropertyOptional({
     example: false,
-    description: 'Whether registration is required to check-in (for closed/invite-only sessions)',
+    description:
+      'Whether registration is required to check-in (for closed/invite-only sessions)',
     default: false,
   })
   @IsOptional()

@@ -26,7 +26,11 @@ export class LoggingInterceptor implements NestInterceptor {
     );
 
     // Log request body in development (exclude sensitive data)
-    if (process.env.NODE_ENV === 'development' && body && Object.keys(body).length > 0) {
+    if (
+      process.env.NODE_ENV === 'development' &&
+      body &&
+      Object.keys(body).length > 0
+    ) {
       const sanitizedBody = this.sanitizeBody(body);
       this.logger.debug(`[Request Body] ${JSON.stringify(sanitizedBody)}`);
     }

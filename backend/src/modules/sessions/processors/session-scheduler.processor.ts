@@ -1,4 +1,10 @@
-import { Processor, Process, OnQueueActive, OnQueueCompleted, OnQueueFailed } from '@nestjs/bull';
+import {
+  Processor,
+  Process,
+  OnQueueActive,
+  OnQueueCompleted,
+  OnQueueFailed,
+} from '@nestjs/bull';
 import * as Bull from 'bull';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
@@ -21,7 +27,7 @@ export type SessionSchedulerJobData = AutoOpenJobData | AutoEndJobData;
 
 /**
  * Session Scheduler Processor
- * 
+ *
  * Handles distributed job processing for session status management.
  * Uses Bull queue with Redis for:
  * - Distributed locking (prevents duplicate runs across instances)
@@ -32,12 +38,14 @@ export type SessionSchedulerJobData = AutoOpenJobData | AutoEndJobData;
 @Processor(SESSION_SCHEDULER_QUEUE)
 export class SessionSchedulerProcessor {
   private readonly logger: PinoLoggerService;
-  
+
   // Event emitter callback - set by RealtimeGateway
-  private onLifecycleUpdate: ((update: SessionLifecycleUpdate) => void) | null = null;
+  private onLifecycleUpdate: ((update: SessionLifecycleUpdate) => void) | null =
+    null;
 
   constructor(
-    @InjectModel(Session.name) private readonly sessionModel: Model<SessionDocument>,
+    @InjectModel(Session.name)
+    private readonly sessionModel: Model<SessionDocument>,
     private readonly configService: ConfigService,
   ) {
     this.logger = new PinoLoggerService();
@@ -47,7 +55,9 @@ export class SessionSchedulerProcessor {
   /**
    * Register callback for lifecycle updates (used by RealtimeGateway)
    */
-  registerLifecycleUpdateCallback(callback: (update: SessionLifecycleUpdate) => void): void {
+  registerLifecycleUpdateCallback(
+    callback: (update: SessionLifecycleUpdate) => void,
+  ): void {
     this.onLifecycleUpdate = callback;
     this.logger.debug('Lifecycle update callback registered with processor');
   }
@@ -66,12 +76,17 @@ export class SessionSchedulerProcessor {
 
   @OnQueueCompleted()
   onCompleted(job: Bull.Job<SessionSchedulerJobData>, result: any) {
-    this.logger.verbose(`Job ${job.id} completed with result: ${JSON.stringify(result)}`);
+    this.logger.verbose(
+      `Job ${job.id} completed with result: ${JSON.stringify(result)}`,
+    );
   }
 
   @OnQueueFailed()
   onFailed(job: Bull.Job<SessionSchedulerJobData>, error: Error) {
-    this.logger.error(`Job ${job.id} failed with error: ${error.message}`, error.stack);
+    this.logger.error(
+      `Job ${job.id} failed with error: ${error.message}`,
+      error.stack,
+    );
   }
 
   /**
@@ -79,10 +94,15 @@ export class SessionSchedulerProcessor {
    * Opens sessions that are within AUTO_OPEN_MINUTES_BEFORE of their start time
    */
   @Process('auto-open-sessions')
-  async handleAutoOpen(job: Bull.Job<AutoOpenJobData>): Promise<{ opened: number; sessions: string[] }> {
+  async handleAutoOpen(
+    job: Bull.Job<AutoOpenJobData>,
+  ): Promise<{ opened: number; sessions: string[] }> {
     this.logger.log('Processing auto-open-sessions job');
-    
-    const autoOpenMinutes = this.configService.get<number>('sessionScheduler.autoOpenMinutesBefore', 10);
+
+    const autoOpenMinutes = this.configService.get<number>(
+      'sessionScheduler.autoOpenMinutesBefore',
+      10,
+    );
     const now = new Date();
     const openThreshold = new Date(now.getTime() + autoOpenMinutes * 60 * 1000);
 
@@ -90,11 +110,13 @@ export class SessionSchedulerProcessor {
     // 1. Are still in SCHEDULED lifecycle
     // 2. Have startTime within the auto-open window
     // 3. Haven't ended yet
-    const sessionsToOpen = await this.sessionModel.find({
-      lifecycle: SessionLifecycle.SCHEDULED,
-      startTime: { $lte: openThreshold },
-      endTime: { $gt: now },
-    }).exec();
+    const sessionsToOpen = await this.sessionModel
+      .find({
+        lifecycle: SessionLifecycle.SCHEDULED,
+        startTime: { $lte: openThreshold },
+        endTime: { $gt: now },
+      })
+      .exec();
 
     const openedSessions: string[] = [];
 
@@ -104,18 +126,22 @@ export class SessionSchedulerProcessor {
           session,
           SessionLifecycle.OPEN,
           true,
-          'auto_open'
+          'auto_open',
         );
         if (update) {
           openedSessions.push(session.name);
         }
       } catch (error) {
-        this.logger.error(`Failed to auto-open session ${session._id}: ${error.message}`);
+        this.logger.error(
+          `Failed to auto-open session ${session._id}: ${error.message}`,
+        );
       }
     }
 
     if (openedSessions.length > 0) {
-      this.logger.log(`Auto-opened ${openedSessions.length} sessions: ${openedSessions.join(', ')}`);
+      this.logger.log(
+        `Auto-opened ${openedSessions.length} sessions: ${openedSessions.join(', ')}`,
+      );
     }
 
     return { opened: openedSessions.length, sessions: openedSessions };
@@ -126,15 +152,23 @@ export class SessionSchedulerProcessor {
    * Ends sessions that have passed their end time
    */
   @Process('auto-end-sessions')
-  async handleAutoEnd(job: Bull.Job<AutoEndJobData>): Promise<{ ended: number; sessions: string[] }> {
+  async handleAutoEnd(
+    job: Bull.Job<AutoEndJobData>,
+  ): Promise<{ ended: number; sessions: string[] }> {
     this.logger.log('Processing auto-end-sessions job');
-    
-    const autoEndEnabled = this.configService.get<boolean>('sessionScheduler.autoEndEnabled', true);
+
+    const autoEndEnabled = this.configService.get<boolean>(
+      'sessionScheduler.autoEndEnabled',
+      true,
+    );
     if (!autoEndEnabled) {
       return { ended: 0, sessions: [] };
     }
 
-    const graceMinutes = this.configService.get<number>('sessionScheduler.autoEndGraceMinutes', 0);
+    const graceMinutes = this.configService.get<number>(
+      'sessionScheduler.autoEndGraceMinutes',
+      0,
+    );
     const now = new Date();
     const endThreshold = new Date(now.getTime() - graceMinutes * 60 * 1000);
 
@@ -142,10 +176,12 @@ export class SessionSchedulerProcessor {
     // 1. Are in OPEN or SCHEDULED lifecycle (SCHEDULED sessions can also expire without being opened)
     // 2. Have endTime before the threshold (past their end time + grace period)
     // This ensures sessions that were never opened but have passed their end time are also marked as ended
-    const sessionsToEnd = await this.sessionModel.find({
-      lifecycle: { $in: [SessionLifecycle.OPEN, SessionLifecycle.SCHEDULED] },
-      endTime: { $lte: endThreshold },
-    }).exec();
+    const sessionsToEnd = await this.sessionModel
+      .find({
+        lifecycle: { $in: [SessionLifecycle.OPEN, SessionLifecycle.SCHEDULED] },
+        endTime: { $lte: endThreshold },
+      })
+      .exec();
 
     const endedSessions: string[] = [];
 
@@ -155,18 +191,22 @@ export class SessionSchedulerProcessor {
           session,
           SessionLifecycle.ENDED,
           false,
-          'auto_end'
+          'auto_end',
         );
         if (update) {
           endedSessions.push(session.name);
         }
       } catch (error) {
-        this.logger.error(`Failed to auto-end session ${session._id}: ${error.message}`);
+        this.logger.error(
+          `Failed to auto-end session ${session._id}: ${error.message}`,
+        );
       }
     }
 
     if (endedSessions.length > 0) {
-      this.logger.log(`Auto-ended ${endedSessions.length} sessions: ${endedSessions.join(', ')}`);
+      this.logger.log(
+        `Auto-ended ${endedSessions.length} sessions: ${endedSessions.join(', ')}`,
+      );
     }
 
     return { ended: endedSessions.length, sessions: endedSessions };
@@ -179,7 +219,7 @@ export class SessionSchedulerProcessor {
     session: SessionDocument,
     newLifecycle: SessionLifecycle,
     newIsOpen: boolean,
-    reason: 'auto_open' | 'auto_end' | 'manual'
+    reason: 'auto_open' | 'auto_end' | 'manual',
   ): Promise<SessionLifecycleUpdate | null> {
     const previousLifecycle = session.lifecycle;
     const previousIsOpen = session.isOpen;
@@ -190,16 +230,18 @@ export class SessionSchedulerProcessor {
     }
 
     // Update in database
-    await this.sessionModel.updateOne(
-      { _id: session._id },
-      { 
-        $set: { 
-          lifecycle: newLifecycle, 
-          isOpen: newIsOpen,
-          updatedAt: new Date(),
-        } 
-      }
-    ).exec();
+    await this.sessionModel
+      .updateOne(
+        { _id: session._id },
+        {
+          $set: {
+            lifecycle: newLifecycle,
+            isOpen: newIsOpen,
+            updatedAt: new Date(),
+          },
+        },
+      )
+      .exec();
 
     const update: SessionLifecycleUpdate = {
       sessionId: session._id.toString(),
@@ -213,7 +255,7 @@ export class SessionSchedulerProcessor {
     };
 
     this.logger.log(
-      `Session "${session.name}" lifecycle changed: ${previousLifecycle} -> ${newLifecycle} (${reason})`
+      `Session "${session.name}" lifecycle changed: ${previousLifecycle} -> ${newLifecycle} (${reason})`,
     );
 
     // Emit real-time update

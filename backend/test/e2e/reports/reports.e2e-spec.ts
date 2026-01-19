@@ -1,9 +1,9 @@
 /**
  * Reports E2E Tests
  * End-to-end tests for the Reports API endpoints
- * 
+ *
  * Route: /api/v1/reports
- * 
+ *
  * Test Coverage:
  * ✔️ Normal cases (happy paths)
  * ✔️ Edge/boundary conditions
@@ -11,7 +11,11 @@
  */
 
 import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication, ValidationPipe, VersioningType } from '@nestjs/common';
+import {
+  INestApplication,
+  ValidationPipe,
+  VersioningType,
+} from '@nestjs/common';
 import request from 'supertest';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { MongooseModule, getConnectionToken } from '@nestjs/mongoose';
@@ -89,30 +93,32 @@ describe('Reports (e2e)', () => {
     // Create a session with check-ins for testing
     const sessionResponse = await request(app.getHttpServer())
       .post('/api/v1/sessions')
-      .send(mockData.createSessionDto({ 
-        name: 'Report Test Session',
-        isOpen: true,
-        capacity: 100,
-      }));
+      .send(
+        mockData.createSessionDto({
+          name: 'Report Test Session',
+          isOpen: true,
+          capacity: 100,
+        }),
+      );
     sessionId = sessionResponse.body.data._id;
 
     // Create multiple participants and check them in
     for (let i = 0; i < 5; i++) {
       const participantResponse = await request(app.getHttpServer())
         .post('/api/v1/participants')
-        .send(mockData.createParticipantDto({ 
-          email: `report-test-${i}@example.com`,
-          name: `Report Test User ${i}`,
-        }));
+        .send(
+          mockData.createParticipantDto({
+            email: `report-test-${i}@example.com`,
+            name: `Report Test User ${i}`,
+          }),
+        );
       participantIds.push(participantResponse.body.data._id);
 
       // Check in the participant
-      await request(app.getHttpServer())
-        .post('/api/v1/checkin')
-        .send({
-          participantId: participantResponse.body.data._id,
-          sessionId,
-        });
+      await request(app.getHttpServer()).post('/api/v1/checkin').send({
+        participantId: participantResponse.body.data._id,
+        sessionId,
+      });
     }
   });
 
@@ -140,7 +146,7 @@ describe('Reports (e2e)', () => {
 
       // Excel responses should have specific content type
       expect(response.headers['content-type']).toContain(
-        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       );
       expect(response.headers['content-disposition']).toContain('attachment');
     });
@@ -166,12 +172,14 @@ describe('Reports (e2e)', () => {
       const pastStartTime = new Date(Date.now() - 15 * 60 * 1000);
       const lateSessionRes = await request(app.getHttpServer())
         .post('/api/v1/sessions')
-        .send(mockData.createSessionDto({
-          name: 'Late Session',
-          isOpen: true,
-          startTime: pastStartTime.toISOString(),
-          endTime: new Date(pastStartTime.getTime() + 3600000).toISOString(),
-        }));
+        .send(
+          mockData.createSessionDto({
+            name: 'Late Session',
+            isOpen: true,
+            startTime: pastStartTime.toISOString(),
+            endTime: new Date(pastStartTime.getTime() + 3600000).toISOString(),
+          }),
+        );
       const lateSessionId = lateSessionRes.body.data._id;
 
       // Create and check in a participant (will be late)
@@ -179,12 +187,10 @@ describe('Reports (e2e)', () => {
         .post('/api/v1/participants')
         .send(mockData.createParticipantDto({ email: 'late@example.com' }));
 
-      await request(app.getHttpServer())
-        .post('/api/v1/checkin')
-        .send({
-          participantId: lateParticipantRes.body.data._id,
-          sessionId: lateSessionId,
-        });
+      await request(app.getHttpServer()).post('/api/v1/checkin').send({
+        participantId: lateParticipantRes.body.data._id,
+        sessionId: lateSessionId,
+      });
 
       const response = await request(app.getHttpServer())
         .get('/api/v1/reports/attendance')
@@ -236,7 +242,7 @@ describe('Reports (e2e)', () => {
         .expect(200);
 
       expect(response.headers['content-type']).toContain(
-        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       );
     });
 
@@ -324,10 +330,12 @@ describe('Reports (e2e)', () => {
       for (let i = 0; i < 3; i++) {
         await request(app.getHttpServer())
           .post('/api/v1/sessions')
-          .send(mockData.createSessionDto({ 
-            name: `Additional Session ${i}`,
-            capacity: 50 + i * 10,
-          }));
+          .send(
+            mockData.createSessionDto({
+              name: `Additional Session ${i}`,
+              capacity: 50 + i * 10,
+            }),
+          );
       }
     });
 
@@ -350,7 +358,7 @@ describe('Reports (e2e)', () => {
 
       // The main test session should have 5 check-ins
       const mainSession = response.body.data.sessions.find(
-        (s: any) => s.name === 'Report Test Session'
+        (s: any) => s.name === 'Report Test Session',
       );
       expect(mainSession).toBeDefined();
       expect(mainSession.checkInsCount).toBe(5);
@@ -372,13 +380,12 @@ describe('Reports (e2e)', () => {
   describe('Concurrent Report Generation', () => {
     it('should handle multiple concurrent report requests', async () => {
       const requests = Array.from({ length: 5 }, () =>
-        request(app.getHttpServer())
-          .get('/api/v1/reports/statistics')
+        request(app.getHttpServer()).get('/api/v1/reports/statistics'),
       );
 
       const responses = await Promise.all(requests);
 
-      responses.forEach(response => {
+      responses.forEach((response) => {
         expect(response.status).toBe(200);
         expect(response.body.status).toBe('success');
       });

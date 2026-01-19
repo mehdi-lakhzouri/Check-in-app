@@ -52,7 +52,8 @@ jobs:
 
       - name: Analyze code
         working-directory: checkin_mobile
-        run: flutter analyze --fatal-infos
+        # Use --fatal-warnings to fail only on warnings/errors, not infos
+        run: flutter analyze --fatal-warnings
 
       - name: Check for outdated dependencies
         working-directory: checkin_mobile

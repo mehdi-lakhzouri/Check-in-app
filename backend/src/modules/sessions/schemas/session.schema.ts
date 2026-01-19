@@ -6,10 +6,10 @@ export type SessionDocument = Session & Document;
 
 /**
  * Session Status Enum - Tracks the lifecycle state of a session
- * 
+ *
  * Status Flow:
  * SCHEDULED -> OPEN (manual or auto-open) -> ENDED (auto after endTime) or CLOSED (manual)
- * 
+ *
  * SCHEDULED: Initial state, check-in not yet available
  * OPEN: Check-in is available (opened manually by admin or automatically before start time)
  * ENDED: Session has ended (automatic after endTime passes)
@@ -33,63 +33,89 @@ export class Session {
   @Prop({ required: true, trim: true, index: true })
   name: string;
 
-  @ApiPropertyOptional({ example: 'Welcome session for all participants', description: 'Session description' })
+  @ApiPropertyOptional({
+    example: 'Welcome session for all participants',
+    description: 'Session description',
+  })
   @Prop({ trim: true })
   description?: string;
 
-  @ApiProperty({ example: '2024-01-01T09:00:00.000Z', description: 'Session start time' })
+  @ApiProperty({
+    example: '2024-01-01T09:00:00.000Z',
+    description: 'Session start time',
+  })
   @Prop({ required: true, type: Date, index: true })
   startTime: Date;
 
-  @ApiProperty({ example: '2024-01-01T10:00:00.000Z', description: 'Session end time' })
+  @ApiProperty({
+    example: '2024-01-01T10:00:00.000Z',
+    description: 'Session end time',
+  })
   @Prop({ required: true, type: Date })
   endTime: Date;
 
-  @ApiPropertyOptional({ example: 'Main Hall', description: 'Session location/venue' })
+  @ApiPropertyOptional({
+    example: 'Main Hall',
+    description: 'Session location/venue',
+  })
   @Prop({ trim: true })
   location?: string;
 
-  @ApiProperty({ example: true, description: 'Whether check-in is open for this session' })
+  @ApiProperty({
+    example: true,
+    description: 'Whether check-in is open for this session',
+  })
   @Prop({ default: false, index: true })
   isOpen: boolean;
 
-  @ApiProperty({ 
-    example: 'scheduled', 
+  @ApiProperty({
+    example: 'scheduled',
     description: 'Current status of the session',
     enum: SessionStatus,
     enumName: 'SessionStatus',
   })
-  @Prop({ 
-    type: String, 
-    enum: SessionStatus, 
-    default: SessionStatus.SCHEDULED, 
-    index: true 
+  @Prop({
+    type: String,
+    enum: SessionStatus,
+    default: SessionStatus.SCHEDULED,
+    index: true,
   })
   status: SessionStatus;
 
-  @ApiPropertyOptional({ example: 100, description: 'Maximum capacity for the session (0 = unlimited)' })
+  @ApiPropertyOptional({
+    example: 100,
+    description: 'Maximum capacity for the session (0 = unlimited)',
+  })
   @Prop({ default: 0 })
   capacity?: number;
 
-  @ApiProperty({ 
-    example: true, 
-    description: 'Whether capacity is strictly enforced (false allows overflow)' 
+  @ApiProperty({
+    example: true,
+    description:
+      'Whether capacity is strictly enforced (false allows overflow)',
   })
   @Prop({ default: true })
   capacityEnforced: boolean;
 
-  @ApiProperty({ 
-    example: false, 
-    description: 'Whether registration is required to check-in (for closed/invite-only sessions)' 
+  @ApiProperty({
+    example: false,
+    description:
+      'Whether registration is required to check-in (for closed/invite-only sessions)',
   })
   @Prop({ default: false, index: true })
   requiresRegistration: boolean;
 
-  @ApiProperty({ example: 0, description: 'Number of check-ins for this session' })
+  @ApiProperty({
+    example: 0,
+    description: 'Number of check-ins for this session',
+  })
   @Prop({ default: 0 })
   checkInsCount: number;
 
-  @ApiProperty({ example: 1, description: 'Day number of the congress (1, 2, 3, etc.)' })
+  @ApiProperty({
+    example: 1,
+    description: 'Day number of the congress (1, 2, 3, etc.)',
+  })
   @Prop({ default: 1, index: true })
   day: number;
 

@@ -1,13 +1,17 @@
 /**
  * Registrations E2E Tests
  * End-to-end tests for the Registrations API endpoints
- * 
+ *
  * Route: /api/v1/registrations
  * Uses PATCH for updates, stats at /stats/overview
  */
 
 import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication, ValidationPipe, VersioningType } from '@nestjs/common';
+import {
+  INestApplication,
+  ValidationPipe,
+  VersioningType,
+} from '@nestjs/common';
 import request from 'supertest';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { MongooseModule, getConnectionToken } from '@nestjs/mongoose';
@@ -170,14 +174,16 @@ describe('Registrations (e2e)', () => {
       for (let i = 0; i < 3; i++) {
         const pResponse = await request(app.getHttpServer())
           .post('/api/v1/participants')
-          .send(mockData.createParticipantDto({ email: `reg-test${i}@example.com` }));
-        
-        await request(app.getHttpServer())
-          .post('/api/v1/registrations')
-          .send({
-            participantId: pResponse.body.data._id,
-            sessionId,
-          });
+          .send(
+            mockData.createParticipantDto({
+              email: `reg-test${i}@example.com`,
+            }),
+          );
+
+        await request(app.getHttpServer()).post('/api/v1/registrations').send({
+          participantId: pResponse.body.data._id,
+          sessionId,
+        });
       }
     });
 
@@ -196,9 +202,12 @@ describe('Registrations (e2e)', () => {
         .query({ sessionId })
         .expect(200);
 
-      expect(response.body.data.every((r: any) => 
-        r.sessionId === sessionId || r.sessionId?._id === sessionId
-      )).toBe(true);
+      expect(
+        response.body.data.every(
+          (r: any) =>
+            r.sessionId === sessionId || r.sessionId?._id === sessionId,
+        ),
+      ).toBe(true);
     });
 
     it('should filter by participantId', async () => {
@@ -219,22 +228,26 @@ describe('Registrations (e2e)', () => {
       // Create a confirmed registration
       const pResponse = await request(app.getHttpServer())
         .post('/api/v1/participants')
-        .send(mockData.createParticipantDto({ email: 'confirmed@example.com' }));
-      
-      await request(app.getHttpServer())
-        .post('/api/v1/registrations')
-        .send({
-          participantId: pResponse.body.data._id,
-          sessionId,
-          status: RegistrationStatus.CONFIRMED,
-        });
+        .send(
+          mockData.createParticipantDto({ email: 'confirmed@example.com' }),
+        );
+
+      await request(app.getHttpServer()).post('/api/v1/registrations').send({
+        participantId: pResponse.body.data._id,
+        sessionId,
+        status: RegistrationStatus.CONFIRMED,
+      });
 
       const response = await request(app.getHttpServer())
         .get('/api/v1/registrations')
         .query({ status: RegistrationStatus.CONFIRMED })
         .expect(200);
 
-      expect(response.body.data.every((r: any) => r.status === RegistrationStatus.CONFIRMED)).toBe(true);
+      expect(
+        response.body.data.every(
+          (r: any) => r.status === RegistrationStatus.CONFIRMED,
+        ),
+      ).toBe(true);
     });
 
     it('should return paginated results', async () => {
@@ -255,7 +268,7 @@ describe('Registrations (e2e)', () => {
       const response = await request(app.getHttpServer())
         .post('/api/v1/registrations')
         .send({ participantId, sessionId });
-      
+
       registrationId = response.body.data._id;
     });
 
@@ -290,7 +303,7 @@ describe('Registrations (e2e)', () => {
       const response = await request(app.getHttpServer())
         .post('/api/v1/registrations')
         .send({ participantId, sessionId });
-      
+
       registrationId = response.body.data._id;
     });
 
@@ -336,7 +349,7 @@ describe('Registrations (e2e)', () => {
       const response = await request(app.getHttpServer())
         .post('/api/v1/registrations')
         .send({ participantId, sessionId });
-      
+
       registrationId = response.body.data._id;
     });
 
@@ -366,28 +379,26 @@ describe('Registrations (e2e)', () => {
       for (let i = 0; i < 2; i++) {
         const pResponse = await request(app.getHttpServer())
           .post('/api/v1/participants')
-          .send(mockData.createParticipantDto({ email: `stats${i}@example.com` }));
-        
-        await request(app.getHttpServer())
-          .post('/api/v1/registrations')
-          .send({
-            participantId: pResponse.body.data._id,
-            sessionId,
-            status: RegistrationStatus.CONFIRMED,
-          });
+          .send(
+            mockData.createParticipantDto({ email: `stats${i}@example.com` }),
+          );
+
+        await request(app.getHttpServer()).post('/api/v1/registrations').send({
+          participantId: pResponse.body.data._id,
+          sessionId,
+          status: RegistrationStatus.CONFIRMED,
+        });
       }
 
       const pResponse = await request(app.getHttpServer())
         .post('/api/v1/participants')
         .send(mockData.createParticipantDto({ email: 'pending@example.com' }));
-      
-      await request(app.getHttpServer())
-        .post('/api/v1/registrations')
-        .send({
-          participantId: pResponse.body.data._id,
-          sessionId,
-          status: RegistrationStatus.PENDING,
-        });
+
+      await request(app.getHttpServer()).post('/api/v1/registrations').send({
+        participantId: pResponse.body.data._id,
+        sessionId,
+        status: RegistrationStatus.PENDING,
+      });
     });
 
     it('should return registration statistics', async () => {

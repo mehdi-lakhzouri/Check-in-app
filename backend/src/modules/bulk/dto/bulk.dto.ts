@@ -1,5 +1,11 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsArray, IsMongoId, ArrayNotEmpty, IsOptional, IsString } from 'class-validator';
+import {
+  IsArray,
+  IsMongoId,
+  ArrayNotEmpty,
+  IsOptional,
+  IsString,
+} from 'class-validator';
 
 export class BulkAssignParticipantsDto {
   @ApiProperty({
@@ -14,13 +20,16 @@ export class BulkAssignParticipantsDto {
 }
 
 export class BulkUploadResultDto {
-  @ApiProperty({ example: 10, description: 'Number of successfully created records' })
+  @ApiProperty({
+    example: 10,
+    description: 'Number of successfully created records',
+  })
   created: number;
 
   @ApiProperty({ example: 2, description: 'Number of failed records' })
   failed: number;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     description: 'List of errors for failed records',
     type: 'array',
     items: {
@@ -29,17 +38,23 @@ export class BulkUploadResultDto {
         row: { type: 'number' },
         email: { type: 'string' },
         error: { type: 'string' },
-      }
-    }
+      },
+    },
   })
   errors?: Array<{ row?: number; email?: string; error: string }>;
 }
 
 export class BulkAssignResultDto {
-  @ApiProperty({ example: 8, description: 'Number of successfully assigned participants' })
+  @ApiProperty({
+    example: 8,
+    description: 'Number of successfully assigned participants',
+  })
   assigned: number;
 
-  @ApiProperty({ example: 2, description: 'Number of already assigned (skipped)' })
+  @ApiProperty({
+    example: 2,
+    description: 'Number of already assigned (skipped)',
+  })
   skipped: number;
 
   @ApiProperty({ example: 0, description: 'Number of failed assignments' })
@@ -53,8 +68,8 @@ export class BulkAssignResultDto {
       properties: {
         participantId: { type: 'string' },
         error: { type: 'string' },
-      }
-    }
+      },
+    },
   })
   errors?: Array<{ participantId: string; error: string }>;
 }

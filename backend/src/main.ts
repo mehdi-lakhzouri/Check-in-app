@@ -14,9 +14,10 @@ async function bootstrap() {
 
   const app = await NestFactory.create(AppModule, {
     // Use Pino logger for NestJS internal logging
-    logger: process.env.NODE_ENV === 'production' 
-      ? logger 
-      : ['error', 'warn', 'log', 'debug', 'verbose'],
+    logger:
+      process.env.NODE_ENV === 'production'
+        ? logger
+        : ['error', 'warn', 'log', 'debug', 'verbose'],
     bufferLogs: true,
   });
 
@@ -35,13 +36,21 @@ async function bootstrap() {
 
   // Security middleware
   app.use(helmet());
-  
+
   // CORS configuration
   app.enableCors({
-    origin: process.env.CORS_ORIGIN?.split(',') || ['http://localhost:3000', 'http://localhost:3001'],
+    origin: process.env.CORS_ORIGIN?.split(',') || [
+      'http://localhost:3000',
+      'http://localhost:3001',
+    ],
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     credentials: true,
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'X-Requested-With',
+      'Accept',
+    ],
   });
 
   // API Versioning
@@ -81,13 +90,13 @@ async function bootstrap() {
     .addTag('travel-grants', 'Travel grant management endpoints')
     .addTag('health', 'Health check endpoints')
     .build();
-  
+
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api/docs', app, document);
 
   const port = process.env.PORT || 3000;
   await app.listen(port);
-  
+
   // Use structured logging for startup messages
   logger.log('Application started successfully', {
     port,
