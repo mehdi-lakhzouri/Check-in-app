@@ -122,7 +122,7 @@ jobs:
         run: flutter build apk --debug --split-per-abi
 
       - name: Upload Debug APK
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: android-debug-apk
           path: checkin_mobile/build/app/outputs/flutter-apk/*-debug.apk
@@ -190,14 +190,14 @@ jobs:
         run: flutter build appbundle --release
 
       - name: Upload Release APK
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: android-release-apk
           path: checkin_mobile/build/app/outputs/flutter-apk/*-release.apk
           retention-days: 30
 
       - name: Upload App Bundle
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: android-release-bundle
           path: checkin_mobile/build/app/outputs/bundle/release/*.aab
@@ -245,7 +245,7 @@ jobs:
           rm -rf Payload
 
       - name: Upload iOS Build
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: ios-release
           path: checkin_mobile/app-release.ipa

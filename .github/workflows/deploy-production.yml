@@ -315,7 +315,7 @@ jobs:
           echo "::warning::Health check timeout"
 
       - name: Upload deployment record
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: deployment-record-${{ github.run_number }}
           path: deployment-record.txt

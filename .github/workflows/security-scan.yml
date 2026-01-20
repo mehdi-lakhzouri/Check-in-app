@@ -97,7 +97,7 @@ jobs:
           args: --file=${{ matrix.project.path }}/package.json --json-file-output=snyk-${{ matrix.project.name }}.json
 
       - name: Upload audit results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: dependency-audit-${{ matrix.project.name }}
           path: |
@@ -271,7 +271,7 @@ jobs:
         continue-on-error: true
 
       - name: Upload license reports
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: license-reports
           path: |
