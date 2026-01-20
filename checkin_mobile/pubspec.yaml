@@ -28,7 +28,7 @@ dependencies:
   mobile_scanner: ^7.0.1
   
   # Permissions
-  permission_handler: ^11.4.0
+  permission_handler: ^12.0.1
   
   # Feedback
   vibration: ^2.0.1
