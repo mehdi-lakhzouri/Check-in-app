@@ -9,7 +9,7 @@ import * as Bull from 'bull';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { ConfigService } from '@nestjs/config';
-import { Session, SessionDocument, SessionLifecycle } from '../schemas';
+import { Session, SessionDocument, SessionStatus } from '../schemas';
 import { SessionLifecycleUpdate } from '../services/session-scheduler.service';
 import { PinoLoggerService } from '../../../common/logger';
 
@@ -112,7 +112,7 @@ export class SessionSchedulerProcessor {
     // 3. Haven't ended yet
     const sessionsToOpen = await this.sessionModel
       .find({
-        status: SessionLifecycle.SCHEDULED,
+        status: SessionStatus.SCHEDULED,
         startTime: { $lte: openThreshold },
         endTime: { $gt: now },
       })
@@ -124,7 +124,7 @@ export class SessionSchedulerProcessor {
       try {
         const update = await this.updateSessionLifecycle(
           session,
-          SessionLifecycle.OPEN,
+          SessionStatus.OPEN,
           true,
           'auto_open',
         );
@@ -178,7 +178,7 @@ export class SessionSchedulerProcessor {
     // This ensures sessions that were never opened but have passed their end time are also marked as ended
     const sessionsToEnd = await this.sessionModel
       .find({
-        status: { $in: [SessionLifecycle.OPEN, SessionLifecycle.SCHEDULED] },
+        status: { $in: [SessionStatus.OPEN, SessionStatus.SCHEDULED] },
         endTime: { $lte: endThreshold },
       })
       .exec();
@@ -189,7 +189,7 @@ export class SessionSchedulerProcessor {
       try {
         const update = await this.updateSessionLifecycle(
           session,
-          SessionLifecycle.ENDED,
+          SessionStatus.ENDED,
           false,
           'auto_end',
         );
@@ -217,7 +217,7 @@ export class SessionSchedulerProcessor {
    */
   private async updateSessionLifecycle(
     session: SessionDocument,
-    newLifecycle: SessionLifecycle,
+    newLifecycle: SessionStatus,
     newIsOpen: boolean,
     reason: 'auto_open' | 'auto_end' | 'manual',
   ): Promise<SessionLifecycleUpdate | null> {

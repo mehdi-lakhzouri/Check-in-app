@@ -9,7 +9,8 @@ import { PaginatedResult } from '../../../common/dto';
 @Injectable()
 export class RegistrationRepository extends BaseRepository<RegistrationDocument> {
   constructor(
-    @InjectModel(Registration.name) private registrationModel: Model<RegistrationDocument>,
+    @InjectModel(Registration.name)
+    private registrationModel: Model<RegistrationDocument>,
   ) {
     super(registrationModel);
   }
@@ -42,7 +43,12 @@ export class RegistrationRepository extends BaseRepository<RegistrationDocument>
     filter: QueryFilter<RegistrationDocument>,
     pagination: RegistrationFilterDto,
   ): Promise<PaginatedResult<RegistrationDocument>> {
-    const { page = 1, limit = 10, sortBy = 'createdAt', sortOrder = 'desc' } = pagination;
+    const {
+      page = 1,
+      limit = 10,
+      sortBy = 'createdAt',
+      sortOrder = 'desc',
+    } = pagination;
     const skip = (page - 1) * limit;
 
     const [data, total] = await Promise.all([
@@ -84,7 +90,9 @@ export class RegistrationRepository extends BaseRepository<RegistrationDocument>
       .exec();
   }
 
-  async findByParticipant(participantId: string): Promise<RegistrationDocument[]> {
+  async findByParticipant(
+    participantId: string,
+  ): Promise<RegistrationDocument[]> {
     return this.registrationModel
       .find({ participantId: new Types.ObjectId(participantId) })
       .populate('sessionId')
@@ -128,7 +136,9 @@ export class RegistrationRepository extends BaseRepository<RegistrationDocument>
   }
 
   async deleteByParticipant(participantId: string): Promise<number> {
-    return this.deleteMany({ participantId: new Types.ObjectId(participantId) });
+    return this.deleteMany({
+      participantId: new Types.ObjectId(participantId),
+    });
   }
 
   async getRegistrationStats(): Promise<{
@@ -141,13 +151,14 @@ export class RegistrationRepository extends BaseRepository<RegistrationDocument>
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const [total, confirmed, pending, cancelled, todayRegistrations] = await Promise.all([
-      this.count({}),
-      this.count({ status: 'confirmed' }),
-      this.count({ status: 'pending' }),
-      this.count({ status: 'cancelled' }),
-      this.count({ createdAt: { $gte: today } }),
-    ]);
+    const [total, confirmed, pending, cancelled, todayRegistrations] =
+      await Promise.all([
+        this.count({}),
+        this.count({ status: 'confirmed' }),
+        this.count({ status: 'pending' }),
+        this.count({ status: 'cancelled' }),
+        this.count({ createdAt: { $gte: today } }),
+      ]);
 
     return {
       total,

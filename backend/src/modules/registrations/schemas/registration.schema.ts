@@ -15,32 +15,49 @@ export class Registration {
   @ApiProperty({ example: '507f1f77bcf86cd799439011' })
   _id: Types.ObjectId;
 
-  @ApiProperty({ example: '507f1f77bcf86cd799439011', description: 'Participant ID' })
-  @Prop({ type: Types.ObjectId, ref: 'Participant', required: true, index: true })
+  @ApiProperty({
+    example: '507f1f77bcf86cd799439011',
+    description: 'Participant ID',
+  })
+  @Prop({
+    type: Types.ObjectId,
+    ref: 'Participant',
+    required: true,
+    index: true,
+  })
   participantId: Types.ObjectId;
 
-  @ApiProperty({ example: '507f1f77bcf86cd799439011', description: 'Session ID' })
+  @ApiProperty({
+    example: '507f1f77bcf86cd799439011',
+    description: 'Session ID',
+  })
   @Prop({ type: Types.ObjectId, ref: 'Session', required: true, index: true })
   sessionId: Types.ObjectId;
 
-  @ApiProperty({ example: '2024-01-01T00:00:00.000Z', description: 'Registration date' })
+  @ApiProperty({
+    example: '2024-01-01T00:00:00.000Z',
+    description: 'Registration date',
+  })
   @Prop({ type: Date, default: Date.now })
   registrationDate: Date;
 
-  @ApiProperty({ 
-    example: 'confirmed', 
+  @ApiProperty({
+    example: 'confirmed',
     enum: RegistrationStatus,
-    description: 'Registration status' 
+    description: 'Registration status',
   })
-  @Prop({ 
-    type: String, 
-    enum: RegistrationStatus, 
+  @Prop({
+    type: String,
+    enum: RegistrationStatus,
     default: RegistrationStatus.PENDING,
-    index: true 
+    index: true,
   })
   status: RegistrationStatus;
 
-  @ApiPropertyOptional({ example: 'Special dietary requirements', description: 'Additional notes' })
+  @ApiPropertyOptional({
+    example: 'Special dietary requirements',
+    description: 'Additional notes',
+  })
   @Prop({ trim: true })
   notes?: string;
 

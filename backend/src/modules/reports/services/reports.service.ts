@@ -22,7 +22,10 @@ export class ReportsService {
   }
 
   async generateAttendanceReport(dto: AttendanceReportDto) {
-    this.logger.debug('Generating attendance report', { filters: dto, reqId: getCurrentRequestId() });
+    this.logger.debug('Generating attendance report', {
+      filters: dto,
+      reqId: getCurrentRequestId(),
+    });
 
     const checkIns = await this.checkInsService.findAll({
       sessionId: dto.sessionId,
@@ -61,12 +64,16 @@ export class ReportsService {
     };
   }
 
-  async generateSessionReport(sessionId: string, format: ReportFormat = ReportFormat.JSON) {
+  async generateSessionReport(
+    sessionId: string,
+    format: ReportFormat = ReportFormat.JSON,
+  ) {
     this.logger.log(`Generating session report for: ${sessionId}`);
 
     const session = await this.sessionsService.findOne(sessionId);
     const checkIns = await this.checkInsService.findBySession(sessionId);
-    const registrations = await this.registrationsService.findBySession(sessionId);
+    const registrations =
+      await this.registrationsService.findBySession(sessionId);
 
     const reportData = {
       session: {
@@ -80,13 +87,14 @@ export class ReportsService {
       statistics: {
         totalRegistrations: registrations.length,
         totalCheckIns: checkIns.length,
-        attendanceRate: registrations.length > 0 
-          ? ((checkIns.length / registrations.length) * 100).toFixed(2) + '%'
-          : '0%',
-        qrCheckIns: checkIns.filter(c => c.method === 'qr').length,
-        manualCheckIns: checkIns.filter(c => c.method === 'manual').length,
+        attendanceRate:
+          registrations.length > 0
+            ? ((checkIns.length / registrations.length) * 100).toFixed(2) + '%'
+            : '0%',
+        qrCheckIns: checkIns.filter((c) => c.method === 'qr').length,
+        manualCheckIns: checkIns.filter((c) => c.method === 'manual').length,
       },
-      checkIns: checkIns.map(checkIn => ({
+      checkIns: checkIns.map((checkIn) => ({
         participantName: (checkIn.participantId as any)?.name || 'Unknown',
         participantEmail: (checkIn.participantId as any)?.email || 'Unknown',
         organization: (checkIn.participantId as any)?.organization || 'N/A',
@@ -97,7 +105,10 @@ export class ReportsService {
     };
 
     if (format === ReportFormat.EXCEL) {
-      return this.generateExcelReport(reportData.checkIns, `session-${sessionId}-report`);
+      return this.generateExcelReport(
+        reportData.checkIns,
+        `session-${sessionId}-report`,
+      );
     }
 
     return reportData;
@@ -128,8 +139,12 @@ export class ReportsService {
 
     const sheetsData = await Promise.all(
       sessions.map(async (session) => {
-        const checkIns = await this.checkInsService.findBySession(session._id.toString());
-        const registrations = await this.registrationsService.findBySession(session._id.toString());
+        const checkIns = await this.checkInsService.findBySession(
+          session._id.toString(),
+        );
+        const registrations = await this.registrationsService.findBySession(
+          session._id.toString(),
+        );
 
         return {
           sessionId: session._id,
@@ -141,9 +156,11 @@ export class ReportsService {
           capacity: session.capacity,
           registrations: registrations.length,
           checkIns: checkIns.length,
-          attendanceRate: registrations.length > 0
-            ? ((checkIns.length / registrations.length) * 100).toFixed(2) + '%'
-            : '0%',
+          attendanceRate:
+            registrations.length > 0
+              ? ((checkIns.length / registrations.length) * 100).toFixed(2) +
+                '%'
+              : '0%',
         };
       }),
     );
@@ -152,14 +169,17 @@ export class ReportsService {
       sessions: sheetsData,
       summary: {
         totalSessions: sessions.length,
-        openSessions: sessions.filter(s => s.isOpen).length,
-        closedSessions: sessions.filter(s => !s.isOpen).length,
+        openSessions: sessions.filter((s) => s.isOpen).length,
+        closedSessions: sessions.filter((s) => !s.isOpen).length,
       },
       generatedAt: new Date().toISOString(),
     };
   }
 
-  private generateExcelReport(data: any[], filename: string): { buffer: Buffer; filename: string } {
+  private generateExcelReport(
+    data: any[],
+    filename: string,
+  ): { buffer: Buffer; filename: string } {
     const worksheet = XLSX.utils.json_to_sheet(data);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Report');

@@ -8,7 +8,9 @@ import { Types } from 'mongoose';
 /**
  * Creates a mock Mongoose document with save, toObject, etc.
  */
-export function createMockDocument<T extends Record<string, unknown>>(data: T): T & {
+export function createMockDocument<T extends Record<string, unknown>>(
+  data: T,
+): T & {
   _id: Types.ObjectId;
   save: jest.Mock;
   toObject: jest.Mock;

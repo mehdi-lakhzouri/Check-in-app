@@ -2,9 +2,9 @@ import { Injectable, Inject, forwardRef } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Types } from 'mongoose';
 import { CheckInRepository, CheckInAttemptRepository } from '../repositories';
-import { 
-  CreateCheckInDto, 
-  QrCheckInDto, 
+import {
+  CreateCheckInDto,
+  QrCheckInDto,
   CheckInFilterDto,
   VerifyQrDto,
   VerificationResult,
@@ -13,16 +13,16 @@ import {
   DeclineCheckInDto,
   CheckInAttemptFilterDto,
 } from '../dto';
-import { 
-  CheckInDocument, 
-  CheckInMethod, 
+import {
+  CheckInDocument,
+  CheckInMethod,
   CheckInBadge,
   CheckInAttemptDocument,
   AttemptStatus,
 } from '../schemas';
-import { 
-  EntityNotFoundException, 
-  EntityExistsException, 
+import {
+  EntityNotFoundException,
+  EntityExistsException,
   ValidationException,
 } from '../../../common/exceptions';
 import { PaginatedResult } from '../../../common/dto';
@@ -80,8 +80,13 @@ export class CheckInsService {
   ) {
     this.logger = new PinoLoggerService();
     this.logger.setContext(CheckInsService.name);
-    this.lateThresholdMinutes = this.configService.get<number>('app.checkinLateThresholdMinutes', 10);
-    this.logger.debug('Late check-in threshold configured', { minutes: this.lateThresholdMinutes });
+    this.lateThresholdMinutes = this.configService.get<number>(
+      'app.checkinLateThresholdMinutes',
+      10,
+    );
+    this.logger.debug('Late check-in threshold configured', {
+      minutes: this.lateThresholdMinutes,
+    });
   }
 
   /**
@@ -109,22 +114,26 @@ export class CheckInsService {
     });
 
     // Find participant by QR code
-    const participant = await this.participantsService.findByQrCode(verifyDto.qrCode);
-    
+    const participant = await this.participantsService.findByQrCode(
+      verifyDto.qrCode,
+    );
+
     // Find session
     const session = await this.sessionsService.findOne(verifyDto.sessionId);
 
     // Check if already checked in
-    const existingCheckIn = await this.checkInRepository.findByParticipantAndSession(
-      participant._id.toString(),
-      verifyDto.sessionId,
-    );
+    const existingCheckIn =
+      await this.checkInRepository.findByParticipantAndSession(
+        participant._id.toString(),
+        verifyDto.sessionId,
+      );
 
     // Check registration status
-    const registrationCheck = await this.registrationsService.isParticipantRegistered(
-      participant._id.toString(),
-      verifyDto.sessionId,
-    );
+    const registrationCheck =
+      await this.registrationsService.isParticipantRegistered(
+        participant._id.toString(),
+        verifyDto.sessionId,
+      );
 
     // Determine verification badge
     let badge: VerificationBadge;
@@ -155,17 +164,27 @@ export class CheckInsService {
 
     // Check session capacity - prevent verification screen if session is full
     let isAtCapacity = false;
-    let capacityInfo: { current: number; max: number; remaining: number } | null = null;
-    
-    if (session.capacity && session.capacity > 0 && session.capacityEnforced !== false) {
-      const currentCount = await this.checkInRepository.countBySession(verifyDto.sessionId);
+    let capacityInfo: {
+      current: number;
+      max: number;
+      remaining: number;
+    } | null = null;
+
+    if (
+      session.capacity &&
+      session.capacity > 0 &&
+      session.capacityEnforced !== false
+    ) {
+      const currentCount = await this.checkInRepository.countBySession(
+        verifyDto.sessionId,
+      );
       isAtCapacity = currentCount >= session.capacity;
       capacityInfo = {
         current: currentCount,
         max: session.capacity,
         remaining: Math.max(0, session.capacity - currentCount),
       };
-      
+
       if (isAtCapacity && !existingCheckIn) {
         canAccept = false;
         acceptLabel = 'Session Full';
@@ -246,26 +265,31 @@ export class CheckInsService {
     }
 
     // Verify participant exists
-    const participant = await this.participantsService.findOne(acceptDto.participantId);
-
-    // Check registration status
-    const registrationCheck = await this.registrationsService.isParticipantRegistered(
+    const participant = await this.participantsService.findOne(
       acceptDto.participantId,
-      acceptDto.sessionId,
     );
 
+    // Check registration status
+    const registrationCheck =
+      await this.registrationsService.isParticipantRegistered(
+        acceptDto.participantId,
+        acceptDto.sessionId,
+      );
+
     // Determine badge based on registration
-    const badge = registrationCheck.isRegistered 
-      ? CheckInBadge.ACCEPTED 
+    const badge = registrationCheck.isRegistered
+      ? CheckInBadge.ACCEPTED
       : CheckInBadge.ACCEPTED_UNREGISTERED;
 
     // Reserve capacity slot
-    const reservation = await this.sessionsService.reserveCapacitySlot(acceptDto.sessionId);
+    const reservation = await this.sessionsService.reserveCapacitySlot(
+      acceptDto.sessionId,
+    );
     if (!reservation.success) {
       throw new ValidationException([
-        { 
-          field: 'sessionId', 
-          message: `Session is at full capacity (${reservation.capacity} participants).` 
+        {
+          field: 'sessionId',
+          message: `Session is at full capacity (${reservation.capacity} participants).`,
         },
       ]);
     }
@@ -343,14 +367,17 @@ export class CheckInsService {
     });
 
     // Verify participant and session exist
-    const participant = await this.participantsService.findOne(declineDto.participantId);
+    const participant = await this.participantsService.findOne(
+      declineDto.participantId,
+    );
     const session = await this.sessionsService.findOne(declineDto.sessionId);
 
     // Check registration status
-    const registrationCheck = await this.registrationsService.isParticipantRegistered(
-      declineDto.participantId,
-      declineDto.sessionId,
-    );
+    const registrationCheck =
+      await this.registrationsService.isParticipantRegistered(
+        declineDto.participantId,
+        declineDto.sessionId,
+      );
 
     // Create attempt record
     const attempt = await this.attemptRepository.create({
@@ -390,7 +417,9 @@ export class CheckInsService {
   /**
    * Get check-in attempts with filtering
    */
-  async getAttempts(filterDto: CheckInAttemptFilterDto): Promise<PaginatedResult<CheckInAttemptDocument>> {
+  async getAttempts(
+    filterDto: CheckInAttemptFilterDto,
+  ): Promise<PaginatedResult<CheckInAttemptDocument>> {
     return this.attemptRepository.findWithFilters(filterDto);
   }
 
@@ -413,21 +442,23 @@ export class CheckInsService {
    * 4. If capacity is enforced, RESERVE slot atomically FIRST
    * 5. Create check-in record
    * 6. On failure: release reserved slot
-   * 
+   *
    * Uses RESERVE-BEFORE-WRITE pattern to prevent race conditions:
    * - Reserve capacity slot FIRST (atomic via MongoDB)
    * - Create check-in record SECOND
    * - Rollback (release slot) if creation fails
    */
   async create(createCheckInDto: CreateCheckInDto): Promise<CheckInResult> {
-    this.logger.log('Creating check-in', { 
-      participantId: createCheckInDto.participantId, 
+    this.logger.log('Creating check-in', {
+      participantId: createCheckInDto.participantId,
       sessionId: createCheckInDto.sessionId,
-      reqId: getCurrentRequestId() 
+      reqId: getCurrentRequestId(),
     });
 
     // Step 1: Verify session exists and is open
-    const session = await this.sessionsService.findOne(createCheckInDto.sessionId);
+    const session = await this.sessionsService.findOne(
+      createCheckInDto.sessionId,
+    );
     if (!session.isOpen) {
       throw new ValidationException([
         { field: 'sessionId', message: 'Session is not open for check-ins' },
@@ -435,28 +466,32 @@ export class CheckInsService {
     }
 
     // Step 2: Verify participant exists
-    const participant = await this.participantsService.findOne(createCheckInDto.participantId);
+    const participant = await this.participantsService.findOne(
+      createCheckInDto.participantId,
+    );
 
     // Step 3: Check registration requirement for closed sessions
     if (session.requiresRegistration) {
-      const registrationCheck = await this.registrationsService.isParticipantRegistered(
-        createCheckInDto.participantId,
-        createCheckInDto.sessionId,
-      );
+      const registrationCheck =
+        await this.registrationsService.isParticipantRegistered(
+          createCheckInDto.participantId,
+          createCheckInDto.sessionId,
+        );
 
       if (!registrationCheck.isRegistered) {
         if (!registrationCheck.registration) {
           throw new ValidationException([
-            { 
-              field: 'participantId', 
-              message: 'Participant is not registered for this session. This is an invite-only workshop.' 
+            {
+              field: 'participantId',
+              message:
+                'Participant is not registered for this session. This is an invite-only workshop.',
             },
           ]);
         } else {
           throw new ValidationException([
-            { 
-              field: 'participantId', 
-              message: `Registration status is "${registrationCheck.status}". Only confirmed registrations can check in.` 
+            {
+              field: 'participantId',
+              message: `Registration status is "${registrationCheck.status}". Only confirmed registrations can check in.`,
             },
           ]);
         }
@@ -465,15 +500,17 @@ export class CheckInsService {
 
     // STEP 4: RESERVE CAPACITY SLOT FIRST (atomic)
     // This is the key fix for the race condition - reserve BEFORE creating the check-in
-    const reservation = await this.sessionsService.reserveCapacitySlot(createCheckInDto.sessionId);
-    
+    const reservation = await this.sessionsService.reserveCapacitySlot(
+      createCheckInDto.sessionId,
+    );
+
     // Check if reservation was rejected (capacity reached)
     // Note: For unlimited capacity (capacity=0), reservation.success is always true
     if (!reservation.success) {
       throw new ValidationException([
-        { 
-          field: 'sessionId', 
-          message: `Session is at full capacity (${reservation.capacity} participants). Cannot accept more check-ins.` 
+        {
+          field: 'sessionId',
+          message: `Session is at full capacity (${reservation.capacity} participants). Cannot accept more check-ins.`,
         },
       ]);
     }
@@ -483,7 +520,9 @@ export class CheckInsService {
     const isLate = this.isCheckInLate(checkInTime, new Date(session.startTime));
 
     if (isLate) {
-      this.logger.log(`Check-in is late (threshold: ${this.lateThresholdMinutes} min after session start)`);
+      this.logger.log(
+        `Check-in is late (threshold: ${this.lateThresholdMinutes} min after session start)`,
+      );
     }
 
     // STEP 5: Create check-in AFTER reservation
@@ -500,11 +539,15 @@ export class CheckInsService {
       });
     } catch (error: any) {
       // STEP 6: ROLLBACK - Release reserved slot on failure
-      this.logger.warn(`Check-in creation failed, releasing capacity slot: ${error.message}`);
-      
+      this.logger.warn(
+        `Check-in creation failed, releasing capacity slot: ${error.message}`,
+      );
+
       // Only release if capacity is limited (for unlimited, nothing was reserved)
       if (reservation.capacity > 0) {
-        await this.sessionsService.releaseCapacitySlot(createCheckInDto.sessionId);
+        await this.sessionsService.releaseCapacitySlot(
+          createCheckInDto.sessionId,
+        );
       }
 
       // Handle MongoDB duplicate key error (E11000)
@@ -520,10 +563,14 @@ export class CheckInsService {
 
     // For unlimited capacity sessions, increment count (reservation didn't increment)
     if (reservation.capacity === 0) {
-      await this.sessionsService.incrementCheckInCount(createCheckInDto.sessionId);
+      await this.sessionsService.incrementCheckInCount(
+        createCheckInDto.sessionId,
+      );
     }
 
-    this.logger.log(`Check-in created with ID: ${checkIn._id} for ${participant.name}`);
+    this.logger.log(
+      `Check-in created with ID: ${checkIn._id} for ${participant.name}`,
+    );
 
     // Return check-in with capacity info from reservation
     return {
@@ -547,7 +594,9 @@ export class CheckInsService {
     );
 
     // Find participant by QR code
-    const participant = await this.participantsService.findByQrCode(qrCheckInDto.qrCode);
+    const participant = await this.participantsService.findByQrCode(
+      qrCheckInDto.qrCode,
+    );
 
     // Create check-in
     return this.create({
@@ -558,8 +607,12 @@ export class CheckInsService {
     });
   }
 
-  async findAll(filterDto: CheckInFilterDto): Promise<PaginatedResult<CheckInDocument>> {
-    this.logger.log(`Finding check-ins with filters: ${JSON.stringify(filterDto)}`);
+  async findAll(
+    filterDto: CheckInFilterDto,
+  ): Promise<PaginatedResult<CheckInDocument>> {
+    this.logger.log(
+      `Finding check-ins with filters: ${JSON.stringify(filterDto)}`,
+    );
     return this.checkInRepository.findWithFilters(filterDto);
   }
 
@@ -585,7 +638,7 @@ export class CheckInsService {
     this.logger.log(`Deleting check-in: ${id}`);
 
     const checkIn = await this.checkInRepository.findById(id);
-    
+
     if (!checkIn) {
       throw new EntityNotFoundException('CheckIn', id);
     }
@@ -593,7 +646,9 @@ export class CheckInsService {
     await this.checkInRepository.deleteById(id);
 
     // Decrement session check-in count
-    await this.sessionsService.decrementCheckInCount(checkIn.sessionId.toString());
+    await this.sessionsService.decrementCheckInCount(
+      checkIn.sessionId.toString(),
+    );
 
     this.logger.log(`Check-in deleted: ${id}`);
     return checkIn;
@@ -602,10 +657,10 @@ export class CheckInsService {
   async removeBySession(sessionId: string): Promise<number> {
     this.logger.log(`Deleting all check-ins for session: ${sessionId}`);
     const count = await this.checkInRepository.deleteBySession(sessionId);
-    
+
     // Reset session check-in count after bulk delete
     await this.sessionsService.reconcileCheckInCount(sessionId, 0);
-    
+
     return count;
   }
 
@@ -622,7 +677,10 @@ export class CheckInsService {
     return this.checkInRepository.getCheckInStats(sessionId);
   }
 
-  async getRecentCheckIns(limit = 10, sessionId?: string): Promise<CheckInDocument[]> {
+  async getRecentCheckIns(
+    limit = 10,
+    sessionId?: string,
+  ): Promise<CheckInDocument[]> {
     return this.checkInRepository.getRecentCheckIns(limit, sessionId);
   }
 
@@ -630,7 +688,10 @@ export class CheckInsService {
     return this.checkInRepository.countBySession(sessionId);
   }
 
-  async isCheckedIn(participantId: string, sessionId: string): Promise<boolean> {
+  async isCheckedIn(
+    participantId: string,
+    sessionId: string,
+  ): Promise<boolean> {
     const checkIn = await this.checkInRepository.findByParticipantAndSession(
       participantId,
       sessionId,
@@ -642,11 +703,18 @@ export class CheckInsService {
    * Reconcile check-in counts for all sessions
    * Used by background job to fix any inconsistencies
    */
-  async reconcileAllSessionCounts(): Promise<{ sessionId: string; expected: number; actual: number; fixed: boolean }[]> {
+  async reconcileAllSessionCounts(): Promise<
+    { sessionId: string; expected: number; actual: number; fixed: boolean }[]
+  > {
     this.logger.log('Starting reconciliation of all session check-in counts');
-    
+
     const sessions = await this.sessionsService.findAll({ limit: 10000 });
-    const results: { sessionId: string; expected: number; actual: number; fixed: boolean }[] = [];
+    const results: {
+      sessionId: string;
+      expected: number;
+      actual: number;
+      fixed: boolean;
+    }[] = [];
 
     for (const session of sessions.data) {
       const actualCount = await this.countBySession(session._id.toString());
@@ -654,9 +722,12 @@ export class CheckInsService {
 
       if (actualCount !== storedCount) {
         this.logger.warn(
-          `Inconsistency found for session ${session._id}: stored=${storedCount}, actual=${actualCount}`
+          `Inconsistency found for session ${session._id}: stored=${storedCount}, actual=${actualCount}`,
         );
-        await this.sessionsService.reconcileCheckInCount(session._id.toString(), actualCount);
+        await this.sessionsService.reconcileCheckInCount(
+          session._id.toString(),
+          actualCount,
+        );
         results.push({
           sessionId: session._id.toString(),
           expected: storedCount,
@@ -673,7 +744,9 @@ export class CheckInsService {
       }
     }
 
-    this.logger.log(`Reconciliation complete. Fixed ${results.filter(r => r.fixed).length} inconsistencies`);
+    this.logger.log(
+      `Reconciliation complete. Fixed ${results.filter((r) => r.fixed).length} inconsistencies`,
+    );
     return results;
   }
 }

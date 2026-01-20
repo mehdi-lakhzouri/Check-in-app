@@ -67,7 +67,9 @@ class MockRedisClient {
 
   keys(pattern: string): Promise<string[]> {
     const regex = new RegExp('^' + pattern.replace(/\*/g, '.*') + '$');
-    return Promise.resolve(Array.from(this.store.keys()).filter((key) => regex.test(key)));
+    return Promise.resolve(
+      Array.from(this.store.keys()).filter((key) => regex.test(key)),
+    );
   }
 
   mGet(keys: string[]): Promise<(string | null)[]> {

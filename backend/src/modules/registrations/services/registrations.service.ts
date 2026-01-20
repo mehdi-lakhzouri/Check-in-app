@@ -1,9 +1,16 @@
 import { Injectable } from '@nestjs/common';
 import { Types } from 'mongoose';
 import { RegistrationRepository } from '../repositories';
-import { CreateRegistrationDto, UpdateRegistrationDto, RegistrationFilterDto } from '../dto';
+import {
+  CreateRegistrationDto,
+  UpdateRegistrationDto,
+  RegistrationFilterDto,
+} from '../dto';
 import { RegistrationDocument, RegistrationStatus } from '../schemas';
-import { EntityNotFoundException, EntityExistsException } from '../../../common/exceptions';
+import {
+  EntityNotFoundException,
+  EntityExistsException,
+} from '../../../common/exceptions';
 import { PaginatedResult } from '../../../common/dto';
 import { PinoLoggerService, getCurrentRequestId } from '../../../common/logger';
 
@@ -16,18 +23,21 @@ export class RegistrationsService {
     this.logger.setContext(RegistrationsService.name);
   }
 
-  async create(createRegistrationDto: CreateRegistrationDto): Promise<RegistrationDocument> {
-    this.logger.log('Creating registration', { 
-      participantId: createRegistrationDto.participantId, 
+  async create(
+    createRegistrationDto: CreateRegistrationDto,
+  ): Promise<RegistrationDocument> {
+    this.logger.log('Creating registration', {
+      participantId: createRegistrationDto.participantId,
       sessionId: createRegistrationDto.sessionId,
-      reqId: getCurrentRequestId() 
+      reqId: getCurrentRequestId(),
     });
 
     // Check for existing registration
-    const existing = await this.registrationRepository.findByParticipantAndSession(
-      createRegistrationDto.participantId,
-      createRegistrationDto.sessionId,
-    );
+    const existing =
+      await this.registrationRepository.findByParticipantAndSession(
+        createRegistrationDto.participantId,
+        createRegistrationDto.sessionId,
+      );
 
     if (existing) {
       throw new EntityExistsException(
@@ -43,12 +53,20 @@ export class RegistrationsService {
       sessionId: new Types.ObjectId(createRegistrationDto.sessionId),
     });
 
-    this.logger.log('Registration created', { registrationId: registration._id, reqId: getCurrentRequestId() });
+    this.logger.log('Registration created', {
+      registrationId: registration._id,
+      reqId: getCurrentRequestId(),
+    });
     return registration;
   }
 
-  async findAll(filterDto: RegistrationFilterDto): Promise<PaginatedResult<RegistrationDocument>> {
-    this.logger.debug('Finding registrations', { filters: filterDto, reqId: getCurrentRequestId() });
+  async findAll(
+    filterDto: RegistrationFilterDto,
+  ): Promise<PaginatedResult<RegistrationDocument>> {
+    this.logger.debug('Finding registrations', {
+      filters: filterDto,
+      reqId: getCurrentRequestId(),
+    });
     return this.registrationRepository.findWithFilters(filterDto);
   }
 
@@ -62,7 +80,9 @@ export class RegistrationsService {
     return registration;
   }
 
-  async findByParticipant(participantId: string): Promise<RegistrationDocument[]> {
+  async findByParticipant(
+    participantId: string,
+  ): Promise<RegistrationDocument[]> {
     return this.registrationRepository.findByParticipant(participantId);
   }
 
@@ -78,7 +98,10 @@ export class RegistrationsService {
     participantId: string,
     sessionId: string,
   ): Promise<RegistrationDocument | null> {
-    return this.registrationRepository.findByParticipantAndSession(participantId, sessionId);
+    return this.registrationRepository.findByParticipantAndSession(
+      participantId,
+      sessionId,
+    );
   }
 
   /**
@@ -87,11 +110,16 @@ export class RegistrationsService {
   async isParticipantRegistered(
     participantId: string,
     sessionId: string,
-  ): Promise<{ isRegistered: boolean; status?: RegistrationStatus; registration?: RegistrationDocument }> {
-    const registration = await this.registrationRepository.findByParticipantAndSession(
-      participantId,
-      sessionId,
-    );
+  ): Promise<{
+    isRegistered: boolean;
+    status?: RegistrationStatus;
+    registration?: RegistrationDocument;
+  }> {
+    const registration =
+      await this.registrationRepository.findByParticipantAndSession(
+        participantId,
+        sessionId,
+      );
 
     if (!registration) {
       return { isRegistered: false };
@@ -110,7 +138,10 @@ export class RegistrationsService {
   ): Promise<RegistrationDocument> {
     this.logger.log(`Updating registration: ${id}`);
 
-    const registration = await this.registrationRepository.updateById(id, updateRegistrationDto);
+    const registration = await this.registrationRepository.updateById(
+      id,
+      updateRegistrationDto,
+    );
 
     if (!registration) {
       throw new EntityNotFoundException('Registration', id);
@@ -139,7 +170,9 @@ export class RegistrationsService {
   }
 
   async removeByParticipant(participantId: string): Promise<number> {
-    this.logger.log(`Deleting all registrations for participant: ${participantId}`);
+    this.logger.log(
+      `Deleting all registrations for participant: ${participantId}`,
+    );
     return this.registrationRepository.deleteByParticipant(participantId);
   }
 

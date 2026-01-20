@@ -137,7 +137,9 @@ export class CheckInRepository extends BaseRepository<CheckInDocument> {
   }
 
   async deleteByParticipant(participantId: string): Promise<number> {
-    return this.deleteMany({ participantId: new Types.ObjectId(participantId) });
+    return this.deleteMany({
+      participantId: new Types.ObjectId(participantId),
+    });
   }
 
   async getCheckInStats(sessionId?: string): Promise<{
@@ -146,8 +148,10 @@ export class CheckInRepository extends BaseRepository<CheckInDocument> {
     manual: number;
   }> {
     const filter: QueryFilter<CheckInDocument> = sessionId
-      ? { sessionId: new Types.ObjectId(sessionId) } as QueryFilter<CheckInDocument>
-      : {} as QueryFilter<CheckInDocument>;
+      ? ({
+          sessionId: new Types.ObjectId(sessionId),
+        } as QueryFilter<CheckInDocument>)
+      : ({} as QueryFilter<CheckInDocument>);
 
     const [total, qr, manual] = await Promise.all([
       this.count(filter),
@@ -158,10 +162,15 @@ export class CheckInRepository extends BaseRepository<CheckInDocument> {
     return { total, qr, manual };
   }
 
-  async getRecentCheckIns(limit = 10, sessionId?: string): Promise<CheckInDocument[]> {
+  async getRecentCheckIns(
+    limit = 10,
+    sessionId?: string,
+  ): Promise<CheckInDocument[]> {
     const filter: QueryFilter<CheckInDocument> = sessionId
-      ? { sessionId: new Types.ObjectId(sessionId) } as QueryFilter<CheckInDocument>
-      : {} as QueryFilter<CheckInDocument>;
+      ? ({
+          sessionId: new Types.ObjectId(sessionId),
+        } as QueryFilter<CheckInDocument>)
+      : ({} as QueryFilter<CheckInDocument>);
 
     return this.checkInModel
       .find(filter)

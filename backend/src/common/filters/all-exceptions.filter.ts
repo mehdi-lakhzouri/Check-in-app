@@ -43,7 +43,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
         const responseObj = exceptionResponse as Record<string, unknown>;
         message = (responseObj.message as string) || message;
         errorCode = responseObj.error as string;
-        
+
         // Handle validation errors from class-validator
         if (Array.isArray(responseObj.message)) {
           message = 'Validation failed';
@@ -80,7 +80,11 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
     // Log based on severity
     if (status >= 500) {
-      this.logger.error('Unhandled exception', exception instanceof Error ? exception.stack : undefined, logPayload);
+      this.logger.error(
+        'Unhandled exception',
+        exception instanceof Error ? exception.stack : undefined,
+        logPayload,
+      );
     } else if (status >= 400) {
       this.logger.warn('Client error', logPayload);
     }

@@ -9,7 +9,9 @@ import { RegistrationsModule } from '../registrations';
 
 @Module({
   imports: [
-    MongooseModule.forFeature([{ name: Participant.name, schema: ParticipantSchema }]),
+    MongooseModule.forFeature([
+      { name: Participant.name, schema: ParticipantSchema },
+    ]),
     forwardRef(() => CheckInsModule),
     forwardRef(() => RegistrationsModule),
   ],

@@ -3,7 +3,8 @@ import { PipeTransform, Injectable } from '@nestjs/common';
 @Injectable()
 export class SanitizeHtmlPipe implements PipeTransform {
   private readonly htmlRegex = /<[^>]*>/g;
-  private readonly scriptRegex = /<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi;
+  private readonly scriptRegex =
+    /<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi;
 
   transform(value: unknown): unknown {
     if (typeof value === 'string') {
@@ -27,9 +28,11 @@ export class SanitizeHtmlPipe implements PipeTransform {
     return sanitized.trim();
   }
 
-  private sanitizeObject(obj: Record<string, unknown>): Record<string, unknown> {
+  private sanitizeObject(
+    obj: Record<string, unknown>,
+  ): Record<string, unknown> {
     const sanitized: Record<string, unknown> = {};
-    
+
     for (const [key, value] of Object.entries(obj)) {
       if (typeof value === 'string') {
         sanitized[key] = this.sanitize(value);

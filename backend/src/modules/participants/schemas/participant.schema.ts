@@ -19,11 +19,23 @@ export class Participant {
   @Prop({ required: true, trim: true, index: true })
   name: string;
 
-  @ApiProperty({ example: 'john.doe@example.com', description: 'Participant email' })
-  @Prop({ required: true, unique: true, trim: true, lowercase: true, index: true })
+  @ApiProperty({
+    example: 'john.doe@example.com',
+    description: 'Participant email',
+  })
+  @Prop({
+    required: true,
+    unique: true,
+    trim: true,
+    lowercase: true,
+    index: true,
+  })
   email: string;
 
-  @ApiPropertyOptional({ example: 'ACME Corp', description: 'Organization/Company' })
+  @ApiPropertyOptional({
+    example: 'ACME Corp',
+    description: 'Organization/Company',
+  })
   @Prop({ trim: true, index: true })
   organization?: string;
 
@@ -39,16 +51,16 @@ export class Participant {
   @Prop({ default: true, index: true })
   isActive: boolean;
 
-  @ApiProperty({ 
-    example: 'regular', 
+  @ApiProperty({
+    example: 'regular',
     enum: ParticipantStatus,
-    description: 'Participant status type' 
+    description: 'Participant status type',
   })
-  @Prop({ 
-    type: String, 
-    enum: ParticipantStatus, 
+  @Prop({
+    type: String,
+    enum: ParticipantStatus,
     default: ParticipantStatus.REGULAR,
-    index: true 
+    index: true,
   })
   status: ParticipantStatus;
 
@@ -56,14 +68,17 @@ export class Participant {
   @Prop({ default: 0 })
   ambassadorPoints: number;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     description: 'IDs of participants referred by this ambassador',
-    type: [String]
+    type: [String],
   })
   @Prop({ type: [Types.ObjectId], ref: 'Participant', default: [] })
   referredParticipantIds: Types.ObjectId[];
 
-  @ApiProperty({ example: false, description: 'Whether travel grant has been applied' })
+  @ApiProperty({
+    example: false,
+    description: 'Whether travel grant has been applied',
+  })
   @Prop({ default: false })
   travelGrantApplied: boolean;
 
@@ -71,15 +86,24 @@ export class Participant {
   @Prop({ type: Boolean, default: null })
   travelGrantApproved: boolean | null;
 
-  @ApiPropertyOptional({ example: '2024-01-01T00:00:00.000Z', description: 'Travel grant application date' })
+  @ApiPropertyOptional({
+    example: '2024-01-01T00:00:00.000Z',
+    description: 'Travel grant application date',
+  })
   @Prop({ type: Date })
   travelGrantAppliedAt?: Date;
 
-  @ApiPropertyOptional({ example: '2024-01-02T00:00:00.000Z', description: 'Travel grant decision date' })
+  @ApiPropertyOptional({
+    example: '2024-01-02T00:00:00.000Z',
+    description: 'Travel grant decision date',
+  })
   @Prop({ type: Date })
   travelGrantDecidedAt?: Date;
 
-  @ApiPropertyOptional({ example: 'Regular ticket holder', description: 'Additional notes' })
+  @ApiPropertyOptional({
+    example: 'Regular ticket holder',
+    description: 'Additional notes',
+  })
   @Prop({ trim: true })
   notes?: string;
 

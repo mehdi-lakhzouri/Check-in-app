@@ -21,7 +21,10 @@ export class ReportsController {
 
   @Get('attendance')
   @ApiOperation({ summary: 'Generate attendance report' })
-  @ApiResponse({ status: 200, description: 'Attendance report generated successfully' })
+  @ApiResponse({
+    status: 200,
+    description: 'Attendance report generated successfully',
+  })
   async getAttendanceReport(
     @Query() dto: AttendanceReportDto,
     @Res({ passthrough: true }) res: Response,
@@ -31,7 +34,8 @@ export class ReportsController {
     if (dto.format === ReportFormat.EXCEL && (report as any).buffer) {
       const excelReport = report as { buffer: Buffer; filename: string };
       res.set({
-        'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'Content-Type':
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         'Content-Disposition': `attachment; filename="${excelReport.filename}"`,
       });
       return new StreamableFile(excelReport.buffer);
@@ -46,20 +50,31 @@ export class ReportsController {
 
   @Get('session/:sessionId')
   @ApiOperation({ summary: 'Generate report for a specific session' })
-  @ApiParam({ name: 'sessionId', description: 'Session ID', example: '507f1f77bcf86cd799439011' })
-  @ApiResponse({ status: 200, description: 'Session report generated successfully' })
+  @ApiParam({
+    name: 'sessionId',
+    description: 'Session ID',
+    example: '507f1f77bcf86cd799439011',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Session report generated successfully',
+  })
   @ApiResponse({ status: 404, description: 'Session not found' })
   async getSessionReport(
     @Param('sessionId', ParseMongoIdPipe) sessionId: string,
     @Query() dto: SessionReportDto,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const report = await this.reportsService.generateSessionReport(sessionId, dto.format);
+    const report = await this.reportsService.generateSessionReport(
+      sessionId,
+      dto.format,
+    );
 
     if (dto.format === ReportFormat.EXCEL && (report as any).buffer) {
       const excelReport = report as { buffer: Buffer; filename: string };
       res.set({
-        'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'Content-Type':
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         'Content-Disposition': `attachment; filename="${excelReport.filename}"`,
       });
       return new StreamableFile(excelReport.buffer);
@@ -74,7 +89,10 @@ export class ReportsController {
 
   @Get('statistics')
   @ApiOperation({ summary: 'Generate overall statistics report' })
-  @ApiResponse({ status: 200, description: 'Statistics report generated successfully' })
+  @ApiResponse({
+    status: 200,
+    description: 'Statistics report generated successfully',
+  })
   async getStatisticsReport() {
     const report = await this.reportsService.generateStatisticsReport();
     return {
@@ -86,7 +104,10 @@ export class ReportsController {
 
   @Get('sessions-sheets')
   @ApiOperation({ summary: 'Generate sessions overview sheets' })
-  @ApiResponse({ status: 200, description: 'Sessions sheets generated successfully' })
+  @ApiResponse({
+    status: 200,
+    description: 'Sessions sheets generated successfully',
+  })
   async getSessionsSheets() {
     const report = await this.reportsService.generateSessionsSheets();
     return {

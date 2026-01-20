@@ -2,14 +2,19 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, QueryFilter, Types } from 'mongoose';
 import { BaseRepository } from '../../../common/repositories';
-import { Participant, ParticipantDocument, ParticipantStatus } from '../schemas';
+import {
+  Participant,
+  ParticipantDocument,
+  ParticipantStatus,
+} from '../schemas';
 import { ParticipantFilterDto } from '../dto';
 import { PaginatedResult } from '../../../common/dto';
 
 @Injectable()
 export class ParticipantRepository extends BaseRepository<ParticipantDocument> {
   constructor(
-    @InjectModel(Participant.name) private participantModel: Model<ParticipantDocument>,
+    @InjectModel(Participant.name)
+    private participantModel: Model<ParticipantDocument>,
   ) {
     super(participantModel);
   }
@@ -47,7 +52,11 @@ export class ParticipantRepository extends BaseRepository<ParticipantDocument> {
       filter.travelGrantApproved = filterDto.travelGrantApproved;
     }
 
-    return this.findWithPagination(filter, filterDto, ['name', 'email', 'organization']);
+    return this.findWithPagination(filter, filterDto, [
+      'name',
+      'email',
+      'organization',
+    ]);
   }
 
   async findAmbassadors(): Promise<ParticipantDocument[]> {
@@ -72,7 +81,11 @@ export class ParticipantRepository extends BaseRepository<ParticipantDocument> {
     return this.participantModel
       .findByIdAndUpdate(
         ambassadorId,
-        { $addToSet: { referredParticipantIds: new Types.ObjectId(participantId) } },
+        {
+          $addToSet: {
+            referredParticipantIds: new Types.ObjectId(participantId),
+          },
+        },
         { new: true },
       )
       .exec();
@@ -85,7 +98,9 @@ export class ParticipantRepository extends BaseRepository<ParticipantDocument> {
     return this.participantModel
       .findByIdAndUpdate(
         ambassadorId,
-        { $pull: { referredParticipantIds: new Types.ObjectId(participantId) } },
+        {
+          $pull: { referredParticipantIds: new Types.ObjectId(participantId) },
+        },
         { new: true },
       )
       .exec();
@@ -120,7 +135,10 @@ export class ParticipantRepository extends BaseRepository<ParticipantDocument> {
       filter.organization = { $regex: organization, $options: 'i' };
     }
 
-    return this.participantModel.find(filter).sort({ travelGrantAppliedAt: -1 }).exec();
+    return this.participantModel
+      .find(filter)
+      .sort({ travelGrantAppliedAt: -1 })
+      .exec();
   }
 
   async getTravelGrantStats(): Promise<{
@@ -165,7 +183,9 @@ export class ParticipantRepository extends BaseRepository<ParticipantDocument> {
       .exec();
   }
 
-  async findByOrganization(organization: string): Promise<ParticipantDocument[]> {
+  async findByOrganization(
+    organization: string,
+  ): Promise<ParticipantDocument[]> {
     return this.participantModel
       .find({ organization: { $regex: `^${organization}$`, $options: 'i' } })
       .sort({ name: 1 })
@@ -272,7 +292,9 @@ export class ParticipantRepository extends BaseRepository<ParticipantDocument> {
     };
   }
 
-  async findByStatus(status: ParticipantStatus): Promise<ParticipantDocument[]> {
+  async findByStatus(
+    status: ParticipantStatus,
+  ): Promise<ParticipantDocument[]> {
     return this.participantModel.find({ status }).sort({ name: 1 }).exec();
   }
 
@@ -304,11 +326,15 @@ export class ParticipantRepository extends BaseRepository<ParticipantDocument> {
    * Remove a participant from all ambassador referral lists
    * Used when deleting a participant
    */
-  async removeParticipantFromAllReferrals(participantId: string): Promise<void> {
+  async removeParticipantFromAllReferrals(
+    participantId: string,
+  ): Promise<void> {
     await this.participantModel
       .updateMany(
         { referredParticipantIds: new Types.ObjectId(participantId) },
-        { $pull: { referredParticipantIds: new Types.ObjectId(participantId) } },
+        {
+          $pull: { referredParticipantIds: new Types.ObjectId(participantId) },
+        },
       )
       .exec();
   }
@@ -324,8 +350,10 @@ export class ParticipantRepository extends BaseRepository<ParticipantDocument> {
     return this.participantModel
       .findByIdAndUpdate(
         ambassadorId,
-        { 
-          referredParticipantIds: participantIds.map(id => new Types.ObjectId(id)),
+        {
+          referredParticipantIds: participantIds.map(
+            (id) => new Types.ObjectId(id),
+          ),
         },
         { new: true },
       )

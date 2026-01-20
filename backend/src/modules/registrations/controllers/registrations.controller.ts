@@ -10,18 +10,20 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-  ApiParam,
-} from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { RegistrationsService } from '../services';
-import { CreateRegistrationDto, UpdateRegistrationDto, RegistrationFilterDto } from '../dto';
+import {
+  CreateRegistrationDto,
+  UpdateRegistrationDto,
+  RegistrationFilterDto,
+} from '../dto';
 import { Registration } from '../schemas';
 import { ParseMongoIdPipe } from '../../../common/pipes';
-import { ApiPaginatedResponse, ApiStandardResponse } from '../../../common/decorators';
+import {
+  ApiPaginatedResponse,
+  ApiStandardResponse,
+} from '../../../common/decorators';
 
 @ApiTags('registrations')
 @Controller('registrations')
@@ -36,7 +38,9 @@ export class RegistrationsController {
   @ApiResponse({ status: 400, description: 'Validation error' })
   @ApiResponse({ status: 409, description: 'Registration already exists' })
   async create(@Body() createRegistrationDto: CreateRegistrationDto) {
-    const registration = await this.registrationsService.create(createRegistrationDto);
+    const registration = await this.registrationsService.create(
+      createRegistrationDto,
+    );
     return {
       status: 'success',
       message: 'Registration created successfully',
@@ -45,7 +49,9 @@ export class RegistrationsController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'Get all registrations with pagination and filtering' })
+  @ApiOperation({
+    summary: 'Get all registrations with pagination and filtering',
+  })
   @ApiPaginatedResponse(Registration, 'Registrations retrieved successfully')
   async findAll(@Query() filterDto: RegistrationFilterDto) {
     const result = await this.registrationsService.findAll(filterDto);
@@ -59,7 +65,11 @@ export class RegistrationsController {
 
   @Get(':id')
   @ApiOperation({ summary: 'Get a registration by ID' })
-  @ApiParam({ name: 'id', description: 'Registration ID', example: '507f1f77bcf86cd799439011' })
+  @ApiParam({
+    name: 'id',
+    description: 'Registration ID',
+    example: '507f1f77bcf86cd799439011',
+  })
   @ApiStandardResponse(Registration, 'Registration retrieved successfully')
   @ApiResponse({ status: 404, description: 'Registration not found' })
   async findOne(@Param('id', ParseMongoIdPipe) id: string) {
@@ -73,7 +83,11 @@ export class RegistrationsController {
 
   @Patch(':id')
   @ApiOperation({ summary: 'Update a registration' })
-  @ApiParam({ name: 'id', description: 'Registration ID', example: '507f1f77bcf86cd799439011' })
+  @ApiParam({
+    name: 'id',
+    description: 'Registration ID',
+    example: '507f1f77bcf86cd799439011',
+  })
   @ApiStandardResponse(Registration, 'Registration updated successfully')
   @ApiResponse({ status: 400, description: 'Validation error' })
   @ApiResponse({ status: 404, description: 'Registration not found' })
@@ -81,7 +95,10 @@ export class RegistrationsController {
     @Param('id', ParseMongoIdPipe) id: string,
     @Body() updateRegistrationDto: UpdateRegistrationDto,
   ) {
-    const registration = await this.registrationsService.update(id, updateRegistrationDto);
+    const registration = await this.registrationsService.update(
+      id,
+      updateRegistrationDto,
+    );
     return {
       status: 'success',
       message: 'Registration updated successfully',
@@ -91,8 +108,8 @@ export class RegistrationsController {
 
   @Get('stats/overview')
   @ApiOperation({ summary: 'Get registration statistics' })
-  @ApiResponse({ 
-    status: 200, 
+  @ApiResponse({
+    status: 200,
     description: 'Statistics retrieved successfully',
     schema: {
       properties: {
@@ -123,7 +140,11 @@ export class RegistrationsController {
   @Delete(':id')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Delete a registration' })
-  @ApiParam({ name: 'id', description: 'Registration ID', example: '507f1f77bcf86cd799439011' })
+  @ApiParam({
+    name: 'id',
+    description: 'Registration ID',
+    example: '507f1f77bcf86cd799439011',
+  })
   @ApiStandardResponse(Registration, 'Registration deleted successfully')
   @ApiResponse({ status: 404, description: 'Registration not found' })
   async remove(@Param('id', ParseMongoIdPipe) id: string) {

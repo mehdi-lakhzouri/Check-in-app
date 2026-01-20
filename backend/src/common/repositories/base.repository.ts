@@ -1,4 +1,10 @@
-import { Document, Model, UpdateQuery, PipelineStage, QueryFilter } from 'mongoose';
+import {
+  Document,
+  Model,
+  UpdateQuery,
+  PipelineStage,
+  QueryFilter,
+} from 'mongoose';
 import { PaginationDto, PaginatedResult } from '../dto';
 
 export abstract class BaseRepository<T extends Document> {
@@ -26,7 +32,13 @@ export abstract class BaseRepository<T extends Document> {
     pagination: PaginationDto,
     searchFields: string[] = [],
   ): Promise<PaginatedResult<T>> {
-    const { page = 1, limit = 10, sortBy = 'createdAt', sortOrder = 'desc', search } = pagination;
+    const {
+      page = 1,
+      limit = 10,
+      sortBy = 'createdAt',
+      sortOrder = 'desc',
+      search,
+    } = pagination;
     const skip = (page - 1) * limit;
 
     // Build search query if search term provided
@@ -75,7 +87,10 @@ export abstract class BaseRepository<T extends Document> {
       .exec();
   }
 
-  async updateOne(filter: QueryFilter<T>, data: UpdateQuery<T>): Promise<T | null> {
+  async updateOne(
+    filter: QueryFilter<T>,
+    data: UpdateQuery<T>,
+  ): Promise<T | null> {
     return this.model
       .findOneAndUpdate(filter, data, { new: true, runValidators: true })
       .exec();

@@ -1,6 +1,11 @@
 import { Module, forwardRef } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
-import { CheckIn, CheckInSchema, CheckInAttempt, CheckInAttemptSchema } from './schemas';
+import {
+  CheckIn,
+  CheckInSchema,
+  CheckInAttempt,
+  CheckInAttemptSchema,
+} from './schemas';
 import { CheckInRepository, CheckInAttemptRepository } from './repositories';
 import { CheckInsService } from './services';
 import { CheckInsController } from './controllers';

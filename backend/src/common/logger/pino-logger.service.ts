@@ -34,7 +34,7 @@ function createPinoOptions(): LoggerOptions {
 
   const baseOptions: LoggerOptions = {
     level: LOG_LEVELS[nodeEnv] || 'info',
-    
+
     // Custom serializers for security and performance
     serializers: {
       // Redact sensitive fields
@@ -125,7 +125,7 @@ function getPinoInstance(): PinoLogger {
 
 /**
  * Production-grade Pino Logger Service
- * 
+ *
  * Features:
  * - Structured JSON logging for production
  * - Pretty console output for development
@@ -134,16 +134,16 @@ function getPinoInstance(): PinoLogger {
  * - Non-blocking async I/O
  * - Correlation ID support
  * - High performance (Pino is 5x faster than Winston)
- * 
+ *
  * @example
  * ```typescript
  * // Basic usage
  * this.logger.log('User created', { userId: '123' });
- * 
+ *
  * // With context
  * this.logger.setContext('UsersService');
  * this.logger.log('Finding users', { filters: { active: true } });
- * 
+ *
  * // Error logging with stack trace
  * this.logger.error('Failed to create user', error.stack, { email });
  * ```
@@ -177,7 +177,10 @@ export class PinoLoggerService implements LoggerService {
   /**
    * Parse message and optional context from NestJS logger format
    */
-  private parseMessage(message: any, optionalParams: any[]): { msg: string; context: LogContext } {
+  private parseMessage(
+    message: any,
+    optionalParams: any[],
+  ): { msg: string; context: LogContext } {
     let msg: string;
     let context: LogContext = {};
 
@@ -225,7 +228,7 @@ export class PinoLoggerService implements LoggerService {
    */
   error(message: any, trace?: string, ...optionalParams: any[]): void {
     const { msg, context } = this.parseMessage(message, optionalParams);
-    
+
     // Handle trace parameter (NestJS convention)
     if (trace && typeof trace === 'string') {
       context.stack = trace;
@@ -300,8 +303,9 @@ export class PinoLoggerService implements LoggerService {
     statusCode: number;
     duration: number;
   }): void {
-    const level = res.statusCode >= 500 ? 'error' : res.statusCode >= 400 ? 'warn' : 'info';
-    
+    const level =
+      res.statusCode >= 500 ? 'error' : res.statusCode >= 400 ? 'warn' : 'info';
+
     this.pino[level](
       {
         context: 'HTTP',
@@ -323,7 +327,7 @@ export class PinoLoggerService implements LoggerService {
     error?: string;
   }): void {
     const level = operation.success ? 'debug' : 'error';
-    
+
     this.pino[level](
       {
         context: 'MongoDB',
@@ -344,7 +348,7 @@ export class PinoLoggerService implements LoggerService {
     error?: string;
   }): void {
     const level = operation.error ? 'warn' : 'debug';
-    
+
     this.pino[level](
       {
         context: 'Redis',
@@ -386,14 +390,20 @@ export class PinoLoggerService implements LoggerService {
    * Log WebSocket events
    */
   logWebSocket(event: {
-    type: 'connect' | 'disconnect' | 'subscribe' | 'unsubscribe' | 'emit' | 'error';
+    type:
+      | 'connect'
+      | 'disconnect'
+      | 'subscribe'
+      | 'unsubscribe'
+      | 'emit'
+      | 'error';
     clientId: string;
     room?: string;
     event?: string;
     error?: string;
   }): void {
     const level = event.type === 'error' ? 'error' : 'debug';
-    
+
     this.pino[level](
       {
         context: 'WebSocket',
@@ -407,7 +417,12 @@ export class PinoLoggerService implements LoggerService {
    * Log security events (authentication, authorization)
    */
   logSecurity(event: {
-    type: 'auth_success' | 'auth_failure' | 'rate_limit' | 'forbidden' | 'suspicious';
+    type:
+      | 'auth_success'
+      | 'auth_failure'
+      | 'rate_limit'
+      | 'forbidden'
+      | 'suspicious';
     ip?: string;
     userId?: string;
     resource?: string;

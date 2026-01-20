@@ -192,8 +192,8 @@ export function RegistrationsContent() {
 
       // Date range filter
       if (dateRange.start && dateRange.end) {
-        const registeredAt = new Date(registration.registeredAt);
-        if (!isWithinInterval(registeredAt, { start: dateRange.start, end: dateRange.end })) {
+        const createdAtDate = new Date(registration.createdAt);
+        if (!isWithinInterval(createdAtDate, { start: dateRange.start, end: dateRange.end })) {
           return false;
         }
       }
@@ -235,7 +235,7 @@ export function RegistrationsContent() {
       try {
         for (const participantId of participantIds) {
           try {
-            await createMutation.mutateAsync({ sessionId, participantId });
+            await createMutation.mutateAsync({ sessionId, participantId, status: 'confirmed' });
             successCount++;
           } catch {
             errorCount++;
@@ -342,7 +342,7 @@ export function RegistrationsContent() {
         align: 'center',
         cell: (row) => (
           <span className="text-sm tabular-nums text-muted-foreground">
-            {format(new Date(row.registeredAt), 'MMM d, yyyy')}
+            {format(new Date(row.createdAt), 'MMM d, yyyy')}
           </span>
         ),
       },

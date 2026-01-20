@@ -189,6 +189,7 @@ export function useCreateSession(
           endTime: newSession.endTime,
           location: newSession.location,
           isOpen: newSession.isOpen ?? false,
+          status: 'scheduled',
           capacity: newSession.capacity,
           checkInsCount: 0,
           capacityEnforced: newSession.capacityEnforced ?? true,

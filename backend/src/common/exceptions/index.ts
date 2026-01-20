@@ -91,10 +91,10 @@ export class RateLimitException extends HttpException {
   }
 }
 
-export { 
-  NotFoundException, 
-  BadRequestException, 
-  ConflictException, 
+export {
+  NotFoundException,
+  BadRequestException,
+  ConflictException,
   InternalServerErrorException,
   ForbiddenException,
   UnauthorizedException,

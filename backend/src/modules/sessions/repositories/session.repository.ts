@@ -37,7 +37,11 @@ export class SessionRepository extends BaseRepository<SessionDocument> {
       }
     }
 
-    return this.findWithPagination(filter, filterDto, ['name', 'description', 'location']);
+    return this.findWithPagination(filter, filterDto, [
+      'name',
+      'description',
+      'location',
+    ]);
   }
 
   async findUpcoming(limit = 5): Promise<SessionDocument[]> {
@@ -63,26 +67,30 @@ export class SessionRepository extends BaseRepository<SessionDocument> {
    * Returns the updated session if successful, null if capacity is reached
    * This prevents race conditions by using MongoDB's atomic operations
    */
-  async incrementCheckInCountWithCapacity(sessionId: string): Promise<SessionDocument | null> {
+  async incrementCheckInCountWithCapacity(
+    sessionId: string,
+  ): Promise<SessionDocument | null> {
     // Use findOneAndUpdate with conditions to atomically check capacity and increment
     // The condition ensures we only increment if:
     // 1. capacity is 0 (unlimited) OR
     // 2. capacity is not enforced OR
     // 3. checkInsCount is less than capacity
-    const result = await this.sessionModel.findOneAndUpdate(
-      {
-        _id: sessionId,
-        $or: [
-          { capacity: 0 },                    // Unlimited capacity
-          { capacity: { $exists: false } },   // No capacity set
-          { capacityEnforced: false },        // Capacity not enforced (overflow allowed)
-          { $expr: { $lt: ['$checkInsCount', '$capacity'] } }  // Under capacity
-        ]
-      },
-      { $inc: { checkInsCount: 1 } },
-      { new: true }
-    ).exec();
-    
+    const result = await this.sessionModel
+      .findOneAndUpdate(
+        {
+          _id: sessionId,
+          $or: [
+            { capacity: 0 }, // Unlimited capacity
+            { capacity: { $exists: false } }, // No capacity set
+            { capacityEnforced: false }, // Capacity not enforced (overflow allowed)
+            { $expr: { $lt: ['$checkInsCount', '$capacity'] } }, // Under capacity
+          ],
+        },
+        { $inc: { checkInsCount: 1 } },
+        { new: true },
+      )
+      .exec();
+
     return result;
   }
 
@@ -113,13 +121,15 @@ export class SessionRepository extends BaseRepository<SessionDocument> {
     if (!session) {
       throw new Error('Session not found');
     }
-    
+
     const capacity = session.capacity || 0;
     const checkInsCount = session.checkInsCount;
     const isUnlimited = capacity === 0;
     const remaining = isUnlimited ? -1 : Math.max(0, capacity - checkInsCount);
-    const percentFull = isUnlimited ? 0 : Math.round((checkInsCount / capacity) * 100);
-    
+    const percentFull = isUnlimited
+      ? 0
+      : Math.round((checkInsCount / capacity) * 100);
+
     return {
       capacity,
       checkInsCount,
@@ -135,7 +145,10 @@ export class SessionRepository extends BaseRepository<SessionDocument> {
    * Reconcile checkInsCount with actual check-ins count from database
    * Used by background job to fix any inconsistencies
    */
-  async reconcileCheckInCount(sessionId: string, actualCount: number): Promise<void> {
+  async reconcileCheckInCount(
+    sessionId: string,
+    actualCount: number,
+  ): Promise<void> {
     await this.sessionModel.updateOne(
       { _id: sessionId },
       { $set: { checkInsCount: actualCount } },

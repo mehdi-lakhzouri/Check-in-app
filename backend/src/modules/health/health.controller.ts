@@ -57,7 +57,10 @@ export class HealthController {
         redis: {
           type: 'object',
           properties: {
-            status: { type: 'string', enum: ['connected', 'degraded', 'disconnected'] },
+            status: {
+              type: 'string',
+              enum: ['connected', 'degraded', 'disconnected'],
+            },
             cache: { type: 'string', enum: ['connected', 'disconnected'] },
             client: { type: 'string', enum: ['connected', 'disconnected'] },
             usingFallback: { type: 'boolean' },
@@ -138,23 +141,28 @@ export class HealthController {
   }
 
   @Get('live')
-  @ApiOperation({ summary: 'Liveness probe - checks if application is running' })
+  @ApiOperation({
+    summary: 'Liveness probe - checks if application is running',
+  })
   @ApiOkResponse({ description: 'Application is live' })
   live(): { status: string } {
     return { status: 'ok' };
   }
 
   @Get('ready')
-  @ApiOperation({ summary: 'Readiness probe - checks if application can serve requests' })
+  @ApiOperation({
+    summary: 'Readiness probe - checks if application can serve requests',
+  })
   @ApiOkResponse({ description: 'Application readiness status' })
-  ready(): { 
-    status: 'ok' | 'degraded' | 'error'; 
-    database: string; 
+  ready(): {
+    status: 'ok' | 'degraded' | 'error';
+    database: string;
     redis: string;
     details: string;
   } {
     const dbReady = this.connection.readyState === 1;
-    const redisReady = this.redisStatus.cacheConnected || this.redisStatus.clientConnected;
+    const redisReady =
+      this.redisStatus.cacheConnected || this.redisStatus.clientConnected;
 
     let status: 'ok' | 'degraded' | 'error';
     let details: string;
@@ -164,7 +172,8 @@ export class HealthController {
       details = 'All systems operational';
     } else if (dbReady && this.redisStatus.usingFallback) {
       status = 'degraded';
-      details = 'Redis using fallback - some features may have reduced performance';
+      details =
+        'Redis using fallback - some features may have reduced performance';
     } else if (dbReady && !redisReady) {
       status = 'degraded';
       details = 'Redis disconnected - using in-memory fallback';
@@ -176,7 +185,11 @@ export class HealthController {
     return {
       status,
       database: dbReady ? 'connected' : 'disconnected',
-      redis: redisReady ? (this.redisStatus.usingFallback ? 'fallback' : 'connected') : 'disconnected',
+      redis: redisReady
+        ? this.redisStatus.usingFallback
+          ? 'fallback'
+          : 'connected'
+        : 'disconnected',
       details,
     };
   }

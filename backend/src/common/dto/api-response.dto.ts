@@ -55,10 +55,8 @@ export class ErrorResponse {
   @ApiPropertyOptional({ example: 400 })
   statusCode?: number;
 
-  @ApiPropertyOptional({ 
-    example: [
-      { field: 'email', message: 'Invalid email format' }
-    ]
+  @ApiPropertyOptional({
+    example: [{ field: 'email', message: 'Invalid email format' }],
   })
   errors?: Array<{ field: string; message: string }>;
 

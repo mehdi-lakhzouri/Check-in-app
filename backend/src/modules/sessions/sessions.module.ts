@@ -9,7 +9,10 @@ import { SessionsController } from './controllers';
 import { RegistrationsModule } from '../registrations/registrations.module';
 import { CheckInsModule } from '../checkins/checkins.module';
 import sessionSchedulerConfig from '../../config/session-scheduler.config';
-import { SESSION_SCHEDULER_QUEUE, SessionSchedulerProcessor } from './processors';
+import {
+  SESSION_SCHEDULER_QUEUE,
+  SessionSchedulerProcessor,
+} from './processors';
 
 @Module({
   imports: [
@@ -38,7 +41,17 @@ import { SESSION_SCHEDULER_QUEUE, SessionSchedulerProcessor } from './processors
     forwardRef(() => CheckInsModule),
   ],
   controllers: [SessionsController],
-  providers: [SessionsService, SessionRepository, SessionSchedulerService, SessionSchedulerProcessor],
-  exports: [SessionsService, SessionRepository, SessionSchedulerService, SessionSchedulerProcessor],
+  providers: [
+    SessionsService,
+    SessionRepository,
+    SessionSchedulerService,
+    SessionSchedulerProcessor,
+  ],
+  exports: [
+    SessionsService,
+    SessionRepository,
+    SessionSchedulerService,
+    SessionSchedulerProcessor,
+  ],
 })
 export class SessionsModule {}

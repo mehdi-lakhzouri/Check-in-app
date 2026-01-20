@@ -18,5 +18,5 @@ jest.setTimeout(30000);
 // Clean up after all tests
 afterAll(async () => {
   // Allow time for connections to close
-  await new Promise(resolve => setTimeout(resolve, 500));
+  await new Promise((resolve) => setTimeout(resolve, 500));
 });

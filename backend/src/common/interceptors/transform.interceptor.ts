@@ -25,9 +25,10 @@ export interface ResponseFormat<T> {
 }
 
 @Injectable()
-export class TransformInterceptor<T>
-  implements NestInterceptor<T, ResponseFormat<T>>
-{
+export class TransformInterceptor<T> implements NestInterceptor<
+  T,
+  ResponseFormat<T>
+> {
   intercept(
     context: ExecutionContext,
     next: CallHandler,
@@ -38,7 +39,10 @@ export class TransformInterceptor<T>
     return next.handle().pipe(
       map((responseData) => {
         // If the response already has our format, return it
-        if (responseData?.status === 'success' || responseData?.status === 'error') {
+        if (
+          responseData?.status === 'success' ||
+          responseData?.status === 'error'
+        ) {
           return {
             ...responseData,
             timestamp: responseData.timestamp || new Date().toISOString(),

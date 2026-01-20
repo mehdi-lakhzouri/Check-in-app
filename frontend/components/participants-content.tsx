@@ -1999,20 +1999,20 @@ export function ParticipantsContent() {
                             <TableCell className="text-center">
                               <Badge
                                 variant={
-                                  participant.role === 'ambassador'
+                                  participant.status === 'ambassador'
                                     ? 'default'
-                                    : participant.role === 'travel_grant'
+                                    : participant.status === 'travel_grant'
                                     ? 'secondary'
                                     : 'outline'
                                 }
                                 className="capitalize"
                               >
-                                {participant.role === 'travel_grant' ? 'Travel Grant' : participant.role}
+                                {participant.status === 'travel_grant' ? 'Travel Grant' : participant.status}
                               </Badge>
                             </TableCell>
                             <TableCell className="text-center">
                               <div className="flex justify-center gap-1">
-                                {(participant.role === 'ambassador' || participant.role === 'travel_grant') && (
+                                {(participant.status === 'ambassador' || participant.status === 'travel_grant') && (
                                   <TooltipProvider>
                                     <Tooltip>
                                       <TooltipTrigger asChild>

@@ -1,5 +1,12 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsMongoId, IsNotEmpty, IsOptional, IsEnum, MaxLength, IsString } from 'class-validator';
+import {
+  IsMongoId,
+  IsNotEmpty,
+  IsOptional,
+  IsEnum,
+  MaxLength,
+  IsString,
+} from 'class-validator';
 import { RegistrationStatus } from '../schemas';
 
 export class CreateRegistrationDto {
