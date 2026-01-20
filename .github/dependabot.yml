@@ -1,12 +1,6 @@
 # Dependabot Configuration - Automated Dependency Updates
 version: 2
 
-registries:
-  npm-github:
-    type: npm-registry
-    url: https://npm.pkg.github.com
-    token: ${{ secrets.GITHUB_TOKEN }}
-
 updates:
   # ============================================
   # Backend Dependencies (NestJS/Node.js)
@@ -17,9 +11,10 @@ updates:
       interval: "weekly"
       day: "monday"
       time: "06:00"
-      timezone: "UTC"
+      timezone: "Etc/UTC"
+
     open-pull-requests-limit: 10
-    reviewers:
+    assignees:
       - "medma"
     labels:
       - "dependencies"
@@ -79,9 +74,9 @@ updates:
       interval: "weekly"
       day: "monday"
       time: "06:00"
-      timezone: "UTC"
+      timezone: "Etc/UTC"
     open-pull-requests-limit: 10
-    reviewers:
+    assignees:
       - "medma"
     labels:
       - "dependencies"
@@ -130,9 +125,9 @@ updates:
       interval: "weekly"
       day: "monday"
       time: "06:00"
-      timezone: "UTC"
+      timezone: "Etc/UTC"
     open-pull-requests-limit: 5
-    reviewers:
+    assignees:
       - "medma"
     labels:
       - "dependencies"
@@ -155,9 +150,9 @@ updates:
       interval: "weekly"
       day: "monday"
       time: "06:00"
-      timezone: "UTC"
+      timezone: "Etc/UTC"
     open-pull-requests-limit: 5
-    reviewers:
+    assignees:
       - "medma"
     labels:
       - "dependencies"
@@ -182,9 +177,9 @@ updates:
       interval: "weekly"
       day: "monday"
       time: "06:00"
-      timezone: "UTC"
+      timezone: "Etc/UTC"
     open-pull-requests-limit: 3
-    reviewers:
+    assignees:
       - "medma"
     labels:
       - "dependencies"
@@ -202,9 +197,9 @@ updates:
       interval: "weekly"
       day: "monday"
       time: "06:00"
-      timezone: "UTC"
+        
     open-pull-requests-limit: 3
-    reviewers:
+    assignees:
       - "medma"
     labels:
       - "dependencies"

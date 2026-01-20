@@ -163,6 +163,57 @@ grafana:
   ingress:
     enabled: false
 
+  # Custom dashboard providers
+  dashboardProviders:
+    dashboardproviders.yaml:
+      apiVersion: 1
+      providers:
+        - name: 'custom'
+          orgId: 1
+          folder: 'Check-in App'
+          type: file
+          disableDeletion: false
+          editable: true
+          options:
+            path: /var/lib/grafana/dashboards/custom
+
+  # Custom dashboards
+  dashboards:
+    custom:
+      checkin-overview:
+        json: |
+          {
+            "title": "Check-in App Overview",
+            "uid": "checkin-overview",
+            "timezone": "browser",
+            "panels": [
+              {
+                "title": "Request Rate",
+                "type": "stat",
+                "gridPos": {"x": 0, "y": 0, "w": 6, "h": 4},
+                "targets": [{"expr": "sum(rate(http_request_duration_seconds_count{job=\"backend\"}[5m]))", "legendFormat": "Requests/sec"}]
+              },
+              {
+                "title": "Error Rate",
+                "type": "stat",
+                "gridPos": {"x": 6, "y": 0, "w": 6, "h": 4},
+                "targets": [{"expr": "sum(rate(http_request_duration_seconds_count{job=\"backend\",status_code=~\"5..\"}[5m])) / sum(rate(http_request_duration_seconds_count{job=\"backend\"}[5m])) * 100", "legendFormat": "Error %"}]
+              },
+              {
+                "title": "P95 Latency",
+                "type": "stat",
+                "gridPos": {"x": 12, "y": 0, "w": 6, "h": 4},
+                "targets": [{"expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{job=\"backend\"}[5m])) by (le))", "legendFormat": "P95 Latency"}]
+              },
+              {
+                "title": "Active Pods",
+                "type": "stat",
+                "gridPos": {"x": 18, "y": 0, "w": 6, "h": 4},
+                "targets": [{"expr": "count(kube_pod_status_phase{namespace=~\"checkin.*\",phase=\"Running\"})", "legendFormat": "Running Pods"}]
+              }
+            ]
+          }
+
 # Node exporter for node-level metrics
 nodeExporter:
   enabled: true
@@ -219,74 +270,3 @@ additionalServiceMonitors:
         - checkin
         - checkin-staging
         - checkin-production
-
-# Custom Grafana dashboards
-grafana:
-  dashboardProviders:
-    dashboardproviders.yaml:
-      apiVersion: 1
-      providers:
-        - name: 'custom'
-          orgId: 1
-          folder: 'Check-in App'
-          type: file
-          disableDeletion: false
-          editable: true
-          options:
-            path: /var/lib/grafana/dashboards/custom
-
-  dashboards:
-    custom:
-      checkin-overview:
-        json: |
-          {
-            "title": "Check-in App Overview",
-            "uid": "checkin-overview",
-            "timezone": "browser",
-            "panels": [
-              {
-                "title": "Request Rate",
-                "type": "stat",
-                "gridPos": {"x": 0, "y": 0, "w": 6, "h": 4},
-                "targets": [
-                  {
-                    "expr": "sum(rate(http_request_duration_seconds_count{job=\"backend\"}[5m]))",
-                    "legendFormat": "Requests/sec"
-                  }
-                ]
-              },
-              {
-                "title": "Error Rate",
-                "type": "stat",
-                "gridPos": {"x": 6, "y": 0, "w": 6, "h": 4},
-                "targets": [
-                  {
-                    "expr": "sum(rate(http_request_duration_seconds_count{job=\"backend\",status_code=~\"5..\"}[5m])) / sum(rate(http_request_duration_seconds_count{job=\"backend\"}[5m])) * 100",
-                    "legendFormat": "Error %"
-                  }
-                ]
-              },
-              {
-                "title": "P95 Latency",
-                "type": "stat",
-                "gridPos": {"x": 12, "y": 0, "w": 6, "h": 4},
-                "targets": [
-                  {
-                    "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{job=\"backend\"}[5m])) by (le))",
-                    "legendFormat": "P95 Latency"
-                  }
-                ]
-              },
-              {
-                "title": "Active Pods",
-                "type": "stat",
-                "gridPos": {"x": 18, "y": 0, "w": 6, "h": 4},
-                "targets": [
-                  {
-                    "expr": "count(kube_pod_status_phase{namespace=~\"checkin.*\",phase=\"Running\"})",
-                    "legendFormat": "Running Pods"
-                  }
-                ]
-              }
-            ]
-          }

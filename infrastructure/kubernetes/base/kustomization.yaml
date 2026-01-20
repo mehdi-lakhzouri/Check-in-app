@@ -22,7 +22,9 @@ resources:
   - pdb.yaml
   - network-policies.yaml
 
-commonLabels:
-  app.kubernetes.io/part-of: checkin-app
-  app.kubernetes.io/managed-by: kustomize
-  sizing: small-event
+labels:
+  - pairs:
+      app.kubernetes.io/part-of: checkin-app
+      app.kubernetes.io/managed-by: kustomize
+      sizing: small-event
+    includeSelectors: true

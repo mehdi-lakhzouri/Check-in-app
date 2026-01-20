@@ -9,8 +9,10 @@ namePrefix: staging-
 resources:
   - ../base
 
-commonLabels:
-  environment: staging
+labels:
+  - pairs:
+      environment: staging
+    includeSelectors: true
 
 patches:
   # Reduce replicas for staging
@@ -49,17 +51,7 @@ patches:
       - op: replace
         path: /spec/minReplicas
         value: 1
-
-configMapGenerator:
-  - name: app-config
-    behavior: merge
-    literals:
-      - api-url=https://staging-api.checkin-app.example.com
-      - log-level=debug
-      - cors-origins=https://staging.checkin-app.example.com
-
-# Update ingress hosts for staging
-patches:
+  # Staging ingress hosts
   - target:
       kind: Ingress
       name: checkin-ingress
@@ -75,3 +67,13 @@ patches:
       - op: replace
         path: /spec/rules/1/host
         value: staging-api.checkin-app.example.com
+
+configMapGenerator:
+  - name: app-config
+    behavior: merge
+    literals:
+      - api-url=https://staging-api.checkin-app.example.com
+      - log-level=debug
+      - cors-origins=https://staging.checkin-app.example.com
+
+# Ingress patches are included in the main patches section above

@@ -9,8 +9,10 @@ namePrefix: prod-
 resources:
   - ../base
 
-commonLabels:
-  environment: production
+labels:
+  - pairs:
+      environment: production
+    includeSelectors: true
 
 # Production-grade resource limits
 patches:
@@ -83,17 +85,7 @@ patches:
       - op: replace
         path: /spec/minReplicas
         value: 3
-
-configMapGenerator:
-  - name: app-config
-    behavior: merge
-    literals:
-      - api-url=https://api.checkin-app.example.com
-      - log-level=info
-      - cors-origins=https://checkin-app.example.com
-
-# Use premium storage class in production
-patches:
+  # MongoDB premium storage
   - target:
       kind: StatefulSet
       name: mongodb
@@ -104,3 +96,11 @@ patches:
       - op: replace
         path: /spec/volumeClaimTemplates/0/spec/resources/requests/storage
         value: 100Gi
+
+configMapGenerator:
+  - name: app-config
+    behavior: merge
+    literals:
+      - api-url=https://api.checkin-app.example.com
+      - log-level=info
+      - cors-origins=https://checkin-app.example.com
