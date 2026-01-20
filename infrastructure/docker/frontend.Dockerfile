@@ -4,7 +4,7 @@
 # ============================================
 
 # Stage 1: Dependencies
-FROM node:20-alpine AS deps
+FROM node:25-alpine AS deps
 WORKDIR /app
 
 # Install libc6-compat for Alpine compatibility
@@ -17,7 +17,7 @@ COPY package*.json ./
 RUN npm ci --prefer-offline
 
 # Stage 2: Builder
-FROM node:20-alpine AS builder
+FROM node:25-alpine AS builder
 WORKDIR /app
 
 # Build arguments
@@ -36,7 +36,7 @@ COPY . .
 RUN npm run build
 
 # Stage 3: Production Runtime
-FROM node:20-alpine AS runner
+FROM node:25-alpine AS runner
 WORKDIR /app
 
 # Build arguments for metadata
