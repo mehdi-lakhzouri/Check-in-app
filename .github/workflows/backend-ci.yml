@@ -168,6 +168,7 @@ jobs:
     needs: lint
     permissions:
       security-events: write
+      actions: read
       contents: read
     
     steps:

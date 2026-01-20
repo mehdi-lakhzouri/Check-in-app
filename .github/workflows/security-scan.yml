@@ -175,6 +175,7 @@ jobs:
     if: ${{ github.event.inputs.scan_type == 'full' || github.event.inputs.scan_type == 'code' || github.event_name == 'schedule' }}
     permissions:
       security-events: write
+      actions: read
       contents: read
     
     steps:
