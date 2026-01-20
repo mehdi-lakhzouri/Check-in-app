@@ -158,7 +158,7 @@ jobs:
         continue-on-error: true
 
       - name: Run Grype scanner
-        uses: anchore/scan-action@v3
+        uses: anchore/scan-action@v7
         with:
           image: ${{ matrix.image.path }}
           fail-build: false
