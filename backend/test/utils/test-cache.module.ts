@@ -29,49 +29,49 @@ class MockRedisClient {
   public readonly isNull = false;
   public isOpen = true;
 
-  async get(key: string): Promise<string | null> {
-    return this.store.get(key) ?? null;
+  get(key: string): Promise<string | null> {
+    return Promise.resolve(this.store.get(key) ?? null);
   }
 
-  async set(key: string, value: string): Promise<string> {
+  set(key: string, value: string): Promise<string> {
     this.store.set(key, value);
-    return 'OK';
+    return Promise.resolve('OK');
   }
 
-  async del(key: string): Promise<number> {
+  del(key: string): Promise<number> {
     const deleted = this.store.delete(key) ? 1 : 0;
-    return deleted;
+    return Promise.resolve(deleted);
   }
 
-  async exists(key: string): Promise<number> {
-    return this.store.has(key) ? 1 : 0;
+  exists(key: string): Promise<number> {
+    return Promise.resolve(this.store.has(key) ? 1 : 0);
   }
 
-  async incr(key: string): Promise<number> {
+  incr(key: string): Promise<number> {
     const current = parseInt(this.store.get(key) || '0', 10);
     const newValue = current + 1;
     this.store.set(key, newValue.toString());
-    return newValue;
+    return Promise.resolve(newValue);
   }
 
-  async decr(key: string): Promise<number> {
+  decr(key: string): Promise<number> {
     const current = parseInt(this.store.get(key) || '0', 10);
     const newValue = current - 1;
     this.store.set(key, newValue.toString());
-    return newValue;
+    return Promise.resolve(newValue);
   }
 
-  async expire(_key: string, _seconds: number): Promise<boolean> {
-    return true;
+  expire(_key: string, _seconds: number): Promise<boolean> {
+    return Promise.resolve(true);
   }
 
-  async keys(pattern: string): Promise<string[]> {
+  keys(pattern: string): Promise<string[]> {
     const regex = new RegExp('^' + pattern.replace(/\*/g, '.*') + '$');
-    return Array.from(this.store.keys()).filter((key) => regex.test(key));
+    return Promise.resolve(Array.from(this.store.keys()).filter((key) => regex.test(key)));
   }
 
-  async mGet(keys: string[]): Promise<(string | null)[]> {
-    return keys.map((key) => this.store.get(key) ?? null);
+  mGet(keys: string[]): Promise<(string | null)[]> {
+    return Promise.resolve(keys.map((key) => this.store.get(key) ?? null));
   }
 
   async *scanIterator(_options?: {
@@ -83,23 +83,25 @@ class MockRedisClient {
     }
   }
 
-  async eval(_script: string, _options: any): Promise<any> {
-    return 1; // Default success for capacity checks
+  eval(_script: string, _options: unknown): Promise<number> {
+    return Promise.resolve(1); // Default success for capacity checks
   }
 
-  async ping(): Promise<string> {
-    return 'PONG';
+  ping(): Promise<string> {
+    return Promise.resolve('PONG');
   }
 
-  async connect(): Promise<void> {
+  connect(): Promise<void> {
     this.isOpen = true;
+    return Promise.resolve();
   }
 
-  async disconnect(): Promise<void> {
+  disconnect(): Promise<void> {
     this.isOpen = false;
+    return Promise.resolve();
   }
 
-  on(_event: string, _callback: Function): this {
+  on(_event: string, _callback: (...args: unknown[]) => void): this {
     return this;
   }
 

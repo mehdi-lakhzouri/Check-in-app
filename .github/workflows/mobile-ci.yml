@@ -15,7 +15,7 @@ on:
       - 'checkin_mobile/**'
 
 env:
-  FLUTTER_VERSION: '3.24.0'
+  FLUTTER_VERSION: '3.29.0'
   JAVA_VERSION: '17'
 
 concurrency:

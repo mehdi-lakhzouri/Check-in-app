@@ -8,10 +8,17 @@ import { Types } from 'mongoose';
 /**
  * Creates a mock Mongoose document with save, toObject, etc.
  */
-export function createMockDocument<T extends Record<string, any>>(data: T) {
+export function createMockDocument<T extends Record<string, unknown>>(data: T): T & {
+  _id: Types.ObjectId;
+  save: jest.Mock;
+  toObject: jest.Mock;
+  toJSON: jest.Mock;
+  populate: jest.Mock;
+  execPopulate: jest.Mock;
+} {
   return {
     ...data,
-    _id: data._id || new Types.ObjectId(),
+    _id: (data._id as Types.ObjectId) || new Types.ObjectId(),
     save: jest.fn().mockResolvedValue(data),
     toObject: jest.fn().mockReturnValue(data),
     toJSON: jest.fn().mockReturnValue(data),
@@ -123,15 +130,17 @@ export function createMockRegistrationRepository() {
 /**
  * ConfigService Mock
  */
-export function createMockConfigService() {
+export function createMockConfigService(): {
+  get: jest.Mock;
+} {
   return {
-    get: jest.fn((key: string, defaultValue?: any) => {
-      const config: Record<string, any> = {
+    get: jest.fn(<T = unknown>(key: string, defaultValue?: T): T => {
+      const config: Record<string, unknown> = {
         'app.checkinLateThresholdMinutes': 10,
         'database.uri': 'mongodb://localhost:27017/test',
         PORT: 3000,
       };
-      return config[key] ?? defaultValue;
+      return (config[key] ?? defaultValue) as T;
     }),
   };
 }

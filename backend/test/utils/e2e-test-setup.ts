@@ -81,6 +81,9 @@ const testConfig = () => ({
   },
 });
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type ModuleType = any;
+
 /**
  * Create a complete E2E test application
  * Includes all modules with in-memory cache (no Redis dependency)
@@ -89,7 +92,7 @@ const testConfig = () => ({
  * @returns E2ETestContext with app, mongo server, and connection
  */
 export async function createE2ETestApp(
-  additionalModules: any[] = [],
+  additionalModules: ModuleType[] = [],
 ): Promise<E2ETestContext> {
   const mongoServer = await MongoMemoryServer.create();
   const mongoUri = mongoServer.getUri();
