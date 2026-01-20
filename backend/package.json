@@ -48,7 +48,7 @@
     "ioredis": "^5.8.2",
     "mongoose": "^9.1.1",
     "multer": "^2.0.2",
-    "pino": "^10.1.0",
+    "pino": "^10.2.1",
     "qrcode": "^1.5.4",
     "redis": "^5.10.0",
     "reflect-metadata": "^0.2.2",
