@@ -175,16 +175,20 @@ export async function createE2ETestApp(
 /**
  * Clean up E2E test resources
  * Call this in afterAll()
+ * Order matters: close app first (waits for in-flight requests), then DB connection, then mongo server
  */
 export async function closeE2ETestApp(context: E2ETestContext): Promise<void> {
+  // First close the app - this gracefully shuts down and waits for in-flight requests
+  if (context.app) {
+    await context.app.close();
+  }
+  // Then close the database connection
   if (context.connection) {
     await context.connection.close();
   }
+  // Finally stop the mongo server
   if (context.mongoServer) {
     await context.mongoServer.stop();
-  }
-  if (context.app) {
-    await context.app.close();
   }
 }
 
