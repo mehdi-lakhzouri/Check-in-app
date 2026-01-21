@@ -6,6 +6,7 @@ import {
   QueryFilter,
 } from 'mongoose';
 import { PaginationDto, PaginatedResult } from '../dto';
+import { createSafeSortObject } from '../utils';
 
 export abstract class BaseRepository<T extends Document> {
   constructor(protected readonly model: Model<T>) {}
@@ -56,10 +57,13 @@ export abstract class BaseRepository<T extends Document> {
       ...searchQuery,
     };
 
+    // Validate sort field to prevent Remote Property Injection (CodeQL: js/remote-property-injection)
+    const safeSort = createSafeSortObject(sortBy, sortOrder, 'base');
+
     const [data, total] = await Promise.all([
       this.model
         .find(combinedFilter)
-        .sort({ [sortBy]: sortOrder === 'asc' ? 1 : -1 })
+        .sort(safeSort)
         .skip(skip)
         .limit(limit)
         .exec(),

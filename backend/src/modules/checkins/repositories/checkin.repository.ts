@@ -5,6 +5,7 @@ import { BaseRepository } from '../../../common/repositories';
 import { CheckIn, CheckInDocument } from '../schemas';
 import { CheckInFilterDto } from '../dto';
 import { PaginatedResult } from '../../../common/dto';
+import { createSafeSortObject } from '../../../common/utils';
 
 @Injectable()
 export class CheckInRepository extends BaseRepository<CheckInDocument> {
@@ -51,15 +52,16 @@ export class CheckInRepository extends BaseRepository<CheckInDocument> {
     const page = filterDto.page || 1;
     const limit = filterDto.limit || 10;
     const skip = (page - 1) * limit;
-    const sortField = filterDto.sortBy || 'checkInTime';
-    const sortOrder = filterDto.sortOrder === 'asc' ? 1 : -1;
+
+    // Validate sort field to prevent Remote Property Injection (CodeQL: js/remote-property-injection)
+    const safeSort = createSafeSortObject(filterDto.sortBy, filterDto.sortOrder, 'checkIn', 'checkInTime');
 
     const [data, total] = await Promise.all([
       this.checkInModel
         .find(filter)
         .populate('participantId', 'name email organization qrCode')
         .populate('sessionId', 'name startTime endTime location')
-        .sort({ [sortField]: sortOrder })
+        .sort(safeSort)
         .skip(skip)
         .limit(limit)
         .exec(),

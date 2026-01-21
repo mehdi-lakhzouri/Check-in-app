@@ -5,6 +5,7 @@ import { BaseRepository } from '../../../common/repositories';
 import { Registration, RegistrationDocument } from '../schemas';
 import { RegistrationFilterDto } from '../dto';
 import { PaginatedResult } from '../../../common/dto';
+import { createSafeSortObject } from '../../../common/utils';
 
 @Injectable()
 export class RegistrationRepository extends BaseRepository<RegistrationDocument> {
@@ -46,17 +47,20 @@ export class RegistrationRepository extends BaseRepository<RegistrationDocument>
     const {
       page = 1,
       limit = 10,
-      sortBy = 'createdAt',
-      sortOrder = 'desc',
+      sortBy,
+      sortOrder,
     } = pagination;
     const skip = (page - 1) * limit;
+
+    // Validate sort field to prevent Remote Property Injection (CodeQL: js/remote-property-injection)
+    const safeSort = createSafeSortObject(sortBy, sortOrder, 'registration');
 
     const [data, total] = await Promise.all([
       this.registrationModel
         .find(filter)
         .populate('participantId')
         .populate('sessionId')
-        .sort({ [sortBy]: sortOrder === 'asc' ? 1 : -1 })
+        .sort(safeSort)
         .skip(skip)
         .limit(limit)
         .exec(),

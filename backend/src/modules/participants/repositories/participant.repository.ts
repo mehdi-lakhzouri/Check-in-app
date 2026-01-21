@@ -9,6 +9,7 @@ import {
 } from '../schemas';
 import { ParticipantFilterDto } from '../dto';
 import { PaginatedResult } from '../../../common/dto';
+import { createSafeSortObject } from '../../../common/utils';
 
 @Injectable()
 export class ParticipantRepository extends BaseRepository<ParticipantDocument> {
@@ -212,12 +213,14 @@ export class ParticipantRepository extends BaseRepository<ParticipantDocument> {
     }
 
     const skip = (page - 1) * limit;
-    const sortDirection = sortOrder === 'asc' ? 1 : -1;
+    
+    // Validate sort field to prevent Remote Property Injection (CodeQL: js/remote-property-injection)
+    const safeSort = createSafeSortObject(sortBy, sortOrder, 'participant', 'ambassadorPoints');
 
     const [data, total] = await Promise.all([
       this.participantModel
         .find(filter)
-        .sort({ [sortBy]: sortDirection })
+        .sort(safeSort)
         .skip(skip)
         .limit(limit)
         .exec(),
@@ -267,12 +270,14 @@ export class ParticipantRepository extends BaseRepository<ParticipantDocument> {
     }
 
     const skip = (page - 1) * limit;
-    const sortDirection = sortOrder === 'asc' ? 1 : -1;
+    
+    // Validate sort field to prevent Remote Property Injection (CodeQL: js/remote-property-injection)
+    const safeSort = createSafeSortObject(sortBy, sortOrder, 'participant', 'travelGrantAppliedAt');
 
     const [data, total] = await Promise.all([
       this.participantModel
         .find(filter)
-        .sort({ [sortBy]: sortDirection })
+        .sort(safeSort)
         .skip(skip)
         .limit(limit)
         .exec(),

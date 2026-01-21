@@ -9,6 +9,7 @@ import {
 } from '../schemas';
 import { CheckInAttemptFilterDto } from '../dto';
 import { PaginatedResult } from '../../../common/dto';
+import { createSafeSortObject } from '../../../common/utils';
 
 @Injectable()
 export class CheckInAttemptRepository extends BaseRepository<CheckInAttemptDocument> {
@@ -46,15 +47,16 @@ export class CheckInAttemptRepository extends BaseRepository<CheckInAttemptDocum
     const page = filterDto.page || 1;
     const limit = filterDto.limit || 10;
     const skip = (page - 1) * limit;
-    const sortField = filterDto.sortBy || 'attemptTime';
-    const sortOrder = filterDto.sortOrder === 'asc' ? 1 : -1;
+
+    // Validate sort field to prevent Remote Property Injection (CodeQL: js/remote-property-injection)
+    const safeSort = createSafeSortObject(filterDto.sortBy, filterDto.sortOrder, 'checkInAttempt', 'attemptTime');
 
     const [data, total] = await Promise.all([
       this.attemptModel
         .find(filter)
         .populate('participantId', 'name email organization qrCode')
         .populate('sessionId', 'name startTime endTime location')
-        .sort({ [sortField]: sortOrder })
+        .sort(safeSort)
         .skip(skip)
         .limit(limit)
         .exec(),
