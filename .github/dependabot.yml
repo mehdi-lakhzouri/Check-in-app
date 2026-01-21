@@ -1,209 +1,114 @@
-# Dependabot Configuration - Automated Dependency Updates
+# Dependabot Configuration
+# Keeps dependencies up to date automatically
+# https://docs.github.com/en/code-security/dependabot
+
 version: 2
 
+registries:
+  npm-npmjs:
+    type: npm-registry
+    url: https://registry.npmjs.org
+    replaces-base: true
+
 updates:
-  # ============================================
-  # Backend Dependencies (NestJS/Node.js)
-  # ============================================
+  # Backend (NestJS) dependencies
   - package-ecosystem: "npm"
     directory: "/backend"
     schedule:
       interval: "weekly"
       day: "monday"
-      time: "06:00"
-      timezone: "Etc/UTC"
-
-    open-pull-requests-limit: 10
-    assignees:
-      - "medma"
+      time: "09:00"
+      timezone: "Europe/Paris"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(deps)"
     labels:
       - "dependencies"
       - "backend"
-      - "automated"
-    commit-message:
-      prefix: "chore(deps)"
-      include: "scope"
     groups:
       nestjs:
         patterns:
           - "@nestjs/*"
-        update-types:
-          - "minor"
-          - "patch"
-      mongodb:
-        patterns:
-          - "mongoose"
-          - "@nestjs/mongoose"
-          - "mongodb-memory-server"
-      redis:
-        patterns:
-          - "ioredis"
-          - "@nestjs/bull"
-          - "bull"
-          - "cache-manager*"
       testing:
         patterns:
           - "jest"
           - "@types/jest"
           - "supertest"
           - "@types/supertest"
-        update-types:
-          - "minor"
-          - "patch"
-      typescript:
+      mongodb:
         patterns:
-          - "typescript"
-          - "@types/*"
-          - "ts-*"
-        update-types:
-          - "minor"
-          - "patch"
-    ignore:
-      # Ignore major version updates that might break compatibility
-      - dependency-name: "@nestjs/*"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "mongoose"
-        update-types: ["version-update:semver-major"]
+          - "mongoose"
+          - "@nestjs/mongoose"
+          - "mongodb*"
 
-  # ============================================
-  # Frontend Dependencies (Next.js/React)
-  # ============================================
+  # Frontend (Next.js) dependencies
   - package-ecosystem: "npm"
     directory: "/frontend"
     schedule:
       interval: "weekly"
       day: "monday"
-      time: "06:00"
-      timezone: "Etc/UTC"
-    open-pull-requests-limit: 10
-    assignees:
-      - "medma"
+      time: "09:00"
+      timezone: "Europe/Paris"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(deps)"
     labels:
       - "dependencies"
       - "frontend"
-      - "automated"
-    commit-message:
-      prefix: "chore(deps)"
-      include: "scope"
     groups:
-      nextjs:
+      react:
         patterns:
-          - "next"
           - "react"
           - "react-dom"
           - "@types/react*"
-        update-types:
-          - "minor"
-          - "patch"
-      ui:
+      nextjs:
+        patterns:
+          - "next"
+          - "next-*"
+      radix-ui:
         patterns:
           - "@radix-ui/*"
-          - "tailwindcss"
-          - "class-variance-authority"
-          - "clsx"
-          - "lucide-react"
-      testing:
+      tanstack:
         patterns:
-          - "jest"
-          - "@testing-library/*"
-          - "vitest"
-        update-types:
-          - "minor"
-          - "patch"
-    ignore:
-      - dependency-name: "next"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "react"
-        update-types: ["version-update:semver-major"]
+          - "@tanstack/*"
 
-  # ============================================
-  # Mobile Dependencies (Flutter/Dart)
-  # ============================================
+  # Mobile App (Flutter) dependencies
   - package-ecosystem: "pub"
     directory: "/checkin_mobile"
     schedule:
       interval: "weekly"
       day: "monday"
-      time: "06:00"
-      timezone: "Etc/UTC"
-    open-pull-requests-limit: 5
-    assignees:
-      - "medma"
+      time: "09:00"
+      timezone: "Europe/Paris"
+    open-pull-requests-limit: 3
+    commit-message:
+      prefix: "chore(deps)"
     labels:
       - "dependencies"
       - "mobile"
-      - "automated"
-    commit-message:
-      prefix: "chore(deps)"
-      include: "scope"
-    ignore:
-      # Be conservative with Flutter dependencies
-      - dependency-name: "flutter"
-        update-types: ["version-update:semver-major"]
 
-  # ============================================
   # GitHub Actions
-  # ============================================
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
       day: "monday"
-      time: "06:00"
-      timezone: "Etc/UTC"
-    open-pull-requests-limit: 5
-    assignees:
-      - "medma"
-    labels:
-      - "dependencies"
-      - "github-actions"
-      - "automated"
+      time: "09:00"
+      timezone: "Europe/Paris"
+    open-pull-requests-limit: 3
     commit-message:
       prefix: "chore(ci)"
-    groups:
-      actions:
-        patterns:
-          - "*"
-        update-types:
-          - "minor"
-          - "patch"
+    labels:
+      - "dependencies"
+      - "ci"
 
-  # ============================================
-  # Docker Base Images
-  # ============================================
+  # Docker dependencies
   - package-ecosystem: "docker"
     directory: "/infrastructure/docker"
     schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "06:00"
-      timezone: "Etc/UTC"
-    open-pull-requests-limit: 3
-    assignees:
-      - "medma"
+      interval: "monthly"
+    commit-message:
+      prefix: "chore(docker)"
     labels:
       - "dependencies"
       - "docker"
-      - "automated"
-    commit-message:
-      prefix: "chore(docker)"
-
-  # ============================================
-  # Terraform Providers
-  # ============================================
-  - package-ecosystem: "terraform"
-    directory: "/infrastructure/terraform"
-    schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "06:00"
-        
-    open-pull-requests-limit: 3
-    assignees:
-      - "medma"
-    labels:
-      - "dependencies"
-      - "terraform"
-      - "automated"
-    commit-message:
-      prefix: "chore(terraform)"

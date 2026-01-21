@@ -1,406 +1,188 @@
-# Production Deployment Pipeline - Zero Tolerance
-# Multi-environment deployment with comprehensive safety checks
+# ============================================
+# Deploy to Production (VPS)
+# Docker Compose Deployment via SSH
+# DISABLED: Uncomment 'push' trigger when VPS is ready
+# ============================================
 
 name: Deploy Production
 
 on:
+  # Uncomment below when VPS is configured
+  # push:
+  #   branches: [master, main]
+  #   paths-ignore:
+  #     - 'docs/**'
+  #     - '*.md'
+  #     - '.github/dependabot.yml'
   workflow_dispatch:
     inputs:
-      environment:
-        description: 'Target environment'
-        required: true
-        default: 'staging'
-        type: choice
-        options:
-          - staging
-          - production
-      backend_version:
-        description: 'Backend image tag (leave empty for latest)'
-        required: false
-        type: string
-      frontend_version:
-        description: 'Frontend image tag (leave empty for latest)'
-        required: false
-        type: string
       skip_tests:
-        description: 'Skip pre-deployment tests (NOT recommended)'
+        description: 'Skip tests (emergency deploy)'
         required: false
-        type: boolean
         default: false
-      # EVENT DAY SAFETY: Deployment freeze toggle
-      event_day_override:
-        description: '⚠️ DANGER: Override event day freeze (type "DEPLOY" to confirm)'
-        required: false
-        type: string
-        default: ''
+        type: boolean
 
 env:
-  REGISTRY: ghcr.io
-  BACKEND_IMAGE: ${{ github.repository }}/backend
-  FRONTEND_IMAGE: ${{ github.repository }}/frontend
-  # Set to 'true' on event day to block deployments
-  EVENT_DAY_FREEZE: 'false'
+  NODE_VERSION: '20'
 
 jobs:
   # ============================================
-  # Event Day Safety Check
+  # Run Tests First
   # ============================================
-  event-day-check:
-    name: 🛑 Event Day Safety Check
+  test:
+    name: 🧪 Run Tests
     runs-on: ubuntu-latest
-    timeout-minutes: 2
+    if: ${{ github.event.inputs.skip_tests != 'true' }}
+    
     steps:
-      - name: Check deployment freeze
-        run: |
-          if [[ "${{ env.EVENT_DAY_FREEZE }}" == "true" ]]; then
-            echo "🛑 DEPLOYMENT FREEZE IS ACTIVE"
-            echo "Event day deployments are blocked for safety."
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install backend dependencies
+        run: npm ci
+        working-directory: backend
+
+      - name: Run backend tests
+        run: npm run test:all
+        working-directory: backend
+        env:
+          NODE_ENV: test
+
+      - name: Build backend
+        run: npm run build
+        working-directory: backend
+
+      - name: Install frontend dependencies
+        run: npm ci
+        working-directory: frontend
+
+      - name: Build frontend
+        run: npm run build
+        working-directory: frontend
+        env:
+          NEXT_PUBLIC_API_URL: ${{ secrets.PRODUCTION_API_URL }}
+
+  # ============================================
+  # Deploy to VPS
+  # ============================================
+  deploy:
+    name: 🚀 Deploy to VPS
+    runs-on: ubuntu-latest
+    needs: test
+    if: always() && (needs.test.result == 'success' || needs.test.result == 'skipped')
+    environment: production
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT || 22 }}
+          script: |
+            set -e
             
-            if [[ "${{ inputs.event_day_override }}" == "DEPLOY" ]]; then
-              echo "⚠️ Override confirmed by ${{ github.actor }}"
-              echo "Proceeding with deployment - YOU ARE RESPONSIBLE FOR ANY ISSUES"
-            else
-              echo "::error::Deployment blocked. To override, enter 'DEPLOY' in event_day_override field."
-              exit 1
-            fi
-          else
-            echo "✅ No deployment freeze active"
-          fi
-
-  # ============================================
-  # Pre-deployment Validation
-  # ============================================
-  validate:
-    name: 🔍 Pre-deployment Validation
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    needs: event-day-check
-    outputs:
-      backend-tag: ${{ steps.tags.outputs.backend }}
-      frontend-tag: ${{ steps.tags.outputs.frontend }}
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Validate environment
-        run: |
-          echo "🎯 Target Environment: ${{ inputs.environment }}"
-          echo "📦 Backend Version: ${{ inputs.backend_version || 'latest' }}"
-          echo "📦 Frontend Version: ${{ inputs.frontend_version || 'latest' }}"
-          
-          if [[ "${{ inputs.environment }}" == "production" && "${{ github.ref }}" != "refs/heads/main" ]]; then
-            echo "::error::Production deployments must be from main branch"
-            exit 1
-          fi
-
-      - name: Determine image tags
-        id: tags
-        run: |
-          BACKEND_TAG="${{ inputs.backend_version || 'latest' }}"
-          FRONTEND_TAG="${{ inputs.frontend_version || 'latest' }}"
-          
-          echo "backend=$BACKEND_TAG" >> $GITHUB_OUTPUT
-          echo "frontend=$FRONTEND_TAG" >> $GITHUB_OUTPUT
-
-      - name: Login to GHCR
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Verify images exist
-        run: |
-          docker manifest inspect ${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE }}:${{ steps.tags.outputs.backend }} || \
-            (echo "::error::Backend image not found" && exit 1)
-          docker manifest inspect ${{ env.REGISTRY }}/${{ env.FRONTEND_IMAGE }}:${{ steps.tags.outputs.frontend }} || \
-            (echo "::error::Frontend image not found" && exit 1)
-
-  # ============================================
-  # Run Smoke Tests
-  # ============================================
-  smoke-tests:
-    name: 🧪 Smoke Tests
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    needs: validate
-    if: ${{ !inputs.skip_tests }}
-    
-    services:
-      mongodb:
-        image: mongo:7.0
-        ports:
-          - 27017:27017
-
-      redis:
-        image: redis:7-alpine
-        ports:
-          - 6379:6379
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Login to GHCR
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Pull and run backend
-        run: |
-          docker pull ${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE }}:${{ needs.validate.outputs.backend-tag }}
-          docker run -d --name backend \
-            --network host \
-            -e MONGODB_URI=mongodb://localhost:27017/checkin_test \
-            -e REDIS_HOST=localhost \
-            -e NODE_ENV=test \
-            ${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE }}:${{ needs.validate.outputs.backend-tag }}
-          
-          # Wait for backend to be ready
-          for i in {1..30}; do
-            if curl -s http://localhost:3001/api/v1/health > /dev/null; then
-              echo "Backend is ready"
-              break
-            fi
-            echo "Waiting for backend... ($i/30)"
-            sleep 2
-          done
-
-      - name: Run smoke tests
-        run: |
-          # Health check
-          curl -f http://localhost:3001/api/v1/health || exit 1
-          
-          # Basic API endpoints
-          curl -f http://localhost:3001/api/v1/sessions || exit 1
-          curl -f http://localhost:3001/api/v1/participants || exit 1
-          
-          echo "✅ All smoke tests passed"
-
-      - name: Cleanup
-        if: always()
-        run: docker stop backend || true
-
-  # ============================================
-  # Deploy to Staging
-  # ============================================
-  deploy-staging:
-    name: 🚀 Deploy to Staging
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    needs: [validate, smoke-tests]
-    if: ${{ always() && needs.validate.result == 'success' && (needs.smoke-tests.result == 'success' || needs.smoke-tests.result == 'skipped') && inputs.environment == 'staging' }}
-    environment:
-      name: staging
-      url: https://staging.checkin-app.example.com
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup kubectl
-        uses: azure/setup-kubectl@v4
-        with:
-          version: 'v1.28.0'
-
-      - name: Configure kubeconfig
-        run: |
-          mkdir -p ~/.kube
-          echo "${{ secrets.KUBE_CONFIG_STAGING }}" | base64 -d > ~/.kube/config
-          chmod 600 ~/.kube/config
-
-      - name: Deploy with Kustomize
-        run: |
-          cd infrastructure/kubernetes
-          
-          # Update image tags
-          kustomize edit set image backend=${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE }}:${{ needs.validate.outputs.backend-tag }}
-          kustomize edit set image frontend=${{ env.REGISTRY }}/${{ env.FRONTEND_IMAGE }}:${{ needs.validate.outputs.frontend-tag }}
-          
-          # Apply staging overlay
-          kubectl apply -k staging/
-
-      - name: Wait for rollout
-        run: |
-          kubectl rollout status deployment/backend -n checkin-staging --timeout=300s
-          kubectl rollout status deployment/frontend -n checkin-staging --timeout=300s
+            echo "📦 Navigating to project directory..."
+            cd ${{ secrets.VPS_PROJECT_PATH || '/opt/checkin-app' }}
+            
+            echo "📥 Pulling latest changes..."
+            git fetch origin master
+            git reset --hard origin/master
+            
+            echo "🔧 Updating environment..."
+            cd infrastructure/docker
+            
+            echo "🐳 Pulling latest images..."
+            docker compose pull
+            
+            echo "🏗️ Building and restarting services..."
+            docker compose up -d --build --remove-orphans
+            
+            echo "🧹 Cleaning up old images..."
+            docker image prune -f
+            
+            echo "✅ Deployment complete!"
+            docker compose ps
 
       - name: Verify deployment
-        run: |
-          echo "=== Deployment Status ==="
-          kubectl get deployments -n checkin-staging
-          kubectl get pods -n checkin-staging
-          
-          echo "=== Health Check ==="
-          STAGING_URL="https://staging.checkin-app.example.com"
-          curl -sf "$STAGING_URL/api/v1/health" || echo "Health check pending..."
-
-  # ============================================
-  # Deploy to Production
-  # ============================================
-  deploy-production:
-    name: 🚀 Deploy to Production
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    needs: [validate, smoke-tests]
-    if: ${{ always() && needs.validate.result == 'success' && (needs.smoke-tests.result == 'success' || needs.smoke-tests.result == 'skipped') && inputs.environment == 'production' }}
-    environment:
-      name: production
-      url: https://checkin-app.example.com
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup kubectl
-        uses: azure/setup-kubectl@v4
+        uses: appleboy/ssh-action@v1.0.3
         with:
-          version: 'v1.28.0'
-
-      - name: Configure kubeconfig
-        run: |
-          mkdir -p ~/.kube
-          echo "${{ secrets.KUBE_CONFIG_PRODUCTION }}" | base64 -d > ~/.kube/config
-          chmod 600 ~/.kube/config
-
-      - name: Create deployment record
-        run: |
-          echo "Deployment started at $(date -u +%Y-%m-%dT%H:%M:%SZ)" > deployment-record.txt
-          echo "Backend: ${{ needs.validate.outputs.backend-tag }}" >> deployment-record.txt
-          echo "Frontend: ${{ needs.validate.outputs.frontend-tag }}" >> deployment-record.txt
-          echo "Deployed by: ${{ github.actor }}" >> deployment-record.txt
-          echo "Commit: ${{ github.sha }}" >> deployment-record.txt
-
-      - name: Pre-deployment backup
-        run: |
-          echo "📦 Creating pre-deployment backup..."
-          # This would trigger a backup job in production
-          # kubectl create job --from=cronjob/mongodb-backup pre-deploy-backup-${{ github.run_number }} -n checkin-production
-
-      - name: Deploy with Kustomize (Canary)
-        run: |
-          cd infrastructure/kubernetes
-          
-          # Update image tags
-          kustomize edit set image backend=${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE }}:${{ needs.validate.outputs.backend-tag }}
-          kustomize edit set image frontend=${{ env.REGISTRY }}/${{ env.FRONTEND_IMAGE }}:${{ needs.validate.outputs.frontend-tag }}
-          
-          # Apply production overlay
-          kubectl apply -k production/
-
-      - name: Wait for rollout
-        run: |
-          kubectl rollout status deployment/backend -n checkin-production --timeout=300s
-          kubectl rollout status deployment/frontend -n checkin-production --timeout=300s
-
-      - name: Post-deployment verification
-        run: |
-          echo "=== Production Deployment Status ==="
-          kubectl get deployments -n checkin-production
-          kubectl get pods -n checkin-production
-          
-          echo "=== Health Check ==="
-          PROD_URL="https://checkin-app.example.com"
-          for i in {1..5}; do
-            if curl -sf "$PROD_URL/api/v1/health"; then
-              echo "✅ Production health check passed"
-              exit 0
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT || 22 }}
+          script: |
+            echo "🔍 Checking services health..."
+            sleep 30
+            
+            # Check backend health
+            if curl -sf http://localhost:3001/api/v1/health > /dev/null; then
+              echo "✅ Backend is healthy"
+            else
+              echo "❌ Backend health check failed"
+              docker compose -f /opt/checkin-app/infrastructure/docker/docker-compose.yml logs backend --tail=50
+              exit 1
             fi
-            echo "Waiting for production health... ($i/5)"
-            sleep 10
-          done
-          echo "::warning::Health check timeout"
+            
+            # Check frontend
+            if curl -sf http://localhost:3000 > /dev/null; then
+              echo "✅ Frontend is healthy"
+            else
+              echo "❌ Frontend health check failed"
+              docker compose -f /opt/checkin-app/infrastructure/docker/docker-compose.yml logs frontend --tail=50
+              exit 1
+            fi
+            
+            echo "🎉 All services are running!"
 
-      - name: Upload deployment record
-        uses: actions/upload-artifact@v6
+      - name: Notify on failure
+        if: failure()
+        uses: appleboy/ssh-action@v1.0.3
         with:
-          name: deployment-record-${{ github.run_number }}
-          path: deployment-record.txt
-          retention-days: 90
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT || 22 }}
+          script: |
+            echo "⚠️ Deployment failed, rolling back..."
+            cd ${{ secrets.VPS_PROJECT_PATH || '/opt/checkin-app' }}/infrastructure/docker
+            git checkout HEAD~1
+            docker compose up -d --build
+            echo "🔄 Rollback complete"
 
   # ============================================
-  # Rollback (Manual trigger)
-  # ============================================
-  rollback:
-    name: ⏪ Rollback
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    needs: [deploy-staging, deploy-production]
-    if: failure()
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup kubectl
-        uses: azure/setup-kubectl@v4
-        with:
-          version: 'v1.28.0'
-
-      - name: Configure kubeconfig
-        run: |
-          mkdir -p ~/.kube
-          if [[ "${{ inputs.environment }}" == "production" ]]; then
-            echo "${{ secrets.KUBE_CONFIG_PRODUCTION }}" | base64 -d > ~/.kube/config
-            NAMESPACE="checkin-production"
-          else
-            echo "${{ secrets.KUBE_CONFIG_STAGING }}" | base64 -d > ~/.kube/config
-            NAMESPACE="checkin-staging"
-          fi
-          chmod 600 ~/.kube/config
-          echo "NAMESPACE=$NAMESPACE" >> $GITHUB_ENV
-
-      - name: Rollback deployments
-        run: |
-          echo "⏪ Rolling back deployments in $NAMESPACE..."
-          kubectl rollout undo deployment/backend -n $NAMESPACE
-          kubectl rollout undo deployment/frontend -n $NAMESPACE
-          
-          echo "Waiting for rollback to complete..."
-          kubectl rollout status deployment/backend -n $NAMESPACE --timeout=300s
-          kubectl rollout status deployment/frontend -n $NAMESPACE --timeout=300s
-
-  # ============================================
-  # Notification
+  # Post-Deploy Notification
   # ============================================
   notify:
     name: 📢 Notify
     runs-on: ubuntu-latest
-    needs: [deploy-staging, deploy-production]
+    needs: deploy
     if: always()
     
     steps:
-      - name: Determine status
-        id: status
+      - name: Create deployment summary
         run: |
-          if [[ "${{ needs.deploy-staging.result }}" == "success" || "${{ needs.deploy-production.result }}" == "success" ]]; then
-            echo "status=success" >> $GITHUB_OUTPUT
-            echo "emoji=✅" >> $GITHUB_OUTPUT
+          echo "## Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ needs.deploy.result }}" == "success" ]; then
+            echo "✅ **Deployment successful!**" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "- **Commit:** \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+            echo "- **Branch:** \`${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY
+            echo "- **Triggered by:** @${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
           else
-            echo "status=failure" >> $GITHUB_OUTPUT
-            echo "emoji=❌" >> $GITHUB_OUTPUT
+            echo "❌ **Deployment failed!**" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Please check the workflow logs for details." >> $GITHUB_STEP_SUMMARY
           fi
-
-      - name: Send Slack notification
-        uses: 8398a7/action-slack@v3
-        with:
-          status: custom
-          custom_payload: |
-            {
-              "text": "${{ steps.status.outputs.emoji }} Deployment to ${{ inputs.environment }}",
-              "attachments": [{
-                "color": "${{ steps.status.outputs.status == 'success' && 'good' || 'danger' }}",
-                "fields": [
-                  {"title": "Environment", "value": "${{ inputs.environment }}", "short": true},
-                  {"title": "Status", "value": "${{ steps.status.outputs.status }}", "short": true},
-                  {"title": "Deployed by", "value": "${{ github.actor }}", "short": true},
-                  {"title": "Commit", "value": "${{ github.sha }}", "short": true}
-                ]
-              }]
-            }
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-        if: env.SLACK_WEBHOOK_URL != ''

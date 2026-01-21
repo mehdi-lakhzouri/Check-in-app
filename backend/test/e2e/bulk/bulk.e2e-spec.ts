@@ -98,7 +98,7 @@ describe('Bulk Operations (e2e)', () => {
 
       // Template should have at least a header row with columns
       expect(data.length).toBeGreaterThan(0);
-      const headers = data[0];
+      const headers = data[0] as string[];
 
       // Verify headers exist (could be any column names for a participant template)
       expect(headers.length).toBeGreaterThan(0);

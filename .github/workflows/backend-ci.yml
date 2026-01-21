@@ -1,5 +1,7 @@
-# Backend CI Pipeline - Zero Tolerance Production Grade
-# Comprehensive testing, building, security scanning for NestJS backend
+# ============================================
+# Backend CI Pipeline - Production Ready
+# NestJS API - Lint, Test, Build, Docker, Scan
+# ============================================
 
 name: Backend CI
 
@@ -13,22 +15,28 @@ on:
     branches: [master, main, develop]
     paths:
       - 'backend/**'
+      - '.github/workflows/backend-ci.yml'
 
 env:
-  NODE_VERSION: '20.x'
+  NODE_VERSION: '20'
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}/backend
 
+# Cancel in-progress runs for the same branch
 concurrency:
   group: backend-${{ github.ref }}
   cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: backend
 
 jobs:
   # ============================================
   # Stage 0: Lint Check (Zero Tolerance)
   # ============================================
   lint:
-    name: 🔍 Lint Check
+    name: 🔍 Lint & TypeCheck
     runs-on: ubuntu-latest
     timeout-minutes: 10
     
@@ -44,20 +52,21 @@ jobs:
           cache-dependency-path: backend/package-lock.json
 
       - name: Install dependencies
-        working-directory: backend
         run: npm ci --prefer-offline
 
-      - name: Run ESLint (Zero Tolerance - No Warnings Allowed)
-        working-directory: backend
-        run: npm run lint -- --max-warnings 0
+      - name: Run ESLint (Zero Tolerance)
+        run: npm run lint:ci
+
+      - name: TypeScript compilation check
+        run: npx tsc --noEmit
 
   # ============================================
   # Stage 1: Unit Tests with Coverage
   # ============================================
-  unit-tests:
+  test-unit:
     name: 🧪 Unit Tests
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 20
     needs: lint
     
     steps:
@@ -72,46 +81,41 @@ jobs:
           cache-dependency-path: backend/package-lock.json
 
       - name: Install dependencies
-        working-directory: backend
         run: npm ci --prefer-offline
 
-      - name: TypeScript compilation check
-        working-directory: backend
-        run: npm run build
-
       - name: Run unit tests with coverage
-        working-directory: backend
-        run: npm run test:cov -- --testPathIgnorePatterns=e2e
+        run: npm run test:unit -- --coverage --coverageReporters=text --coverageReporters=lcov --coverageReporters=json-summary
         env:
           NODE_ENV: test
+
+      - name: Coverage threshold check
+        run: |
+          if [ -f coverage/coverage-summary.json ]; then
+            COVERAGE=$(cat coverage/coverage-summary.json | jq '.total.lines.pct // 0')
+            echo "📊 Current coverage: ${COVERAGE}%"
+            if (( $(echo "$COVERAGE < 30" | bc -l) )); then
+              echo "::warning::Coverage is below 30% threshold"
+            fi
+          fi
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
         with:
           files: backend/coverage/lcov.info
           flags: backend-unit
-          name: backend-coverage
+          name: backend-unit-coverage
           fail_ci_if_error: false
-          token: ${{ secrets.CODECOV_TOKEN }}
-
-      - name: Coverage threshold check
-        working-directory: backend
-        run: |
-          COVERAGE=$(cat coverage/coverage-summary.json | jq '.total.lines.pct')
-          echo "Current coverage: ${COVERAGE}%"
-          if (( $(echo "$COVERAGE < 30" | bc -l) )); then
-            echo "::warning::Coverage is below 30% threshold"
-          fi
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
   # ============================================
   # Stage 2: E2E Tests with MongoDB
   # ============================================
-  e2e-tests:
+  test-e2e:
     name: 🔗 E2E Tests
     runs-on: ubuntu-latest
     timeout-minutes: 25
     needs: lint
-    continue-on-error: true  # E2E tests are optional for now - require proper cache module setup
     
     services:
       mongodb:
@@ -124,16 +128,6 @@ jobs:
           --health-timeout 5s
           --health-retries 5
 
-      redis:
-        image: redis:7-alpine
-        ports:
-          - 6379:6379
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -146,17 +140,23 @@ jobs:
           cache-dependency-path: backend/package-lock.json
 
       - name: Install dependencies
-        working-directory: backend
         run: npm ci --prefer-offline
 
       - name: Run E2E tests
-        working-directory: backend
-        run: npm run test:e2e
+        run: npm run test:e2e -- --coverage --coverageReporters=text --coverageReporters=lcov
         env:
           NODE_ENV: test
           MONGODB_URI: mongodb://localhost:27017/checkin_test
-          REDIS_HOST: localhost
-          REDIS_PORT: 6379
+
+      - name: Upload E2E coverage
+        uses: codecov/codecov-action@v4
+        with:
+          files: backend/coverage/e2e/lcov.info
+          flags: backend-e2e
+          name: backend-e2e-coverage
+          fail_ci_if_error: false
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
   # ============================================
   # Stage 3: Security Scanning
@@ -183,52 +183,84 @@ jobs:
           cache-dependency-path: backend/package-lock.json
 
       - name: Install dependencies
-        working-directory: backend
         run: npm ci --prefer-offline
 
       - name: Run npm audit
-        working-directory: backend
         run: npm audit --audit-level=high || true
 
-      - name: Run Snyk security scan
-        uses: snyk/actions/node@master
-        continue-on-error: true
-        env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        with:
-          args: --file=backend/package.json --severity-threshold=high
-
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v4
+        uses: github/codeql-action/init@v3
         with:
           languages: javascript-typescript
           queries: security-extended
 
       - name: Autobuild
-        uses: github/codeql-action/autobuild@v4
+        uses: github/codeql-action/autobuild@v3
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v4
+        uses: github/codeql-action/analyze@v3
         with:
           category: "/language:javascript-typescript"
 
   # ============================================
-  # Stage 4: Build Docker Image
+  # Stage 4: Build Application
   # ============================================
   build:
-    name:  Build & Push Docker
+    name: 🏗️ Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: [test-unit, test-e2e]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci --prefer-offline
+
+      - name: Build application
+        run: npm run build
+
+      - name: Verify build output
+        run: |
+          if [ ! -d "dist" ]; then
+            echo "❌ Build failed - dist folder not found"
+            exit 1
+          fi
+          echo "✅ Build successful"
+          ls -la dist/
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-build
+          path: backend/dist
+          retention-days: 7
+
+  # ============================================
+  # Stage 5: Build & Push Docker Image
+  # ============================================
+  docker-build:
+    name: 🐳 Build & Push Docker
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    needs: [unit-tests, e2e-tests, security]
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+    needs: [build, security]
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
     permissions:
       contents: read
       packages: write
     
     outputs:
       image-tag: ${{ steps.meta.outputs.tags }}
-      image-digest: ${{ steps.build.outputs.digest }}
-
+      image-digest: ${{ steps.docker-build.outputs.digest }}
+    
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -243,7 +275,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract metadata
+      - name: Extract metadata for Docker
         id: meta
         uses: docker/metadata-action@v5
         with:
@@ -251,11 +283,11 @@ jobs:
           tags: |
             type=ref,event=branch
             type=sha,prefix={{branch}}-
-            type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main' }}
 
-      - name: Build and push
-        id: build
-        uses: docker/build-push-action@v5
+      - name: Build and push Docker image
+        id: docker-build
+        uses: docker/build-push-action@v6
         with:
           context: ./backend
           file: ./infrastructure/docker/backend.Dockerfile
@@ -269,32 +301,29 @@ jobs:
             BUILD_DATE=${{ github.event.head_commit.timestamp }}
             VCS_REF=${{ github.sha }}
 
-      - name: Generate SBOM
-        uses: anchore/sbom-action@v0
-        with:
-          image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
-          format: spdx-json
-          output-file: sbom.spdx.json
-
-      - name: Upload SBOM artifact
-        uses: actions/upload-artifact@v6
-        with:
-          name: backend-sbom
-          path: sbom.spdx.json
+      - name: Image build summary
+        run: |
+          echo "## 🐳 Docker Image Built" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Tags:** ${{ steps.meta.outputs.tags }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Digest:** ${{ steps.docker-build.outputs.digest }}" >> $GITHUB_STEP_SUMMARY
 
   # ============================================
-  # Stage 5: Image Vulnerability Scan
+  # Stage 6: Container Vulnerability Scan
   # ============================================
   scan-image:
-    name:  Scan Container
+    name: 🛡️ Scan Container
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    needs: build
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+    needs: docker-build
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
     permissions:
       security-events: write
     
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
       - name: Login to GHCR
         uses: docker/login-action@v3
         with:
@@ -307,30 +336,47 @@ jobs:
         with:
           image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}
           format: 'sarif'
-          output: 'trivy-results.sarif'
+          output: 'trivy-backend-results.sarif'
           severity: 'CRITICAL,HIGH'
+          exit-code: '0'
 
-      - name: Upload Trivy scan results
-        uses: github/codeql-action/upload-sarif@v4
+      - name: Upload Trivy scan results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
         with:
-          sarif_file: 'trivy-results.sarif'
+          sarif_file: 'trivy-backend-results.sarif'
+        continue-on-error: true
+
+      - name: Run Trivy (Table output for logs)
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}
+          format: 'table'
+          severity: 'CRITICAL,HIGH,MEDIUM'
 
   # ============================================
-  # Notification on Failure
+  # Pipeline Summary
   # ============================================
-  notify-failure:
-    name:  Notify Failure
+  pipeline-summary:
+    name: 📊 Pipeline Summary
     runs-on: ubuntu-latest
-    needs: [unit-tests, e2e-tests, security, build]
-    if: failure()
+    needs: [lint, test-unit, test-e2e, security, build, docker-build, scan-image]
+    if: always()
     
     steps:
-      - name: Send Slack notification
-        uses: 8398a7/action-slack@v3
-        with:
-          status: ${{ job.status }}
-          channel: '#ci-alerts'
-          fields: repo,message,commit,author,action,eventName,ref,workflow
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-        if: env.SLACK_WEBHOOK_URL != ''
+      - name: Generate pipeline summary
+        run: |
+          echo "## 🚀 Backend CI Pipeline Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Stage | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| 🔍 Lint | ${{ needs.lint.result == 'success' && '✅ Passed' || needs.lint.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🧪 Unit Tests | ${{ needs.test-unit.result == 'success' && '✅ Passed' || needs.test-unit.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🔗 E2E Tests | ${{ needs.test-e2e.result == 'success' && '✅ Passed' || needs.test-e2e.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🔒 Security | ${{ needs.security.result == 'success' && '✅ Passed' || needs.security.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🏗️ Build | ${{ needs.build.result == 'success' && '✅ Passed' || needs.build.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🐳 Docker | ${{ needs.docker-build.result == 'success' && '✅ Passed' || needs.docker-build.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🛡️ Image Scan | ${{ needs.scan-image.result == 'success' && '✅ Passed' || needs.scan-image.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Branch:** \`${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Triggered by:** @${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
