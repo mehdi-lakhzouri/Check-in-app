@@ -18,6 +18,9 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { Connection } from 'mongoose';
 import { TestCacheModule } from './test-cache.module';
 
+import { RedisModule } from '../../src/common/redis/redis.module';
+import { EventEmitter } from 'events';
+
 // Feature Modules
 import { SessionsModule } from '../../src/modules/sessions';
 import { ParticipantsModule } from '../../src/modules/participants';
@@ -29,6 +32,18 @@ import { HealthModule } from '../../src/modules/health';
 
 // Queue name from processor
 const SESSION_SCHEDULER_QUEUE = 'session-scheduler';
+
+class MockBullRedisClient extends EventEmitter {
+  status = 'ready';
+  defineCommand() {}
+  disconnect() { return Promise.resolve(); }
+  quit() { return Promise.resolve(); }
+  on(event: string, callback: (...args: any[]) => void) {
+    super.on(event, callback);
+    return this;
+  }
+  toPromise() { return Promise.resolve(); }
+}
 
 /**
  * Creates a mock Bull Queue with all methods required by SessionSchedulerService
@@ -115,10 +130,7 @@ export async function createE2ETestApp(
 
       // Bull Queue with mock/minimal config
       BullModule.forRoot({
-        redis: {
-          host: 'localhost',
-          port: 6379,
-        },
+        createClient: () => new MockBullRedisClient() as any,
       }),
 
       // Feature Modules
@@ -134,6 +146,9 @@ export async function createE2ETestApp(
       ...additionalModules,
     ],
   })
+    // Replace RedisModule with TestCacheModule (in-memory) to avoid real Redis connections
+    .overrideModule(RedisModule)
+    .useModule(TestCacheModule)
     // Override Bull Queue to avoid Redis connection - use getQueueToken for proper injection
     .overrideProvider(getQueueToken(SESSION_SCHEDULER_QUEUE))
     .useValue(createMockQueue())
