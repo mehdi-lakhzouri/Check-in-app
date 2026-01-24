@@ -30,6 +30,7 @@ import { ParticipantsService } from '../../participants/services';
 import { SessionsService } from '../../sessions/services';
 import { RegistrationsService } from '../../registrations/services';
 import { PinoLoggerService, getCurrentRequestId } from '../../../common/logger';
+import { SessionDocument } from '../../sessions/schemas';
 
 /**
  * Enhanced check-in response with capacity information
@@ -84,17 +85,37 @@ export class CheckInsService {
       'app.checkinLateThresholdMinutes',
       10,
     );
-    this.logger.debug('Late check-in threshold configured', {
+    this.logger.debug('Default late check-in threshold configured', {
       minutes: this.lateThresholdMinutes,
     });
   }
 
   /**
-   * Determines if a check-in is late based on session start time and threshold
+   * Get the late threshold minutes for a session (per-session override or global default)
    */
-  private isCheckInLate(checkInTime: Date, sessionStartTime: Date): boolean {
-    const thresholdMs = this.lateThresholdMinutes * 60 * 1000;
-    const lateThreshold = new Date(sessionStartTime.getTime() + thresholdMs);
+  private getLateThresholdForSession(session: SessionDocument): number {
+    if (
+      session.lateThresholdMinutes !== undefined &&
+      session.lateThresholdMinutes !== null
+    ) {
+      return session.lateThresholdMinutes;
+    }
+    return this.lateThresholdMinutes;
+  }
+
+  /**
+   * Determines if a check-in is late based on session start time and threshold
+   * Uses per-session threshold if configured, otherwise falls back to global default
+   */
+  private isCheckInLate(
+    checkInTime: Date,
+    session: SessionDocument,
+  ): boolean {
+    const thresholdMinutes = this.getLateThresholdForSession(session);
+    const thresholdMs = thresholdMinutes * 60 * 1000;
+    const lateThreshold = new Date(
+      new Date(session.startTime).getTime() + thresholdMs,
+    );
     return checkInTime > lateThreshold;
   }
 
@@ -296,7 +317,7 @@ export class CheckInsService {
 
     // Create check-in
     const checkInTime = new Date();
-    const isLate = this.isCheckInLate(checkInTime, new Date(session.startTime));
+    const isLate = this.isCheckInLate(checkInTime, session as SessionDocument);
 
     let checkIn: CheckInDocument;
     try {
@@ -515,13 +536,14 @@ export class CheckInsService {
       ]);
     }
 
-    // Determine if check-in is late
+    // Determine if check-in is late (uses per-session threshold if configured)
     const checkInTime = new Date();
-    const isLate = this.isCheckInLate(checkInTime, new Date(session.startTime));
+    const isLate = this.isCheckInLate(checkInTime, session as SessionDocument);
+    const lateThreshold = this.getLateThresholdForSession(session as SessionDocument);
 
     if (isLate) {
       this.logger.log(
-        `Check-in is late (threshold: ${this.lateThresholdMinutes} min after session start)`,
+        `Check-in is late (threshold: ${lateThreshold} min after session start)`,
       );
     }
 

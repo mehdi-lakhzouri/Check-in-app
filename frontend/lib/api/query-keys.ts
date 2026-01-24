@@ -94,6 +94,15 @@ export const queryKeys = {
     stats: () => [...queryKeys.admin.all, 'stats'] as const,
     participantStats: () => [...queryKeys.admin.all, 'participant-stats'] as const,
   },
+
+  // ============================================================================
+  // Settings
+  // ============================================================================
+  settings: {
+    all: ['settings'] as const,
+    timing: () => [...queryKeys.settings.all, 'timing'] as const,
+    application: () => [...queryKeys.settings.all, 'application'] as const,
+  },
 } as const;
 
 // Type helper for extracting query key types

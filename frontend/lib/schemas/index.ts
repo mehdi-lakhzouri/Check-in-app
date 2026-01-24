@@ -53,6 +53,10 @@ export const sessionSchema = z.object({
   capacityEnforced: z.boolean().optional().default(true),
   requiresRegistration: z.boolean().optional().default(false),
   day: z.number().int().min(1).max(10).optional().default(1),
+  // Per-session timing configuration (optional - falls back to global defaults)
+  autoOpenMinutesBefore: z.number().int().min(0).max(1440).optional().nullable(),
+  autoEndGraceMinutes: z.number().int().min(0).max(1440).optional().nullable(),
+  lateThresholdMinutes: z.number().int().min(0).max(1440).optional().nullable(),
 }).merge(timestampsSchema);
 
 export const createSessionSchema = z.object({
@@ -66,6 +70,10 @@ export const createSessionSchema = z.object({
   capacityEnforced: z.boolean().optional().default(true),
   requiresRegistration: z.boolean().optional().default(false),
   day: z.number().int().min(1).max(10).optional().default(1),
+  // Per-session timing configuration (optional - falls back to global defaults)
+  autoOpenMinutesBefore: z.number().int().min(0).max(1440).optional().nullable(),
+  autoEndGraceMinutes: z.number().int().min(0).max(1440).optional().nullable(),
+  lateThresholdMinutes: z.number().int().min(0).max(1440).optional().nullable(),
 }).refine(
   (data) => new Date(data.endTime) > new Date(data.startTime),
   { message: 'End time must be after start time', path: ['endTime'] }
@@ -82,6 +90,10 @@ export const updateSessionSchema = z.object({
   capacityEnforced: z.boolean().optional(),
   requiresRegistration: z.boolean().optional(),
   day: z.number().int().min(1).max(10).optional(),
+  // Per-session timing configuration (optional - falls back to global defaults)
+  autoOpenMinutesBefore: z.number().int().min(0).max(1440).optional().nullable(),
+  autoEndGraceMinutes: z.number().int().min(0).max(1440).optional().nullable(),
+  lateThresholdMinutes: z.number().int().min(0).max(1440).optional().nullable(),
 });
 
 export type Session = z.infer<typeof sessionSchema>;

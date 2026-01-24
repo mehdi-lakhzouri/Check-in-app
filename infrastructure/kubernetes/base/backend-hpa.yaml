@@ -1,0 +1,48 @@
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: backend-hpa
+  namespace: checkin
+  labels:
+    app: backend
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: backend
+  
+  # Scale between 2-3 pods
+  minReplicas: 2
+  maxReplicas: 3
+  
+  metrics:
+    # Scale based on CPU usage
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70  # Scale up when CPU > 70%
+    
+    # Scale based on Memory usage
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 80  # Scale up when Memory > 80%
+  
+  # Scaling behavior - be conservative on single VPS
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 60  # Wait 1 min before scaling up
+      policies:
+        - type: Pods
+          value: 1
+          periodSeconds: 60  # Add max 1 pod per minute
+    scaleDown:
+      stabilizationWindowSeconds: 300  # Wait 5 min before scaling down
+      policies:
+        - type: Pods
+          value: 1
+          periodSeconds: 120  # Remove max 1 pod per 2 minutes

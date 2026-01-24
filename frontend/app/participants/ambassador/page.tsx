@@ -1,4 +1,4 @@
-import { AmbassadorsContent } from '@/components/ambassadors-content';
+import { AmbassadorsContent } from '@/components/ambassadors';
 
 export const metadata = {
   title: 'Ambassadors | IASTAM Check-in',

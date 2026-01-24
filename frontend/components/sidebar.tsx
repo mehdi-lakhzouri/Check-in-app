@@ -139,13 +139,13 @@ export function Sidebar({ className }: SidebarProps) {
             <button
               className={cn(
                 'flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left',
-                'text-muted-foreground transition-all duration-200 ease-in-out',
-                'hover:bg-[#F0F2FD] hover:text-[#2D3282]',
-                'active:bg-[#D0D6F2] active:scale-[0.98]',
-                isParentActive && 'bg-[#E0E4F7] text-[#2D3282] font-semibold'
+                'text-white/70 transition-all duration-200 ease-in-out',
+                'hover:bg-white/10 hover:text-white',
+                'active:bg-white/15 active:scale-[0.98]',
+                isParentActive && 'bg-white/15 text-white font-semibold'
               )}
             >
-              <Icon className={cn('h-5 w-5 shrink-0', isParentActive && 'text-[#2D3282]')} />
+              <Icon className={cn('h-5 w-5 shrink-0', isParentActive && 'text-white')} />
               <span className="flex-1 text-sm font-medium">{item.title}</span>
               <ChevronDown 
                 className={cn(
@@ -156,7 +156,7 @@ export function Sidebar({ className }: SidebarProps) {
             </button>
           </CollapsibleTrigger>
           <CollapsibleContent className="pl-4 pt-1">
-            <div className="flex flex-col gap-1 border-l border-border pl-2">
+            <div className="flex flex-col gap-1 border-l border-white/20 pl-2">
               {item.children!.map((child) => (
                 <NavItemComponent key={child.href} item={child} isChild />
               ))}
@@ -171,15 +171,15 @@ export function Sidebar({ className }: SidebarProps) {
         href={item.href}
         className={cn(
           'flex items-center gap-3 rounded-xl px-3 py-2.5',
-          'text-muted-foreground transition-all duration-200 ease-in-out',
-          'hover:bg-[#F0F2FD] hover:text-[#2D3282]',
-          'active:bg-[#D0D6F2] active:scale-[0.98]',
-          isActive && 'bg-[#E0E4F7] text-[#2D3282] font-semibold',
+          'text-white/70 transition-all duration-200 ease-in-out',
+          'hover:bg-white/10 hover:text-white',
+          'active:bg-white/15 active:scale-[0.98]',
+          isActive && 'bg-white/15 text-white font-semibold',
           isCollapsed && 'justify-center px-2',
           isChild && 'py-2 text-sm rounded-lg'
         )}
       >
-        <Icon className={cn('h-5 w-5 shrink-0', isActive && 'text-[#2D3282]', isChild && 'h-4 w-4')} />
+        <Icon className={cn('h-5 w-5 shrink-0', isActive && 'text-white', isChild && 'h-4 w-4')} />
         {!isCollapsed && (
           <>
             <span className={cn('flex-1 text-sm font-medium', isChild && 'text-xs')}>{item.title}</span>
@@ -214,33 +214,33 @@ export function Sidebar({ className }: SidebarProps) {
     <TooltipProvider delayDuration={0}>
       <div
         className={cn(
-          'relative flex h-screen flex-col border-r bg-background transition-all duration-300',
+          'relative flex h-screen flex-col border-r border-indigo/20 bg-indigo transition-all duration-300',
           isCollapsed ? 'w-16' : 'w-64',
           className
         )}
       >
         {/* Header */}
-        <div className="flex h-16 items-center border-b px-4">
+        <div className="flex h-16 items-center border-b border-white/10 px-4">
           {!isCollapsed && (
             <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                <Calendar className="h-4 w-4" />
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/15 backdrop-blur-sm">
+                <UserCheck className="h-5 w-5 text-white" />
               </div>
               <div className="flex flex-col">
-                <span className="text-sm font-semibold">IASTAM</span>
-                <span className="text-xs text-muted-foreground">Check-in Admin</span>
+                <span className="text-sm font-bold text-white">Check-in App</span>
+                <span className="text-xs text-white/60">Admin Dashboard</span>
               </div>
             </div>
           )}
           {isCollapsed && (
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-              <Calendar className="h-4 w-4" />
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/15 backdrop-blur-sm">
+              <UserCheck className="h-5 w-5 text-white" />
             </div>
           )}
         </div>
 
         {/* Navigation */}
-        <ScrollArea className="flex-1 px-3 py-4">
+        <ScrollArea className="flex-1 px-3 py-4" style={{ colorScheme: 'dark' }}>
           <nav className="flex flex-col gap-1">
             {navItems.map((item) => (
               <NavItemComponent key={item.href} item={item} />
@@ -249,7 +249,7 @@ export function Sidebar({ className }: SidebarProps) {
         </ScrollArea>
 
         {/* Bottom Section */}
-        <div className="border-t px-3 py-4">
+        <div className="border-t border-white/10 px-3 py-4">
           <nav className="flex flex-col gap-1">
             {bottomNavItems.map((item) => (
               <NavItemComponent key={item.href} item={item} />
@@ -262,7 +262,7 @@ export function Sidebar({ className }: SidebarProps) {
           <Button
             variant="outline"
             size="icon"
-            className="h-6 w-6 rounded-full border-2 bg-background shadow-md"
+            className="h-6 w-6 rounded-full border-2 border-indigo/30 bg-background shadow-lg hover:bg-lavender-light"
             onClick={toggleSidebar}
             aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           >

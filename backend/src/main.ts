@@ -78,7 +78,7 @@ async function bootstrap() {
 
   // Swagger documentation
   const config = new DocumentBuilder()
-    .setTitle('IASTAM Check-in API')
+    .setTitle(' Check-in API')
     .setDescription('Conference attendance and check-in management system API')
     .setVersion('1.0')
     .addTag('sessions', 'Session management endpoints')

@@ -1,4 +1,4 @@
-import { ParticipantsContent } from '@/components/participants-content';
+import { ParticipantsContent } from '@/components/participants';
 
 export default function ParticipantsPage() {
   return <ParticipantsContent />;

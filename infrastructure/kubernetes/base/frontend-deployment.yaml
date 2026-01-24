@@ -1,0 +1,102 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: checkin
+  labels:
+    app: frontend
+    app.kubernetes.io/name: checkin-frontend
+    app.kubernetes.io/component: web
+spec:
+  # Start with 1 replica, HPA can scale to 2 if needed
+  replicas: 1
+  
+  # Rolling update strategy for zero-downtime deployments
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1        # Can create 1 extra pod during update
+      maxUnavailable: 0  # Never have less than desired replicas
+  
+  selector:
+    matchLabels:
+      app: frontend
+  
+  template:
+    metadata:
+      labels:
+        app: frontend
+        app.kubernetes.io/name: checkin-frontend
+    spec:
+      terminationGracePeriodSeconds: 30
+      
+      containers:
+        - name: frontend
+          image: ghcr.io/mehdi-lakhzouri/checkin-frontend:latest
+          imagePullPolicy: Always
+          
+          ports:
+            - containerPort: 3000
+              name: http
+              protocol: TCP
+          
+          env:
+            - name: NODE_ENV
+              value: "production"
+            - name: NEXT_PUBLIC_API_URL
+              value: "https://api.YOUR_DOMAIN.com/api/v1"
+          
+          # Resource limits - lighter than backend
+          resources:
+            requests:
+              cpu: "50m"       # 0.05 CPU guaranteed
+              memory: "128Mi"  # 128MB guaranteed
+            limits:
+              cpu: "200m"      # Max 0.2 CPU
+              memory: "256Mi"  # Max 256MB
+          
+          # Liveness probe
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          
+          # Readiness probe
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+          
+          # Startup probe
+          startupProbe:
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            failureThreshold: 30
+          
+          # Security context
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            allowPrivilegeEscalation: false
+      
+      # Spread frontend pods across nodes
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    app: frontend
+                topologyKey: kubernetes.io/hostname

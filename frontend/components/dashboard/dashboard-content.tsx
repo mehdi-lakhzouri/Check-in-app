@@ -2,9 +2,14 @@
 
 import { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Users, Calendar, UserCheck, ClipboardCheck, RefreshCw } from 'lucide-react';
-import { StatsCard } from '@/components/stats-card';
-import { SessionOverview } from '@/components/session-overview';
+import {
+  Users,
+  Calendar,
+  UserCheck,
+  ClipboardCheck,
+  RefreshCw,
+  LayoutDashboard,
+} from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Table,
@@ -17,24 +22,34 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { StatsCardsSkeleton, TableSkeleton } from '@/components/ui/skeleton';
-import { ErrorState } from '@/components/ui/error-state';
-import { useDashboard } from '@/lib/hooks';
+import { SessionOverview } from '@/components/session-overview';
 import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/api/query-keys';
-import { 
-  staggerContainer, 
-  cardVariants, 
+import {
+  staggerContainer,
+  cardVariants,
   tableRowVariants,
   pageTransition,
   TIMING,
-  EASING
+  EASING,
 } from '@/lib/animations';
+
+// Common components
+import { PageHeader, StatsGrid, StatCard } from '@/components/common';
+
+// Hooks
+import { useDashboard } from '@/lib/hooks';
+
+// =============================================================================
+// Main Component
+// =============================================================================
 
 export function DashboardContent() {
   const queryClient = useQueryClient();
-  const { stats, recentSessions, recentCheckIns, sessions, checkIns, isLoading, isError, error } = useDashboard();
+  const { stats, recentSessions, recentCheckIns, sessions, checkIns, isLoading, isError } =
+    useDashboard();
 
-  // Auto-refresh every 30 seconds for real-time updates
+  // Auto-refresh every 30 seconds
   useEffect(() => {
     const interval = setInterval(() => {
       queryClient.invalidateQueries({ queryKey: queryKeys.sessions.all });
@@ -51,17 +66,15 @@ export function DashboardContent() {
     queryClient.invalidateQueries({ queryKey: queryKeys.registrations.all });
   };
 
+  // Loading state
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
-            <p className="text-muted-foreground">
-              Welcome to the IASTAM Conference Check-in System
-            </p>
-          </div>
-        </div>
+        <PageHeader
+          icon={LayoutDashboard}
+          title="Dashboard"
+          description="Welcome to the Check-in App Dashboard"
+        />
         <StatsCardsSkeleton />
         <div className="grid gap-4 md:grid-cols-2">
           <Card>
@@ -87,21 +100,19 @@ export function DashboardContent() {
     );
   }
 
+  // Error state
   if (isError) {
     return (
       <div className="space-y-6">
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
-          <p className="text-muted-foreground">
-            Welcome to the IASTAM Conference Check-in System
-          </p>
-        </div>
-        <ErrorState
-          error={error}
-          onRetry={handleRefresh}
-          title="Failed to load dashboard"
-          description="Unable to fetch dashboard data from the server."
+        <PageHeader
+          icon={LayoutDashboard}
+          title="Dashboard"
+          description="Welcome to the Check-in App Dashboard"
         />
+        <div className="text-center py-12">
+          <p className="text-destructive mb-4">Failed to load dashboard</p>
+          <Button onClick={handleRefresh}>Retry</Button>
+        </div>
       </div>
     );
   }
@@ -114,87 +125,52 @@ export function DashboardContent() {
       animate="animate"
       exit="exit"
     >
-      {/* Header with animated title */}
-      <motion.div 
-        className="flex items-center justify-between"
+      {/* Header */}
+      <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: TIMING.normal, ease: EASING.smooth }}
       >
-        <div>
-          <motion.h2 
-            className="text-3xl font-bold tracking-tight"
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: TIMING.normal, delay: 0.1 }}
-          >
-            Dashboard
-          </motion.h2>
-          <motion.p 
-            className="text-muted-foreground"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: TIMING.normal, delay: 0.2 }}
-          >
-            Welcome to the IASTAM Conference Check-in System
-          </motion.p>
-        </div>
-        <motion.div
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: TIMING.fast, delay: 0.3 }}
-        >
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={handleRefresh}
-            className="group"
-          >
-            <RefreshCw className="mr-2 h-4 w-4 group-hover:rotate-180 transition-transform duration-500" />
-            Refresh
-          </Button>
-        </motion.div>
+        <PageHeader
+          icon={LayoutDashboard}
+          title="Dashboard"
+          description="Welcome to the Check-in App Dashboard"
+          onRefresh={handleRefresh}
+        />
       </motion.div>
 
-      {/* Stats Cards with stagger animation */}
-      <motion.div
-        className="grid gap-4 md:grid-cols-2 lg:grid-cols-4"
-        variants={staggerContainer}
-        initial="hidden"
-        animate="visible"
-      >
-        <StatsCard
-          title="Total Participants"
-          value={stats.totalParticipants}
-          description="Active participants"
-          icon={Users}
-          index={0}
-          accentColor="from-blue-500/50 to-blue-500/20"
-        />
-        <StatsCard
-          title="Sessions"
-          value={stats.totalSessions}
-          description="Conference sessions"
-          icon={Calendar}
-          index={1}
-          accentColor="from-purple-500/50 to-purple-500/20"
-        />
-        <StatsCard
-          title="Check-ins"
-          value={stats.totalCheckIns}
-          description="Total attendance"
-          icon={UserCheck}
-          index={2}
-          accentColor="from-green-500/50 to-green-500/20"
-        />
-        <StatsCard
-          title="Registrations"
-          value={stats.totalRegistrations}
-          description="Session registrations"
-          icon={ClipboardCheck}
-          index={3}
-          accentColor="from-orange-500/50 to-orange-500/20"
-        />
+      {/* Stats Cards */}
+      <motion.div variants={staggerContainer} initial="hidden" animate="visible">
+        <StatsGrid columns={{ default: 1, sm: 2, lg: 4 }}>
+          <StatCard
+            title="Total Participants"
+            value={stats.totalParticipants}
+            description="Active participants"
+            icon={Users}
+            variant="primary"
+          />
+          <StatCard
+            title="Sessions"
+            value={stats.totalSessions}
+            description="Conference sessions"
+            icon={Calendar}
+            variant="info"
+          />
+          <StatCard
+            title="Check-ins"
+            value={stats.totalCheckIns}
+            description="Total attendance"
+            icon={UserCheck}
+            variant="success"
+          />
+          <StatCard
+            title="Registrations"
+            value={stats.totalRegistrations}
+            description="Session registrations"
+            icon={ClipboardCheck}
+            variant="warning"
+          />
+        </StatsGrid>
       </motion.div>
 
       {/* Real-time Session Overview */}
@@ -207,8 +183,8 @@ export function DashboardContent() {
       </motion.div>
 
       {/* Recent Sessions and Check-ins */}
-      <motion.div 
-        className="grid gap-4 md:grid-cols-2" 
+      <motion.div
+        className="grid gap-4 md:grid-cols-2"
         variants={staggerContainer}
         initial="hidden"
         animate="visible"
@@ -227,8 +203,8 @@ export function DashboardContent() {
               <Table>
                 <TableHeader>
                   <TableRow className="bg-muted/30">
-                    <TableHead className="text-center" scope="col">Name</TableHead>
-                    <TableHead className="text-center" scope="col">Status</TableHead>
+                    <TableHead className="text-center">Name</TableHead>
+                    <TableHead className="text-center">Status</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -246,10 +222,7 @@ export function DashboardContent() {
                         >
                           <TableCell className="font-medium">{session.name}</TableCell>
                           <TableCell className="text-center">
-                            <Badge 
-                              variant={session.isOpen ? 'default' : 'secondary'}
-                              className="transition-all duration-200"
-                            >
+                            <Badge variant={session.isOpen ? 'default' : 'secondary'}>
                               {session.isOpen ? 'Open' : 'Closed'}
                             </Badge>
                           </TableCell>
@@ -283,8 +256,8 @@ export function DashboardContent() {
               <Table>
                 <TableHeader>
                   <TableRow className="bg-muted/30">
-                    <TableHead className="text-center" scope="col">Time</TableHead>
-                    <TableHead className="text-center" scope="col">Status</TableHead>
+                    <TableHead className="text-center">Time</TableHead>
+                    <TableHead className="text-center">Status</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -304,10 +277,7 @@ export function DashboardContent() {
                             {new Date(checkIn.checkInTime).toLocaleString()}
                           </TableCell>
                           <TableCell className="text-center">
-                            <Badge
-                              variant={checkIn.isLate ? 'secondary' : 'default'}
-                              className="transition-all duration-200"
-                            >
+                            <Badge variant={checkIn.isLate ? 'secondary' : 'default'}>
                               {checkIn.isLate ? 'Late' : 'On Time'}
                             </Badge>
                           </TableCell>
@@ -330,3 +300,5 @@ export function DashboardContent() {
     </motion.div>
   );
 }
+
+export default DashboardContent;

@@ -45,6 +45,7 @@ import { ReportsModule } from './modules/reports';
 import { BulkModule } from './modules/bulk';
 import { HealthModule } from './modules/health';
 import { RealtimeModule } from './modules/realtime';
+import { SettingsModule } from './modules/settings';
 
 @Module({
   imports: [
@@ -123,15 +124,23 @@ import { RealtimeModule } from './modules/realtime';
       inject: [ConfigService],
     }),
 
-    // Rate Limiting
+    // Rate Limiting - Two-tier protection
+    // 1. Long window: 500 req/min (sustained load)
+    // 2. Short window: 100 req/10s (burst protection)
     ThrottlerModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
         throttlers: [
           {
+            name: 'short',
+            ttl: config.get<number>('throttle.short.ttl') ?? 10000,
+            limit: config.get<number>('throttle.short.limit') ?? 100,
+          },
+          {
+            name: 'long',
             ttl: config.get<number>('throttle.ttl') ?? 60000,
-            limit: config.get<number>('throttle.limit') ?? 100,
+            limit: config.get<number>('throttle.limit') ?? 500,
           },
         ],
       }),
@@ -149,6 +158,7 @@ import { RealtimeModule } from './modules/realtime';
     BulkModule,
     HealthModule,
     RealtimeModule,
+    SettingsModule,
   ],
   providers: [
     // Global Guards

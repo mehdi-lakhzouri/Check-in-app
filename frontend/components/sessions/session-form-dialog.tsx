@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Clock, MapPin, Users } from 'lucide-react';
+import { Clock, MapPin, Users, UserCheck } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -78,6 +78,11 @@ export function SessionFormDialog({
             location: session.location || '',
             isOpen: session.isOpen,
             capacity: session.capacity,
+            requiresRegistration: session.requiresRegistration ?? false,
+            // Timing settings are now managed in Settings page
+            autoOpenMinutesBefore: undefined,
+            autoEndGraceMinutes: undefined,
+            lateThresholdMinutes: undefined,
           });
         } else {
           setFormData(getDefaultFormData());
@@ -102,6 +107,11 @@ export function SessionFormDialog({
         location: session.location || '',
         isOpen: session.isOpen,
         capacity: session.capacity,
+        requiresRegistration: session.requiresRegistration ?? false,
+        // Per-session timing (undefined/null means use system defaults)
+        autoOpenMinutesBefore: session.autoOpenMinutesBefore ?? undefined,
+        autoEndGraceMinutes: session.autoEndGraceMinutes ?? undefined,
+        lateThresholdMinutes: session.lateThresholdMinutes ?? undefined,
       });
     } else {
       resetForm();
@@ -163,6 +173,11 @@ export function SessionFormDialog({
       location: formData.location.trim() || undefined,
       isOpen: formData.isOpen,
       capacity: formData.capacity,
+      requiresRegistration: formData.requiresRegistration,
+      // Per-session timing configuration (undefined = use system defaults)
+      autoOpenMinutesBefore: formData.autoOpenMinutesBefore,
+      autoEndGraceMinutes: formData.autoEndGraceMinutes,
+      lateThresholdMinutes: formData.lateThresholdMinutes,
     };
 
     if (session) {
@@ -349,6 +364,27 @@ export function SessionFormDialog({
                 checked={formData.isOpen}
                 onCheckedChange={(checked) =>
                   setFormData({ ...formData, isOpen: checked })
+                }
+                disabled={isMutating}
+              />
+            </div>
+
+            {/* Requires Registration Switch */}
+            <div className="flex items-center justify-between rounded-lg border p-4">
+              <div className="space-y-0.5">
+                <Label htmlFor="requiresRegistration" className="text-base flex items-center gap-2">
+                  <UserCheck className="h-4 w-4" />
+                  Requires Registration
+                </Label>
+                <p className="text-sm text-muted-foreground">
+                  Only registered participants can check in to this session
+                </p>
+              </div>
+              <Switch
+                id="requiresRegistration"
+                checked={formData.requiresRegistration}
+                onCheckedChange={(checked) =>
+                  setFormData({ ...formData, requiresRegistration: checked })
                 }
                 disabled={isMutating}
               />

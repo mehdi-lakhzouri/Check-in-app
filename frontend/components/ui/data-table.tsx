@@ -1,6 +1,8 @@
 'use client';
 
 import * as React from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { tableRowVariants } from '@/lib/animations';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
   Table,
@@ -310,6 +312,7 @@ export function DataTable<T>({
           </TableHeader>
 
           <TableBody>
+            <AnimatePresence mode="popLayout">
             {/* Loading State */}
             {isLoading ? (
               Array.from({ length: skeletonRows }).map((_, index) => (
@@ -354,22 +357,34 @@ export function DataTable<T>({
               </TableRow>
             ) : (
               /* Data Rows */
-              data.map((row) => {
+              data.map((row, index) => {
                 const rowId = getRowId(row);
                 const isSelected = selectedIds.has(rowId);
                 const customClassName = getRowClassName?.(row);
+                const isEvenRow = index % 2 === 1;
 
                 return (
-                  <TableRow
+                  <motion.tr
                     key={rowId}
                     data-state={isSelected ? 'selected' : undefined}
                     className={cn(
-                      'transition-colors',
+                      'transition-colors border-b',
+                      isEvenRow ? 'bg-[var(--table-row-alt)]' : 'bg-[var(--table-row)]',
                       isSelected && 'bg-primary/5',
                       onRowClick && 'cursor-pointer',
+                      'hover:bg-muted/50',
                       customClassName
                     )}
                     onClick={onRowClick ? () => onRowClick(row) : undefined}
+                    variants={tableRowVariants}
+                    initial="hidden"
+                    animate="visible"
+                    exit="exit"
+                    custom={index}
+                    layout
+                    transition={{
+                      layout: { duration: 0.2, ease: 'easeInOut' }
+                    }}
                   >
                     {/* Selection Checkbox */}
                     {selectable && (
@@ -395,10 +410,11 @@ export function DataTable<T>({
                         {column.cell(row)}
                       </TableCell>
                     ))}
-                  </TableRow>
+                  </motion.tr>
                 );
               })
             )}
+            </AnimatePresence>
           </TableBody>
         </Table>
       </div>
@@ -406,35 +422,40 @@ export function DataTable<T>({
       {/* Pagination */}
       {(onPageChange || onItemsPerPageChange) && !isLoading && data.length > 0 && (
         <div
-          className="flex flex-col sm:flex-row items-center justify-between gap-4 px-2"
+          className={cn(
+            "flex flex-col sm:flex-row items-center gap-4 px-2",
+            onItemsPerPageChange ? "justify-between" : "justify-center"
+          )}
           role="navigation"
           aria-label="Table pagination"
         >
           {/* Items per page */}
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <span>Show</span>
-            <Select
-              value={itemsPerPage.toString()}
-              onValueChange={(value) => onItemsPerPageChange?.(parseInt(value))}
-            >
-              <SelectTrigger className="h-8 w-[70px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {itemsPerPageOptions.map((option) => (
-                  <SelectItem key={option} value={option.toString()}>
-                    {option}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <span>per page</span>
-            {totalItems !== undefined && (
-              <span className="text-muted-foreground/70">
-                ({totalItems} total)
-              </span>
-            )}
-          </div>
+          {onItemsPerPageChange && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <span>Show</span>
+              <Select
+                value={itemsPerPage.toString()}
+                onValueChange={(value) => onItemsPerPageChange(parseInt(value))}
+              >
+                <SelectTrigger className="h-8 w-[70px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {itemsPerPageOptions.map((option) => (
+                    <SelectItem key={option} value={option.toString()}>
+                      {option}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <span>per page</span>
+              {totalItems !== undefined && (
+                <span className="text-muted-foreground/70">
+                  ({totalItems} total)
+                </span>
+              )}
+            </div>
+          )}
 
           {/* Page Navigation */}
           <div className="flex items-center gap-1">
@@ -488,6 +509,8 @@ export function DataTable<T>({
       )}
 
       {/* Bulk Delete Confirmation Dialog */}
+      <AnimatePresence>
+        {deleteDialogOpen && (
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -536,6 +559,8 @@ export function DataTable<T>({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

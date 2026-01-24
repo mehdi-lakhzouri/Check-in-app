@@ -7,6 +7,7 @@ import {
   IsDateString,
   IsInt,
   Min,
+  Max,
   MaxLength,
 } from 'class-validator';
 
@@ -106,4 +107,47 @@ export class CreateSessionDto {
   @IsInt()
   @Min(1)
   day?: number;
+
+  // ============================================================================
+  // Per-Session Timing Configuration (Optional - falls back to global config)
+  // ============================================================================
+
+  @ApiPropertyOptional({
+    example: 15,
+    description:
+      'Minutes before session start time to auto-open check-in. Leave empty to use system default.',
+    minimum: 0,
+    maximum: 1440,
+  })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(1440)
+  autoOpenMinutesBefore?: number;
+
+  @ApiPropertyOptional({
+    example: 5,
+    description:
+      'Grace period in minutes after session end time before auto-ending. Leave empty to use system default.',
+    minimum: 0,
+    maximum: 1440,
+  })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(1440)
+  autoEndGraceMinutes?: number;
+
+  @ApiPropertyOptional({
+    example: 10,
+    description:
+      'Minutes after session start time after which check-ins are marked as late. Leave empty to use system default.',
+    minimum: 0,
+    maximum: 1440,
+  })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(1440)
+  lateThresholdMinutes?: number;
 }

@@ -1,4 +1,4 @@
-import { RegistrationsContent } from '@/components/registrations-content';
+import { RegistrationsContent } from '@/components/registrations';
 
 export default function RegistrationsPage() {
   return <RegistrationsContent />;

@@ -69,6 +69,56 @@ export class SessionSchedulerProcessor {
     this.onLifecycleUpdate = null;
   }
 
+  // ============================================================================
+  // Per-Session Timing Resolution (with fallback to global config)
+  // ============================================================================
+
+  /**
+   * Get auto-open minutes for a session (per-session override or global default)
+   */
+  private getAutoOpenMinutes(session: SessionDocument): number {
+    if (
+      session.autoOpenMinutesBefore !== undefined &&
+      session.autoOpenMinutesBefore !== null
+    ) {
+      return session.autoOpenMinutesBefore;
+    }
+    return this.configService.get<number>(
+      'sessionScheduler.autoOpenMinutesBefore',
+      10,
+    );
+  }
+
+  /**
+   * Get auto-end grace minutes for a session (per-session override or global default)
+   */
+  private getAutoEndGraceMinutes(session: SessionDocument): number {
+    if (
+      session.autoEndGraceMinutes !== undefined &&
+      session.autoEndGraceMinutes !== null
+    ) {
+      return session.autoEndGraceMinutes;
+    }
+    return this.configService.get<number>(
+      'sessionScheduler.autoEndGraceMinutes',
+      0,
+    );
+  }
+
+  /**
+   * Get late threshold minutes for a session (per-session override or global default)
+   * Exposed as public for use by CheckInsService
+   */
+  public getLateThresholdMinutes(session: SessionDocument): number {
+    if (
+      session.lateThresholdMinutes !== undefined &&
+      session.lateThresholdMinutes !== null
+    ) {
+      return session.lateThresholdMinutes;
+    }
+    return this.configService.get<number>('app.checkinLateThresholdMinutes', 10);
+  }
+
   @OnQueueActive()
   onActive(job: Bull.Job<SessionSchedulerJobData>) {
     this.logger.verbose(`Processing job ${job.id} of type ${job.data.type}`);
@@ -91,7 +141,7 @@ export class SessionSchedulerProcessor {
 
   /**
    * Process auto-open sessions job
-   * Opens sessions that are within AUTO_OPEN_MINUTES_BEFORE of their start time
+   * Opens sessions that are within their auto-open window (per-session or global config)
    */
   @Process('auto-open-sessions')
   async handleAutoOpen(
@@ -99,37 +149,45 @@ export class SessionSchedulerProcessor {
   ): Promise<{ opened: number; sessions: string[] }> {
     this.logger.log('Processing auto-open-sessions job');
 
-    const autoOpenMinutes = this.configService.get<number>(
+    const globalAutoOpenMinutes = this.configService.get<number>(
       'sessionScheduler.autoOpenMinutesBefore',
       10,
     );
     const now = new Date();
-    const openThreshold = new Date(now.getTime() + autoOpenMinutes * 60 * 1000);
 
-    // Find sessions that:
-    // 1. Are still in SCHEDULED lifecycle
-    // 2. Have startTime within the auto-open window
-    // 3. Haven't ended yet
-    const sessionsToOpen = await this.sessionModel
+    // Find all SCHEDULED sessions that haven't ended yet
+    // We'll check each session's individual timing configuration
+    const scheduledSessions = await this.sessionModel
       .find({
         status: SessionStatus.SCHEDULED,
-        startTime: { $lte: openThreshold },
         endTime: { $gt: now },
       })
       .exec();
 
     const openedSessions: string[] = [];
 
-    for (const session of sessionsToOpen) {
+    for (const session of scheduledSessions) {
       try {
-        const update = await this.updateSessionLifecycle(
-          session,
-          SessionStatus.OPEN,
-          true,
-          'auto_open',
+        // Get per-session or global auto-open minutes
+        const autoOpenMinutes = this.getAutoOpenMinutes(session);
+        const openThreshold = new Date(
+          new Date(session.startTime).getTime() - autoOpenMinutes * 60 * 1000,
         );
-        if (update) {
-          openedSessions.push(session.name);
+
+        // Check if current time is past the open threshold
+        if (now >= openThreshold) {
+          this.logger.debug(
+            `Session "${session.name}" qualifies for auto-open (threshold: ${autoOpenMinutes} min before start)`,
+          );
+          const update = await this.updateSessionLifecycle(
+            session,
+            SessionStatus.OPEN,
+            true,
+            'auto_open',
+          );
+          if (update) {
+            openedSessions.push(session.name);
+          }
         }
       } catch (error) {
         this.logger.error(
@@ -149,7 +207,7 @@ export class SessionSchedulerProcessor {
 
   /**
    * Process auto-end sessions job
-   * Ends sessions that have passed their end time
+   * Ends sessions that have passed their end time (with per-session or global grace period)
    */
   @Process('auto-end-sessions')
   async handleAutoEnd(
@@ -165,36 +223,40 @@ export class SessionSchedulerProcessor {
       return { ended: 0, sessions: [] };
     }
 
-    const graceMinutes = this.configService.get<number>(
-      'sessionScheduler.autoEndGraceMinutes',
-      0,
-    );
     const now = new Date();
-    const endThreshold = new Date(now.getTime() - graceMinutes * 60 * 1000);
 
-    // Find sessions that:
-    // 1. Are in OPEN or SCHEDULED lifecycle (SCHEDULED sessions can also expire without being opened)
-    // 2. Have endTime before the threshold (past their end time + grace period)
-    // This ensures sessions that were never opened but have passed their end time are also marked as ended
-    const sessionsToEnd = await this.sessionModel
+    // Find all OPEN or SCHEDULED sessions
+    // We'll check each session's individual timing configuration
+    const activeSessions = await this.sessionModel
       .find({
         status: { $in: [SessionStatus.OPEN, SessionStatus.SCHEDULED] },
-        endTime: { $lte: endThreshold },
       })
       .exec();
 
     const endedSessions: string[] = [];
 
-    for (const session of sessionsToEnd) {
+    for (const session of activeSessions) {
       try {
-        const update = await this.updateSessionLifecycle(
-          session,
-          SessionStatus.ENDED,
-          false,
-          'auto_end',
+        // Get per-session or global grace minutes
+        const graceMinutes = this.getAutoEndGraceMinutes(session);
+        const endThreshold = new Date(
+          new Date(session.endTime).getTime() + graceMinutes * 60 * 1000,
         );
-        if (update) {
-          endedSessions.push(session.name);
+
+        // Check if current time is past the end threshold (endTime + grace period)
+        if (now >= endThreshold) {
+          this.logger.debug(
+            `Session "${session.name}" qualifies for auto-end (grace: ${graceMinutes} min after end)`,
+          );
+          const update = await this.updateSessionLifecycle(
+            session,
+            SessionStatus.ENDED,
+            false,
+            'auto_end',
+          );
+          if (update) {
+            endedSessions.push(session.name);
+          }
         }
       } catch (error) {
         this.logger.error(

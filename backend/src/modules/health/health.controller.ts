@@ -2,6 +2,7 @@ import { Controller, Get, Inject } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiOkResponse } from '@nestjs/swagger';
 import { InjectConnection } from '@nestjs/mongoose';
 import { Connection } from 'mongoose';
+import { SkipThrottle } from '@nestjs/throttler';
 import { REDIS_STATUS } from '../../common/redis/redis.module';
 import type { RedisConnectionStatus } from '../../common/redis/redis.module';
 
@@ -31,6 +32,7 @@ interface HealthCheckResponse {
 
 @ApiTags('Health')
 @Controller('health')
+@SkipThrottle() // Health checks should never be rate limited
 export class HealthController {
   constructor(
     @InjectConnection() private readonly connection: Connection,

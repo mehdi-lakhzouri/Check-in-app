@@ -1,0 +1,129 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: checkin
+  labels:
+    app: backend
+    app.kubernetes.io/name: checkin-backend
+    app.kubernetes.io/component: api
+spec:
+  # Start with 2 replicas, HPA will scale to 3 if needed
+  replicas: 2
+  
+  # Rolling update strategy for zero-downtime deployments
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1        # Can create 1 extra pod during update
+      maxUnavailable: 0  # Never have less than desired replicas
+  
+  selector:
+    matchLabels:
+      app: backend
+  
+  template:
+    metadata:
+      labels:
+        app: backend
+        app.kubernetes.io/name: checkin-backend
+      annotations:
+        # Prometheus scraping
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "3001"
+        prometheus.io/path: "/api/v1/metrics"
+    spec:
+      # Graceful shutdown - wait for connections to drain
+      terminationGracePeriodSeconds: 30
+      
+      containers:
+        - name: backend
+          image: ghcr.io/mehdi-lakhzouri/checkin-backend:latest
+          imagePullPolicy: Always
+          
+          ports:
+            - containerPort: 3001
+              name: http
+              protocol: TCP
+          
+          # Environment from ConfigMap
+          envFrom:
+            - configMapRef:
+                name: checkin-config
+          
+          # Environment from Secrets
+          env:
+            - name: MONGODB_URI
+              valueFrom:
+                secretKeyRef:
+                  name: checkin-secrets
+                  key: MONGODB_URI
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: checkin-secrets
+                  key: JWT_SECRET
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: checkin-secrets
+                  key: REDIS_PASSWORD
+          
+          # Resource limits - tuned for single VPS
+          resources:
+            requests:
+              cpu: "100m"      # 0.1 CPU guaranteed
+              memory: "256Mi"  # 256MB guaranteed
+            limits:
+              cpu: "500m"      # Max 0.5 CPU
+              memory: "512Mi"  # Max 512MB
+          
+          # Liveness probe - restart if unhealthy
+          livenessProbe:
+            httpGet:
+              path: /api/v1/health
+              port: 3001
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+            successThreshold: 1
+          
+          # Readiness probe - only receive traffic when ready
+          readinessProbe:
+            httpGet:
+              path: /api/v1/health
+              port: 3001
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+            successThreshold: 1
+          
+          # Startup probe - give time for initial startup
+          startupProbe:
+            httpGet:
+              path: /api/v1/health
+              port: 3001
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 30  # 30 * 5s = 150s max startup time
+          
+          # Security context
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            readOnlyRootFilesystem: false
+            allowPrivilegeEscalation: false
+      
+      # Pod anti-affinity - spread pods across nodes (when multi-node)
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    app: backend
+                topologyKey: kubernetes.io/hostname

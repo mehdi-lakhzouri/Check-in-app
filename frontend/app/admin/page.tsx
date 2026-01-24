@@ -1,4 +1,4 @@
-import { AdminDashboardContent } from '@/components/admin-dashboard-content';
+import { AdminDashboardContent } from '@/components/admin';
 
 export const metadata = {
   title: 'Admin Dashboard | IASTAM Check-in',

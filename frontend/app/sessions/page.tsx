@@ -1,4 +1,4 @@
-import { SessionsContent } from '@/components/sessions-content';
+import { SessionsContent } from '@/components/sessions';
 
 export default function SessionsPage() {
   return <SessionsContent />;

@@ -119,6 +119,40 @@ export class Session {
   @Prop({ default: 1, index: true })
   day: number;
 
+  // ============================================================================
+  // Per-Session Timing Configuration (Optional - falls back to global config)
+  // ============================================================================
+
+  @ApiPropertyOptional({
+    example: 15,
+    description:
+      'Minutes before session start time to auto-open check-in. Leave empty to use system default (AUTO_OPEN_MINUTES_BEFORE env variable).',
+    minimum: 0,
+    maximum: 1440,
+  })
+  @Prop({ type: Number })
+  autoOpenMinutesBefore?: number;
+
+  @ApiPropertyOptional({
+    example: 5,
+    description:
+      'Grace period in minutes after session end time before auto-ending. Leave empty to use system default (AUTO_END_GRACE_MINUTES env variable).',
+    minimum: 0,
+    maximum: 1440,
+  })
+  @Prop({ type: Number })
+  autoEndGraceMinutes?: number;
+
+  @ApiPropertyOptional({
+    example: 10,
+    description:
+      'Minutes after session start time after which check-ins are marked as late. Leave empty to use system default (CHECKIN_LATE_THRESHOLD_MINUTES env variable).',
+    minimum: 0,
+    maximum: 1440,
+  })
+  @Prop({ type: Number })
+  lateThresholdMinutes?: number;
+
   @ApiProperty({ example: '2024-01-01T00:00:00.000Z' })
   createdAt: Date;
 

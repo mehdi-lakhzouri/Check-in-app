@@ -9,7 +9,6 @@ import {
   Download,
   Upload,
   QrCode,
-  Filter,
   FileUp,
   X,
   Eye,
@@ -28,10 +27,8 @@ import {
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
-  Group,
-  LayoutGrid,
-  List,
   AlertTriangle,
+  MoreVertical,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { tableRowVariants } from '@/lib/animations';
@@ -49,6 +46,9 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import { DataTable } from '@/components/ui/data-table';
+import { createParticipantColumns } from '@/components/participants/participant-columns';
+import { ParticipantProfileModal } from '@/components/participants/participant-profile-modal';
 import {
   Dialog,
   DialogContent,
@@ -96,6 +96,12 @@ import { ButtonLoading } from '@/components/ui/loading-state';
 import { ErrorState } from '@/components/ui/error-state';
 import { TableSkeleton } from '@/components/ui/skeleton';
 import { Progress } from '@/components/ui/progress';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import {
   Tooltip,
   TooltipContent,
@@ -183,9 +189,9 @@ function ParticipantTableRow({
       animate="visible"
       exit="exit"
       transition={{ delay: index * 0.02, duration: 0.15 }}
-      className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted group"
+      className={`border-b border-border/50 transition-colors hover:bg-lavender-light/40 data-[state=selected]:bg-lavender/50 group ${index % 2 === 1 ? 'bg-[var(--table-row-alt)]' : 'bg-[var(--table-row)]'}`}
     >
-      <TableCell className="py-2">
+      <TableCell className="px-4 py-3">
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -215,16 +221,16 @@ function ParticipantTableRow({
           </Tooltip>
         </TooltipProvider>
       </TableCell>
-      <TableCell className="font-medium">
+      <TableCell className="font-medium px-4 py-3">
         <span className="truncate max-w-[200px] block">{participant.name}</span>
       </TableCell>
-      <TableCell>
+      <TableCell className="px-4 py-3">
         <span className="text-muted-foreground truncate max-w-[250px] block">{participant.email}</span>
       </TableCell>
       {!hideOrganization && (
-        <TableCell>
+        <TableCell className="px-4 py-3">
           {participant.organization ? (
-            <Badge variant="outline" className="font-normal">
+            <Badge variant="outline" className="font-normal bg-lavender-light/50 text-indigo-700 border-indigo/20">
               {participant.organization}
             </Badge>
           ) : (
@@ -233,7 +239,7 @@ function ParticipantTableRow({
         </TableCell>
       )}
       {!hideStatus && (
-        <TableCell>
+        <TableCell className="px-4 py-3">
           <Badge
             variant={
               participant.status === 'ambassador'
@@ -242,78 +248,49 @@ function ParticipantTableRow({
                 ? 'secondary'
                 : 'outline'
             }
-            className="capitalize"
+            className={cn(
+              "capitalize",
+              participant.status === 'ambassador' && "bg-indigo text-white",
+              participant.status === 'travel_grant' && "bg-cerulean/10 text-cerulean border-cerulean/30",
+              participant.status === 'regular' && "bg-muted text-muted-foreground border-border"
+            )}
           >
             {participant.status === 'travel_grant' ? 'Travel Grant' : participant.status}
           </Badge>
         </TableCell>
       )}
-      <TableCell className="text-right">
-        <div className="flex justify-end gap-1">
-          {(participant.status === 'ambassador' || participant.status === 'travel_grant') && (
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8"
-                    onClick={() => handleViewDetails(participant)}
-                  >
-                    <Eye className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>View Details</TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          )}
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={() => generateQRCode(participant)}
-                >
-                  <QrCode className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>View QR Code</TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={() => openEditDialog(participant)}
-                >
-                  <Pencil className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Edit</TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                  onClick={() => handleDelete(participant._id)}
-                  disabled={deleteMutation.isPending}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Delete</TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        </div>
+      <TableCell className="text-right px-4 py-3">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Actions">
+              <MoreVertical className="h-4 w-4" aria-hidden="true" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            {(participant.status === 'ambassador' || participant.status === 'travel_grant') && (
+              <DropdownMenuItem onClick={() => handleViewDetails(participant)}>
+                <Eye className="h-4 w-4 mr-2" aria-hidden="true" />
+                View Details
+              </DropdownMenuItem>
+            )}
+            <DropdownMenuItem onClick={() => generateQRCode(participant)}>
+              <QrCode className="h-4 w-4 mr-2" aria-hidden="true" />
+              View QR Code
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => openEditDialog(participant)}>
+              <Pencil className="h-4 w-4 mr-2" aria-hidden="true" />
+              Edit
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => handleDelete(participant._id)}
+              disabled={deleteMutation.isPending}
+              className="text-destructive focus:text-destructive"
+            >
+              <Trash2 className="h-4 w-4 mr-2" aria-hidden="true" />
+              Delete
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </TableCell>
     </motion.tr>
   );
@@ -343,7 +320,6 @@ export function ParticipantsContent() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(5);
   const [organizationFilter, setOrganizationFilter] = useState<string>('all');
-  const [orgFilterComboOpen, setOrgFilterComboOpen] = useState(false);
   
   // Multi-step form state
   const [isMultiAddOpen, setIsMultiAddOpen] = useState(false);
@@ -383,7 +359,7 @@ export function ParticipantsContent() {
     enabled: isDialogOpen && !editingParticipant,
   });
 
-  const { data: participantDetails } = useParticipantDetails(
+  const { data: participantDetails, isLoading: isDetailsLoading } = useParticipantDetails(
     selectedParticipantId || '',
     { enabled: !!selectedParticipantId }
   );
@@ -572,6 +548,17 @@ export function ParticipantsContent() {
   const filteredParticipants = processedParticipants;
 
   const referrals = participantDetails?.referredParticipants || [];
+
+  // Participant table columns
+  const columns = useMemo(() => createParticipantColumns({
+    participant: null as never, // This is just to satisfy type, not used
+    tableQRCodes,
+    onViewQR: generateQRCode,
+    onViewDetails: handleViewDetails,
+    onEdit: openEditDialog,
+    onDelete: handleDelete,
+    isDeleting: deleteMutation.isPending,
+  }), [tableQRCodes, deleteMutation.isPending]);
 
   // Selection helpers for bulk operations
   const allOnPageSelected = useMemo(() => {
@@ -928,9 +915,14 @@ export function ParticipantsContent() {
         animate={{ opacity: 1 }}
         className="space-y-6"
       >
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between p-6 -mx-6 -mt-6 mb-2 bg-gradient-to-r from-indigo-50 to-lavender-light border-b border-border/50">
           <div>
-            <h2 className="text-3xl font-bold tracking-tight">Participants</h2>
+            <h2 className="text-3xl font-bold tracking-tight flex items-center gap-3 text-indigo-900">
+              <div className="p-2.5 rounded-xl bg-primary shadow-primary">
+                <Users className="h-6 w-6 text-primary-foreground" />
+              </div>
+              Participants
+            </h2>
             <p className="text-muted-foreground">Loading participants...</p>
           </div>
         </div>
@@ -951,18 +943,18 @@ export function ParticipantsContent() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between p-6 -mx-6 -mt-6 mb-2 bg-gradient-to-r from-indigo-50 to-lavender-light border-b border-border/50">
         <div className="space-y-1">
-          <h2 className="text-3xl font-bold tracking-tight flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-primary/10">
-              <Users className="h-6 w-6 text-primary" />
+          <h2 className="text-3xl font-bold tracking-tight flex items-center gap-3 text-indigo-900">
+            <div className="p-2.5 rounded-xl bg-primary shadow-primary">
+              <Users className="h-6 w-6 text-primary-foreground" />
             </div>
-            Participants
+            <span>Participants</span>
           </h2>
           <p className="text-muted-foreground">
             Manage conference participants
             {filteredParticipants.length !== participants.length && (
-              <Badge variant="secondary" className="ml-2">
+              <Badge variant="secondary" className="ml-2 bg-lavender text-indigo font-medium">
                 {filteredParticipants.length} of {participants.length} shown
               </Badge>
             )}
@@ -1247,7 +1239,7 @@ export function ParticipantsContent() {
             setIsMultiAddOpen(open);
           }}>
             <DialogTrigger asChild>
-              <Button className="gap-2">
+              <Button className="gap-2 bg-indigo hover:bg-indigo-700 shadow-primary hover:shadow-primary-lg transition-all">
                 <UserPlus className="h-4 w-4" />
                 Add Participants
               </Button>
@@ -1574,19 +1566,21 @@ export function ParticipantsContent() {
         </div>
       </div>
 
-      {/* Search and Filter Bar */}
+      {/* Filters - Always Visible */}
       <Card className="border-dashed">
         <CardContent className="py-4">
           <div className="flex flex-col gap-4">
-            {/* Search Row */}
-            <div className="flex flex-col gap-4 md:flex-row md:items-center">
-              <div className="relative flex-1 max-w-md">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            {/* Search and Filters Row */}
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {/* Search */}
+              <div className="relative sm:col-span-2 lg:col-span-1">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
                 <Input
-                  placeholder="Search by name, email, organization..."
+                  placeholder="Search by name, email..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-9 bg-background"
+                  aria-label="Search participants"
                 />
                 {searchQuery && (
                   <Button
@@ -1594,548 +1588,169 @@ export function ParticipantsContent() {
                     size="icon"
                     className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
                     onClick={() => setSearchQuery('')}
+                    aria-label="Clear search"
                   >
-                    <X className="h-4 w-4" />
+                    <X className="h-4 w-4" aria-hidden="true" />
                   </Button>
                 )}
               </div>
-            </div>
-            
-            {/* Filters Row */}
-            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+
               {/* Status Filter */}
-              <div className="flex items-center gap-2">
-                <Filter className="h-4 w-4 text-muted-foreground shrink-0" />
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="w-[150px]">
-                    <SelectValue placeholder="Status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Statuses</SelectItem>
-                    <SelectItem value="regular">Regular</SelectItem>
-                    <SelectItem value="ambassador">Ambassador</SelectItem>
-                    <SelectItem value="travel_grant">Travel Grant</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="All statuses" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All statuses</SelectItem>
+                  <SelectItem value="regular">Regular</SelectItem>
+                  <SelectItem value="ambassador">Ambassador</SelectItem>
+                  <SelectItem value="travel_grant">Travel Grant</SelectItem>
+                </SelectContent>
+              </Select>
 
               {/* Organization Filter */}
-              <div className="flex items-center gap-2">
-                <Popover open={orgFilterComboOpen} onOpenChange={setOrgFilterComboOpen}>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      role="combobox"
-                      className="w-[180px] justify-between"
-                    >
-                      {organizationFilter === 'all' 
-                        ? 'All Organizations' 
-                        : organizationFilter}
-                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-[200px] p-0" align="start">
-                    <Command>
-                      <CommandInput placeholder="Search org..." />
-                      <CommandList>
-                        <CommandEmpty>No organization found.</CommandEmpty>
-                        <CommandGroup>
-                          <CommandItem
-                            value="all"
-                            onSelect={() => {
-                              setOrganizationFilter('all');
-                              setOrgFilterComboOpen(false);
-                            }}
-                          >
-                            <Check className={cn("mr-2 h-4 w-4", organizationFilter === 'all' ? "opacity-100" : "opacity-0")} />
-                            All Organizations
-                          </CommandItem>
-                          {uniqueOrganizations.map((org) => (
-                            <CommandItem
-                              key={org}
-                              value={org}
-                              onSelect={() => {
-                                setOrganizationFilter(org);
-                                setOrgFilterComboOpen(false);
-                              }}
-                            >
-                              <Check className={cn("mr-2 h-4 w-4", organizationFilter === org ? "opacity-100" : "opacity-0")} />
-                              {org}
-                            </CommandItem>
-                          ))}
-                        </CommandGroup>
-                      </CommandList>
-                    </Command>
-                  </PopoverContent>
-                </Popover>
-              </div>
-
-              <Separator orientation="vertical" className="h-8 hidden sm:block" />
+              <Select value={organizationFilter} onValueChange={setOrganizationFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="All organizations" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All organizations</SelectItem>
+                  {uniqueOrganizations.map((org) => (
+                    <SelectItem key={org} value={org}>
+                      {org}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
 
               {/* Group By */}
-              <div className="flex items-center gap-2">
-                <LayoutGrid className="h-4 w-4 text-muted-foreground shrink-0" />
-                <Select value={groupBy} onValueChange={(v: GroupByOption) => setGroupBy(v)}>
-                  <SelectTrigger className="w-40">
-                    <SelectValue placeholder="Group by" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">
-                      <div className="flex items-center gap-2">
-                        <List className="h-4 w-4" />
-                        No Grouping
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="status">
-                      <div className="flex items-center gap-2">
-                        <Group className="h-4 w-4" />
-                        Group by Status
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="organization">
-                      <div className="flex items-center gap-2">
-                        <Group className="h-4 w-4" />
-                        Group by Org
-                      </div>
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+              <Select value={groupBy} onValueChange={(v: GroupByOption) => setGroupBy(v)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="No grouping" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">No grouping</SelectItem>
+                  <SelectItem value="status">Group by status</SelectItem>
+                  <SelectItem value="organization">Group by organization</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-              {/* Clear Filters */}
-              {(statusFilter !== 'all' || organizationFilter !== 'all' || searchQuery || groupBy !== 'none') && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    setStatusFilter('all');
-                    setOrganizationFilter('all');
-                    setSearchQuery('');
-                    setGroupBy('none');
-                  }}
-                  className="text-muted-foreground hover:text-foreground"
-                >
-                  <X className="mr-1 h-4 w-4" />
+            {/* Clear filters */}
+            {(statusFilter !== 'all' || organizationFilter !== 'all' || searchQuery || groupBy !== 'none') && (
+              <div className="flex justify-end">
+                <Button variant="ghost" size="sm" onClick={() => {
+                  setStatusFilter('all');
+                  setOrganizationFilter('all');
+                  setSearchQuery('');
+                  setGroupBy('none');
+                }} className="gap-1">
+                  <X className="h-3 w-3" aria-hidden="true" />
                   Clear filters
                 </Button>
-              )}
-            </div>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
 
-      <Card className="overflow-hidden">
-        <CardHeader className="bg-linear-to-r from-muted/50 to-transparent">
+      <Card className="overflow-hidden border-border/60 shadow-sm">
+        <CardHeader className="border-b border-border/50">
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5 text-primary" aria-hidden="true" />
+              <CardTitle className="flex items-center gap-2 text-foreground">
+                <Users className="h-5 w-5 text-indigo" aria-hidden="true" />
                 All Participants
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-muted-foreground">
                 {filteredParticipants.length === participants.length
                   ? `A list of all ${participants.length} conference participants`
                   : `Showing ${filteredParticipants.length} of ${participants.length} participants`}
               </CardDescription>
             </div>
             <div className="flex items-center gap-3">
-              {/* Bulk Delete Button */}
-              {selectedIds.size > 0 && (
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={() => setIsBulkDeleteDialogOpen(true)}
-                  className="gap-2"
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <span>Show</span>
+                <Select
+                  value={itemsPerPage.toString()}
+                  onValueChange={(value) => {
+                    setItemsPerPage(parseInt(value));
+                    setCurrentPage(1);
+                  }}
                 >
-                  <Trash2 className="h-4 w-4" aria-hidden="true" />
-                  Delete ({selectedIds.size})
-                </Button>
-              )}
-              <Badge variant="secondary" className="text-sm">
+                  <SelectTrigger className="h-8 w-[70px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {[5, 10, 20, 50].map((option) => (
+                      <SelectItem key={option} value={option.toString()}>
+                        {option}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <span>per page</span>
+                <span className="text-muted-foreground/70">
+                  ({filteredParticipants.length} total)
+                </span>
+              </div>
+              <Badge variant="secondary" className="text-sm bg-indigo-100 text-indigo border-indigo/20">
                 {participants.length} total
               </Badge>
             </div>
           </div>
         </CardHeader>
-        <CardContent className="p-0">
-          {/* Page Size Selector - Before Table */}
-          {groupBy === 'none' && totalItems > 0 && (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground px-6 py-4">
-              <label htmlFor="participants-page-size" className="sr-only">Items per page</label>
-              <span aria-hidden="true">Show</span>
-              <Select value={String(itemsPerPage)} onValueChange={(v) => { setItemsPerPage(Number(v)); setCurrentPage(1); }}>
-                <SelectTrigger id="participants-page-size" className="w-[70px] h-8">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="5">5</SelectItem>
-                  <SelectItem value="10">10</SelectItem>
-                  <SelectItem value="25">25</SelectItem>
-                  <SelectItem value="50">50</SelectItem>
-                  <SelectItem value="100">100</SelectItem>
-                </SelectContent>
-              </Select>
-              <span aria-hidden="true">entries per page</span>
-            </div>
-          )}
-
-          {/* Grouped View */}
-          {groupBy !== 'none' && groupedParticipants ? (
-            <div className="divide-y">
-              {groupedParticipants.map(({ key, participants: groupParticipants }) => (
-                <div key={key} className="bg-background">
-                  <div className="sticky top-0 z-10 flex items-center justify-between bg-muted/70 backdrop-blur-sm px-6 py-3 border-b">
-                    <div className="flex items-center gap-3">
-                      <Badge variant={groupBy === 'status' ? 'default' : 'outline'} className="capitalize">
-                        {key}
-                      </Badge>
-                      <span className="text-sm text-muted-foreground">
-                        {groupParticipants.length} participant{groupParticipants.length !== 1 ? 's' : ''}
-                      </span>
-                    </div>
-                  </div>
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="bg-muted/20 hover:bg-muted/20">
-                        <TableHead className="w-[60px] text-center" scope="col">QR</TableHead>
-                        <TableHead className="text-center" scope="col">
-                          <button 
-                            onClick={() => handleSort('name')}
-                            className="flex items-center justify-center w-full hover:text-foreground transition-colors font-semibold"
-                            aria-label="Sort by name"
-                          >
-                            Name
-                            {renderSortIndicator('name')}
-                          </button>
-                        </TableHead>
-                        <TableHead className="text-center" scope="col">
-                          <button 
-                            onClick={() => handleSort('email')}
-                            className="flex items-center justify-center w-full hover:text-foreground transition-colors font-semibold"
-                            aria-label="Sort by email"
-                          >
-                            Email
-                            {renderSortIndicator('email')}
-                          </button>
-                        </TableHead>
-                        {groupBy !== 'organization' && (
-                          <TableHead className="text-center" scope="col">
-                            <button 
-                              onClick={() => handleSort('organization')}
-                              className="flex items-center justify-center w-full hover:text-foreground transition-colors font-semibold"
-                              aria-label="Sort by organization"
-                            >
-                              Organization
-                              {renderSortIndicator('organization')}
-                            </button>
-                          </TableHead>
-                        )}
-                        {groupBy !== 'status' && (
-                          <TableHead className="text-center" scope="col">
-                            <button 
-                              onClick={() => handleSort('status')}
-                              className="flex items-center justify-center w-full hover:text-foreground transition-colors font-semibold"
-                              aria-label="Sort by status"
-                            >
-                              Status
-                              {renderSortIndicator('status')}
-                            </button>
-                          </TableHead>
-                        )}
-                        <TableHead className="text-center w-[140px]" scope="col">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {groupParticipants.map((participant, index) => (
-                        <ParticipantTableRow
-                          key={participant._id}
-                          participant={participant}
-                          index={index}
-                          tableQRCodes={tableQRCodes}
-                          generateQRCode={generateQRCode}
-                          handleViewDetails={handleViewDetails}
-                          openEditDialog={openEditDialog}
-                          handleDelete={handleDelete}
-                          deleteMutation={deleteMutation}
-                          hideOrganization={groupBy === 'organization'}
-                          hideStatus={groupBy === 'status'}
-                        />
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              ))}
-            </div>
-          ) : (
-            /* Standard Table View */
-            <>
-              <Table role="table" aria-label="Participants list">
-                <TableHeader>
-                  <TableRow className="bg-muted/30 hover:bg-muted/30">
-                    <TableHead className="w-[50px] text-center" scope="col">
-                      <Checkbox
-                        checked={allOnPageSelected}
-                        ref={(el) => {
-                          if (el) {
-                            (el as HTMLButtonElement & { indeterminate: boolean }).indeterminate = someOnPageSelected;
-                          }
-                        }}
-                        onCheckedChange={handleSelectAll}
-                        aria-label="Select all participants on this page"
-                      />
-                    </TableHead>
-                    <TableHead className="w-[60px] text-center" scope="col">QR</TableHead>
-                    <TableHead className="text-center" scope="col">
-                      <button 
-                        onClick={() => handleSort('name')}
-                        className="flex items-center justify-center w-full hover:text-foreground transition-colors font-semibold"
-                        aria-label="Sort by name"
-                      >
-                        Name
-                        {renderSortIndicator('name')}
-                      </button>
-                    </TableHead>
-                    <TableHead className="text-center" scope="col">
-                      <button 
-                        onClick={() => handleSort('email')}
-                        className="flex items-center justify-center w-full hover:text-foreground transition-colors font-semibold"
-                        aria-label="Sort by email"
-                      >
-                        Email
-                        {renderSortIndicator('email')}
-                      </button>
-                    </TableHead>
-                    <TableHead className="text-center" scope="col">
-                      <button 
-                        onClick={() => handleSort('organization')}
-                        className="flex items-center justify-center w-full hover:text-foreground transition-colors font-semibold"
-                        aria-label="Sort by organization"
-                      >
-                        Organization
-                        {renderSortIndicator('organization')}
-                      </button>
-                    </TableHead>
-                    <TableHead className="text-center" scope="col">
-                      <button 
-                        onClick={() => handleSort('status')}
-                        className="flex items-center justify-center w-full hover:text-foreground transition-colors font-semibold"
-                        aria-label="Sort by status"
-                      >
-                        Status
-                        {renderSortIndicator('status')}
-                      </button>
-                    </TableHead>
-                    <TableHead className="text-center w-[140px]" scope="col">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  <AnimatePresence mode="popLayout">
-                    {paginatedParticipants.length > 0 ? (
-                      paginatedParticipants.map((participant, index) => {
-                        const isSelected = selectedIds.has(participant._id);
-                        return (
-                          <motion.tr
-                            key={participant._id}
-                            variants={tableRowVariants}
-                            initial="hidden"
-                            animate="visible"
-                            exit="exit"
-                            transition={{ delay: index * 0.02, duration: 0.15 }}
-                            className={`border-b transition-colors hover:bg-muted/50 group ${isSelected ? 'bg-primary/5' : ''}`}
-                            data-state={isSelected ? 'selected' : undefined}
-                          >
-                            <TableCell className="text-center py-2">
-                              <Checkbox
-                                checked={isSelected}
-                                onCheckedChange={(checked) => handleSelectOne(participant._id, !!checked)}
-                                aria-label={`Select ${participant.name}`}
-                              />
-                            </TableCell>
-                            <TableCell className="py-2">
-                              <TooltipProvider>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <button
-                                      onClick={() => generateQRCode(participant)}
-                                      className="block rounded-md border border-transparent hover:border-primary/30 hover:shadow-sm transition-all p-0.5"
-                                    >
-                                      {tableQRCodes[participant.qrCode] ? (
-                                        /* eslint-disable-next-line @next/next/no-img-element */
-                                        <img
-                                          src={tableQRCodes[participant.qrCode]}
-                                          alt={`QR: ${participant.qrCode}`}
-                                          className="w-10 h-10 rounded"
-                                        />
-                                      ) : (
-                                        <div className="w-10 h-10 rounded bg-muted flex items-center justify-center">
-                                          <QrCode className="h-5 w-5 text-muted-foreground" />
-                                        </div>
-                                      )}
-                                    </button>
-                                  </TooltipTrigger>
-                                  <TooltipContent side="right" className="font-mono text-xs">
-                                    {participant.qrCode}
-                                    <br />
-                                    <span className="text-muted-foreground">Click to enlarge</span>
-                                  </TooltipContent>
-                                </Tooltip>
-                              </TooltipProvider>
-                            </TableCell>
-                            <TableCell className="font-medium text-center">
-                              <span className="truncate max-w-[200px] block">{participant.name}</span>
-                            </TableCell>
-                            <TableCell className="text-center">
-                              <span className="text-muted-foreground truncate max-w-[250px] block">{participant.email}</span>
-                            </TableCell>
-                            <TableCell className="text-center">
-                              {participant.organization ? (
-                                <Badge variant="outline" className="font-normal">
-                                  {participant.organization}
-                                </Badge>
-                              ) : (
-                                <span className="text-muted-foreground">—</span>
-                              )}
-                            </TableCell>
-                            <TableCell className="text-center">
-                              <Badge
-                                variant={
-                                  participant.status === 'ambassador'
-                                    ? 'default'
-                                    : participant.status === 'travel_grant'
-                                    ? 'secondary'
-                                    : 'outline'
-                                }
-                                className="capitalize"
-                              >
-                                {participant.status === 'travel_grant' ? 'Travel Grant' : participant.status}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="text-center">
-                              <div className="flex justify-center gap-1">
-                                {(participant.status === 'ambassador' || participant.status === 'travel_grant') && (
-                                  <TooltipProvider>
-                                    <Tooltip>
-                                      <TooltipTrigger asChild>
-                                        <Button
-                                          variant="ghost"
-                                          size="icon"
-                                          className="h-8 w-8"
-                                          onClick={() => handleViewDetails(participant)}
-                                        >
-                                          <Eye className="h-4 w-4" />
-                                        </Button>
-                                      </TooltipTrigger>
-                                      <TooltipContent>View Details</TooltipContent>
-                                    </Tooltip>
-                                  </TooltipProvider>
-                                )}
-                                <TooltipProvider>
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-8 w-8"
-                                        onClick={() => generateQRCode(participant)}
-                                      >
-                                        <QrCode className="h-4 w-4" />
-                                      </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent>View QR Code</TooltipContent>
-                                  </Tooltip>
-                                </TooltipProvider>
-                                <TooltipProvider>
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-8 w-8"
-                                        onClick={() => openEditDialog(participant)}
-                                      >
-                                        <Pencil className="h-4 w-4" />
-                                      </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent>Edit</TooltipContent>
-                                  </Tooltip>
-                                </TooltipProvider>
-                                <TooltipProvider>
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                                        onClick={() => handleDelete(participant._id)}
-                                        disabled={deleteMutation.isPending}
-                                      >
-                                        <Trash2 className="h-4 w-4" />
-                                      </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent>Delete</TooltipContent>
-                                  </Tooltip>
-                                </TooltipProvider>
-                              </div>
-                            </TableCell>
-                          </motion.tr>
-                        );
-                      })
-                    ) : (
-                      <TableRow>
-                        <TableCell colSpan={7} className="h-32">
-                          <div className="flex flex-col items-center justify-center text-center">
-                            <Users className="h-10 w-10 text-muted-foreground/50 mb-2" aria-hidden="true" />
-                            <p className="text-muted-foreground font-medium">
-                              {searchQuery || statusFilter !== 'all' || organizationFilter !== 'all'
-                                ? 'No participants match your filters'
-                                : 'No participants yet'}
-                            </p>
-                            <p className="text-sm text-muted-foreground/70">
-                              {searchQuery || statusFilter !== 'all' || organizationFilter !== 'all'
-                                ? 'Try adjusting your search or filter criteria'
-                                : 'Add your first participant to get started'}
-                            </p>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </AnimatePresence>
-                </TableBody>
-              </Table>
-
-              {/* Pagination Controls - Bottom Right */}
-              {groupBy === 'none' && totalItems > 0 && (
-                <nav 
-                  className="flex items-center justify-end gap-2 border-t px-6 py-4 bg-muted/20"
-                  aria-label="Participants table pagination"
-                >
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                    disabled={currentPage === 1}
-                    aria-label="Go to previous page"
-                  >
-                    <ChevronLeft className="h-4 w-4 mr-1" aria-hidden="true" />
-                    Previous
-                  </Button>
-                  <span className="text-sm min-w-[100px] text-center" aria-live="polite">
-                    Page {currentPage} of {totalPages || 1}
-                  </span>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                    disabled={currentPage === totalPages || totalPages === 0}
-                    aria-label="Go to next page"
-                  >
-                    Next
-                    <ChevronRight className="h-4 w-4 ml-1" aria-hidden="true" />
-                  </Button>
-                </nav>
-              )}
-            </>
-          )}
+        <CardContent>
+          <DataTable
+            data={paginatedParticipants}
+            columns={columns}
+            getRowId={(row) => row._id}
+            selectable={true}
+            selectedIds={selectedIds}
+            onSelectionChange={setSelectedIds}
+            bulkDeleteEnabled={true}
+            onBulkDelete={async (ids) => {
+              setIsBulkDeleting(true);
+              for (const id of ids) {
+                try {
+                  await deleteMutation.mutateAsync(id);
+                } catch {
+                  // Continue deleting other items even if one fails
+                }
+              }
+              setIsBulkDeleting(false);
+              setSelectedIds(new Set());
+            }}
+            deleteConfirmMessage={(count) => (
+              <>
+                <p>
+                  This action cannot be undone. This will permanently delete{' '}
+                  <strong className="text-foreground">{count}</strong>{' '}
+                  participant{count !== 1 ? 's' : ''} and all associated data including 
+                  check-ins, session registrations, and referral records.
+                </p>
+              </>
+            )}
+            isLoading={false}
+            emptyMessage={
+              searchQuery || statusFilter !== 'all' || organizationFilter !== 'all'
+                ? 'No participants match your filters'
+                : 'No participants yet'
+            }
+            emptyDescription={
+              searchQuery || statusFilter !== 'all' || organizationFilter !== 'all'
+                ? 'Try adjusting your search or filter criteria'
+                : 'Add your first participant to get started'
+            }
+            currentPage={currentPage}
+            totalPages={totalPages}
+            itemsPerPage={itemsPerPage}
+            totalItems={filteredParticipants.length}
+            onPageChange={setCurrentPage}
+            stickyHeader={true}
+            maxHeight="600px"
+            ariaLabel="Participants table"
+          />
         </CardContent>
       </Card>
 
@@ -2203,239 +1818,13 @@ export function ParticipantsContent() {
         </DialogContent>
       </Dialog>
 
-      {/* Participant Details Dialog */}
-      <Dialog open={isDetailDialogOpen} onOpenChange={handleDetailDialogChange}>
-        <DialogContent className="sm:max-w-3xl overflow-hidden p-0">
-          <DialogHeader className="space-y-1 border-b bg-muted/40 px-6 py-5 text-left">
-            <DialogTitle className="text-2xl font-semibold">
-              {selectedParticipant ? selectedParticipant.name : 'Participant'}
-            </DialogTitle>
-            <DialogDescription className="text-sm text-muted-foreground">
-              {selectedParticipant
-                ? `Complete profile for ${selectedParticipant.email}`
-                : 'Participant profile overview'}
-            </DialogDescription>
-          </DialogHeader>
-          <ScrollArea className="max-h-[70vh]">
-            <div className="space-y-6 p-6">
-              {participantDetails && selectedParticipant ? (
-                <div className="space-y-6">
-                  <section className="rounded-2xl border bg-background/90 shadow-sm">
-                    <div className="grid gap-6 p-6 md:grid-cols-[1.5fr_1fr] md:items-center">
-                      <div className="space-y-4">
-                        <div className="space-y-2">
-                          <p className="text-sm text-muted-foreground">Email</p>
-                          <p className="text-base font-medium">{selectedParticipant.email}</p>
-                        </div>
-                        <div className="space-y-2">
-                          <p className="text-sm text-muted-foreground">Organization</p>
-                          <p className="text-base font-medium">{selectedParticipant.organization || 'Not provided'}</p>
-                        </div>
-                        <div className="flex flex-wrap items-center gap-3">
-                          <Badge variant={
-                            selectedParticipant.status === 'ambassador'
-                              ? 'default'
-                              : selectedParticipant.status === 'travel_grant'
-                              ? 'secondary'
-                              : 'outline'
-                          } className="capitalize">
-                            {selectedParticipant.status === 'travel_grant'
-                              ? 'Travel Grant'
-                              : selectedParticipant.status.replace('_', ' ')}
-                          </Badge>
-                          <code className="rounded-md bg-muted px-2 py-1 text-xs font-medium">
-                            QR: {selectedParticipant.qrCode}
-                          </code>
-                        </div>
-                      </div>
-                      {detailIsAmbassador ? (
-                        <div className="flex flex-col items-start gap-3 rounded-xl border border-primary/20 bg-primary/5 p-4">
-                          <p className="text-sm font-medium text-primary">Ambassador Program</p>
-                          <div className="flex items-center gap-3">
-                            <Users className="h-10 w-10 rounded-full bg-primary text-primary-foreground p-2" />
-                            <div>
-                              <p className="text-3xl font-semibold text-primary">
-                                {participantDetails.scores?.points ?? 0}
-                              </p>
-                              <p className="text-xs text-muted-foreground">Total points accumulated</p>
-                            </div>
-                          </div>
-                          <Button
-                            type="button"
-                            variant="secondary"
-                            size="sm"
-                            onClick={openReferralsModal}
-                          >
-                            <Users className="mr-2 h-4 w-4" />
-                            View Referrals
-                          </Button>
-                          <p className="text-xs text-muted-foreground">
-                            {referrals.length
-                              ? `${referrals.length} active referral${referrals.length === 1 ? '' : 's'}`
-                              : 'No referrals have been added yet.'}
-                          </p>
-                        </div>
-                      ) : detailIsTravelGrant ? (
-                        <div className="flex flex-col gap-3 rounded-xl border border-secondary/30 bg-secondary/10 p-4">
-                          <p className="text-sm font-medium text-secondary-foreground">Travel Grant Status</p>
-                          <div className="flex items-center gap-2">
-                            <CheckCircle2
-                              className={`h-5 w-5 ${participantDetails.scores?.applied ? 'text-secondary-foreground' : 'text-muted-foreground'}`}
-                            />
-                            <span className="text-sm">
-                              Applied: {participantDetails.scores?.applied ? 'Yes' : 'No'}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <CheckCircle2
-                              className={`h-5 w-5 ${participantDetails.scores?.approved ? 'text-secondary-foreground' : 'text-muted-foreground'}`}
-                            />
-                            <span className="text-sm">
-                              Approved: {participantDetails.scores?.approved ? 'Yes' : 'Pending'}
-                            </span>
-                          </div>
-                        </div>
-                      ) : null}
-                    </div>
-                  </section>
-
-                  {detailIsAmbassador && (
-                    <section className="rounded-2xl border bg-linear-to-br from-primary/5 via-background to-background p-6">
-                      <div className="flex flex-wrap items-center justify-between gap-4">
-                        <div>
-                          <h3 className="text-lg font-semibold">Ambassador Performance</h3>
-                          <p className="text-sm text-muted-foreground">
-                            Keep track of engagement metrics and referral activity.
-                          </p>
-                        </div>
-                        <Badge variant="outline" className="bg-white/60">
-                          {referrals.length} referral{referrals.length === 1 ? '' : 's'}
-                        </Badge>
-                      </div>
-                      <Separator className="my-4" />
-                      <div className="grid gap-4 md:grid-cols-2">
-                        <div className="rounded-xl border border-primary/20 bg-white/70 p-4 shadow-sm">
-                          <p className="text-sm text-muted-foreground">Total Points</p>
-                          <p className="mt-1 text-3xl font-semibold text-primary">
-                            {participantDetails.scores?.points ?? 0}
-                          </p>
-                          <p className="mt-2 text-xs text-muted-foreground">
-                            Includes ambassador check-ins and referral activity.
-                          </p>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={openReferralsModal}
-                          className="rounded-xl border border-primary/10 bg-primary/5 p-4 shadow-sm transition-all hover:border-primary/30 hover:bg-primary/10 hover:shadow-md cursor-pointer text-left"
-                        >
-                          <p className="text-sm text-muted-foreground">Active Referrals</p>
-                          <p className="mt-1 text-3xl font-semibold text-primary">
-                            {participantDetails.scores?.referralCount ?? 0}
-                          </p>
-                          <p className="mt-2 flex items-center gap-1 text-xs text-muted-foreground">
-                            <Users className="h-3 w-3" />
-                            Participants directly referred by this ambassador.
-                          </p>
-                          <p className="mt-2 text-xs font-medium text-primary">
-                            Click to view details →
-                          </p>
-                        </button>
-                      </div>
-                    </section>
-                  )}
-
-                  <section className="rounded-2xl border bg-background/90 p-6">
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                      <div>
-                        <h3 className="text-lg font-semibold">Registered Sessions</h3>
-                        <p className="text-sm text-muted-foreground">
-                          Every session the participant is currently confirmed for.
-                        </p>
-                      </div>
-                      <Badge variant="secondary" className="capitalize">
-                        {detailSessions.length} session{detailSessions.length === 1 ? '' : 's'}
-                      </Badge>
-                    </div>
-                    <Separator className="my-4" />
-                    {detailSessions.length ? (
-                      <div className="space-y-3">
-                        {detailSessions.map((session) => (
-                          <div
-                            key={session.id}
-                            className="flex flex-col gap-3 rounded-xl border border-muted bg-muted/10 px-4 py-3 md:flex-row md:items-center md:justify-between"
-                          >
-                            <div>
-                              <p className="font-medium">{session.name}</p>
-                              <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
-                                <Calendar className="h-3 w-3" /> {formatDateTime(session.registeredAt)}
-                              </p>
-                            </div>
-                            <Badge
-                              variant={session.status === 'confirmed' ? 'default' : 'outline'}
-                              className="self-start capitalize md:self-center"
-                            >
-                              {session.status.replace('_', ' ')}
-                            </Badge>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-sm text-muted-foreground">No sessions registered yet.</p>
-                    )}
-                  </section>
-
-                  <section className="rounded-2xl border bg-background/90 p-6">
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                      <div>
-                        <h3 className="text-lg font-semibold">Recent Check-ins</h3>
-                        <p className="text-sm text-muted-foreground">
-                          Latest attendance events recorded for this participant.
-                        </p>
-                      </div>
-                      <Badge variant="outline">
-                        {detailCheckIns.length} total
-                      </Badge>
-                    </div>
-                    <Separator className="my-4" />
-                    {detailCheckIns.length ? (
-                      <div className="space-y-3">
-                        {detailCheckIns.slice(0, 6).map((checkIn) => {
-                          const session = checkIn.sessionId as { _id?: string; name?: string } | string | undefined;
-                          const sessionName = (typeof session === 'object' && session?.name) || 'Session';
-                          const checkInTime =
-                            checkIn.createdAt || (checkIn as { checkedInAt?: string; checkInTime?: string }).checkedInAt || (checkIn as { checkedInAt?: string; checkInTime?: string }).checkInTime;
-                          return (
-                            <div
-                              key={checkIn._id}
-                              className="flex flex-col gap-3 rounded-xl border border-muted bg-muted/10 px-4 py-3 md:flex-row md:items-center md:justify-between"
-                            >
-                              <div>
-                                <p className="font-medium">{sessionName}</p>
-                                <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
-                                  <Clock className="h-3 w-3" /> {formatDateTime(checkInTime)}
-                                </p>
-                              </div>
-                              <Badge variant={checkIn.isLate ? 'secondary' : 'default'} className="self-start capitalize md:self-center">
-                                {checkIn.isLate ? 'Late' : 'On Time'}
-                              </Badge>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    ) : (
-                      <p className="text-sm text-muted-foreground">No check-ins recorded yet.</p>
-                    )}
-                  </section>
-                </div>
-              ) : (
-                <div className="py-10 text-center text-sm text-muted-foreground">
-                  Loading participant details…
-                </div>
-              )}
-            </div>
-          </ScrollArea>
-        </DialogContent>
-      </Dialog>
+      <ParticipantProfileModal
+        open={isDetailDialogOpen}
+        onOpenChange={handleDetailDialogChange}
+        participant={selectedParticipant}
+        details={participantDetails || null}
+        isLoading={isDetailsLoading}
+      />
 
       {/* Ambassador Referrals Dialog */}
       <Dialog open={isReferralDialogOpen} onOpenChange={handleReferralDialogChange}>
@@ -2483,43 +1872,6 @@ export function ParticipantsContent() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      {/* Bulk Delete Confirmation Dialog */}
-      <AlertDialog open={isBulkDeleteDialogOpen} onOpenChange={setIsBulkDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-destructive" />
-              Delete {selectedIds.size} participant{selectedIds.size === 1 ? '' : 's'}?
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the selected 
-              participant{selectedIds.size === 1 ? '' : 's'} and all associated data including 
-              check-ins, session registrations, and referral records.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isBulkDeleting}>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleBulkDelete}
-              disabled={isBulkDeleting}
-              className="bg-destructive text-white hover:bg-destructive/90"
-            >
-              {isBulkDeleting ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Deleting...
-                </>
-              ) : (
-                <>
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  Delete {selectedIds.size} participant{selectedIds.size === 1 ? '' : 's'}
-                </>
-              )}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }

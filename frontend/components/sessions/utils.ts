@@ -63,7 +63,7 @@ export function rowsToBulkSessions(rows: string[][], hasHeader: boolean): BulkSe
   return dataRows
     .filter(row => row.some(cell => cell.trim()))
     .map((row, index) => {
-      const [name, description, startTime, endTime, location, capacity, isOpen] = row;
+      const [name, description, startTime, endTime, location, capacity, isOpen, requiresRegistration] = row;
       
       const startDate = parseDateTime(startTime) || format(new Date(now.getTime() + (index + 1) * 60 * 60 * 1000), "yyyy-MM-dd'T'HH:mm");
       const endDate = parseDateTime(endTime) || format(new Date(new Date(startDate).getTime() + 60 * 60 * 1000), "yyyy-MM-dd'T'HH:mm");
@@ -77,6 +77,11 @@ export function rowsToBulkSessions(rows: string[][], hasHeader: boolean): BulkSe
         location: location?.trim() || '',
         isOpen: isOpen?.toLowerCase() === 'true' || isOpen?.toLowerCase() === 'yes' || isOpen === '1',
         capacity: capacity ? parseInt(capacity) || undefined : undefined,
+        requiresRegistration: requiresRegistration?.toLowerCase() === 'true' || requiresRegistration?.toLowerCase() === 'yes' || requiresRegistration === '1',
+        // Per-session timing - undefined for bulk imports (use system defaults)
+        autoOpenMinutesBefore: undefined,
+        autoEndGraceMinutes: undefined,
+        lateThresholdMinutes: undefined,
       };
     });
 }
@@ -126,6 +131,11 @@ export function getDefaultFormData(): SessionFormData {
     location: '',
     isOpen: false,
     capacity: undefined,
+    requiresRegistration: false,
+    // Per-session timing - undefined means use system defaults
+    autoOpenMinutesBefore: undefined,
+    autoEndGraceMinutes: undefined,
+    lateThresholdMinutes: undefined,
   };
 }
 
@@ -144,6 +154,11 @@ export function createEmptyBulkSession(existingCount: number = 0): BulkSessionEn
     location: '',
     isOpen: false,
     capacity: undefined,
+    requiresRegistration: false,
+    // Per-session timing - undefined means use system defaults
+    autoOpenMinutesBefore: undefined,
+    autoEndGraceMinutes: undefined,
+    lateThresholdMinutes: undefined,
   };
 }
 

@@ -6,3 +6,4 @@ export * from './reports';
 export * from './bulk';
 export * from './health';
 export * from './realtime';
+export * from './settings';

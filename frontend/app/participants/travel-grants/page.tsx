@@ -1,4 +1,4 @@
-import { TravelGrantsContent } from '@/components/travel-grants-content';
+import { TravelGrantsContent } from '@/components/travel-grants';
 
 export const metadata = {
   title: 'Travel Grants | IASTAM Check-in',

@@ -1122,6 +1122,21 @@ export class ParticipantsService implements OnModuleInit {
       throw new EntityNotFoundException('Participant', id);
     }
 
+    // Auto-sync organization referrals if ambassador has an organization
+    if (updated.organization) {
+      try {
+        const syncResult = await this.syncOrganizationReferrals(id);
+        this.logger.log(
+          `Auto-synced ${syncResult.addedCount} referrals for new ambassador ${id}`,
+        );
+        return syncResult.ambassador;
+      } catch (error) {
+        this.logger.warn(
+          `Failed to auto-sync referrals for new ambassador ${id}: ${error.message}`,
+        );
+      }
+    }
+
     return updated;
   }
 
