@@ -22,7 +22,7 @@ dependencies:
   # Networking
   dio: ^5.8.0+1
   socket_io_client: ^3.1.4
-  connectivity_plus: ^6.1.4
+  connectivity_plus: ^7.0.0
   
   # QR Scanner
   mobile_scanner: ^7.0.1
