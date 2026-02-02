@@ -20,7 +20,7 @@ dependencies:
   flutter_riverpod: ^2.6.1
   
   # Networking
-  dio: ^5.8.0+1
+  dio: ^5.9.1
   socket_io_client: ^3.1.4
   connectivity_plus: ^6.1.4
   
