@@ -90,14 +90,9 @@ import { SettingsModule } from './modules/settings';
             // Add connection options for resilience
             maxRetriesPerRequest: 3,
             retryStrategy: (times: number) => {
-              if (times > 10) {
-                logger.error(
-                  'Bull Queue: Max retries reached for Redis connection',
-                );
-                // Return null to stop retrying (Bull will work in degraded mode)
-                return null;
-              }
-              const delay = Math.min(times * 100, 3000);
+              // Infinite retries with exponential backoff + jitter
+              // Cap at 5 seconds
+              const delay = Math.min(times * 100, 5000);
               logger.warn(
                 `Bull Queue: Redis reconnecting in ${delay}ms (attempt ${times})`,
               );

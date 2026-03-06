@@ -213,9 +213,14 @@ export class ParticipantRepository extends BaseRepository<ParticipantDocument> {
     }
 
     const skip = (page - 1) * limit;
-    
+
     // Validate sort field to prevent Remote Property Injection (CodeQL: js/remote-property-injection)
-    const safeSort = createSafeSortObject(sortBy, sortOrder, 'participant', 'ambassadorPoints');
+    const safeSort = createSafeSortObject(
+      sortBy,
+      sortOrder,
+      'participant',
+      'ambassadorPoints',
+    );
 
     const [data, total] = await Promise.all([
       this.participantModel
@@ -270,9 +275,14 @@ export class ParticipantRepository extends BaseRepository<ParticipantDocument> {
     }
 
     const skip = (page - 1) * limit;
-    
+
     // Validate sort field to prevent Remote Property Injection (CodeQL: js/remote-property-injection)
-    const safeSort = createSafeSortObject(sortBy, sortOrder, 'participant', 'travelGrantAppliedAt');
+    const safeSort = createSafeSortObject(
+      sortBy,
+      sortOrder,
+      'participant',
+      'travelGrantAppliedAt',
+    );
 
     const [data, total] = await Promise.all([
       this.participantModel

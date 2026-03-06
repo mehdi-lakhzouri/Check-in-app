@@ -36,13 +36,19 @@ const SESSION_SCHEDULER_QUEUE = 'session-scheduler';
 class MockBullRedisClient extends EventEmitter {
   status = 'ready';
   defineCommand() {}
-  disconnect() { return Promise.resolve(); }
-  quit() { return Promise.resolve(); }
+  disconnect() {
+    return Promise.resolve();
+  }
+  quit() {
+    return Promise.resolve();
+  }
   on(event: string, callback: (...args: any[]) => void) {
     super.on(event, callback);
     return this;
   }
-  toPromise() { return Promise.resolve(); }
+  toPromise() {
+    return Promise.resolve();
+  }
 }
 
 /**
@@ -108,7 +114,12 @@ type ModuleType = any;
 export async function createE2ETestApp(
   additionalModules: ModuleType[] = [],
 ): Promise<E2ETestContext> {
-  const mongoServer = await MongoMemoryServer.create();
+  const mongoServer = await MongoMemoryServer.create({
+    replSet: {
+      count: 1,
+      storageEngine: 'wiredTiger',
+    },
+  });
   const mongoUri = mongoServer.getUri();
 
   const moduleFixture: TestingModule = await Test.createTestingModule({

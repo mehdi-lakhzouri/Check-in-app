@@ -1,7 +1,10 @@
 import { Controller, Get, Put, Body } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
 import { SettingsService } from './settings.service';
-import type { GlobalTimingConfig, ApplicationSettings } from './settings.service';
+import type {
+  GlobalTimingConfig,
+  ApplicationSettings,
+} from './settings.service';
 import { UpdateTimingSettingsDto } from './dto';
 
 @ApiTags('Settings')
@@ -49,7 +52,8 @@ export class SettingsController {
         schedulerIntervalMs: {
           type: 'number',
           example: 30000,
-          description: 'How often the scheduler checks for session updates (ms)',
+          description:
+            'How often the scheduler checks for session updates (ms)',
         },
       },
     },

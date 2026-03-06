@@ -268,10 +268,53 @@ export function createMockCheckInsService() {
     remove: jest.fn(),
     removeBySession: jest.fn(),
     removeByParticipant: jest.fn(),
+    removeAttemptsByParticipant: jest.fn(),
     getStats: jest.fn(),
     getRecentCheckIns: jest.fn(),
     countBySession: jest.fn(),
     isCheckedIn: jest.fn(),
     reconcileAllSessionCounts: jest.fn(),
+  };
+}
+
+/**
+ * SessionCapacityService Mock Factory
+ */
+export function createMockSessionCapacityService() {
+  return {
+    reserveSlot: jest.fn(),
+    releaseSlot: jest.fn(),
+    incrementCheckInCountWithCapacity: jest.fn(),
+    getCapacityStatus: jest.fn(),
+    repairRedisCounter: jest.fn(),
+    scanAndSync: jest.fn(),
+    syncCapacity: jest.fn(),
+  };
+}
+
+/**
+ * SessionCacheService Mock Factory
+ */
+export function createMockSessionCacheService() {
+  return {
+    getSession: jest.fn(),
+    setSession: jest.fn(),
+    invalidateSession: jest.fn(),
+    getSessionStats: jest.fn(),
+    setSessionStats: jest.fn(),
+    setStats: jest.fn(),
+    invalidateSessionStats: jest.fn(),
+  };
+}
+
+/**
+ * SessionStatsService Mock Factory
+ */
+export function createMockSessionStatsService() {
+  return {
+    getStats: jest.fn(),
+    getUpcomingSessions: jest.fn(),
+    refreshStats: jest.fn(),
+    onModuleInit: jest.fn(),
   };
 }

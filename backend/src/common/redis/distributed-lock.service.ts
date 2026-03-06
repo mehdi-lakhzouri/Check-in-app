@@ -1,5 +1,5 @@
 import { Injectable, Inject, OnModuleInit } from '@nestjs/common';
-import { REDIS_CLIENT } from './redis.module';
+import { REDIS_CLIENT } from './redis.tokens';
 import type { RedisClientType } from 'redis';
 import { PinoLoggerService } from '../logger';
 
@@ -24,30 +24,6 @@ const RELEASE_LOCK_SCRIPT = `
   end
 `;
 
-/**
- * Distributed Lock Service
- *
- * Provides Redis-based distributed locking for multi-instance safety.
- * Uses the Redlock algorithm pattern for reliable distributed locks.
- *
- * Features:
- * - Atomic lock acquisition with TTL (auto-expiry)
- * - Safe release (only owner can release)
- * - Graceful fallback when Redis unavailable
- * - Lock ID tracking for ownership verification
- *
- * Usage:
- * ```typescript
- * const lock = await this.lockService.acquireLock('myResource', 5000);
- * if (lock.acquired) {
- *   try {
- *     // Critical section
- *   } finally {
- *     await lock.releaseLock();
- *   }
- * }
- * ```
- */
 @Injectable()
 export class DistributedLockService implements OnModuleInit {
   private readonly logger: PinoLoggerService;
@@ -96,15 +72,17 @@ export class DistributedLockService implements OnModuleInit {
     retryCount: number = 3,
     retryDelayMs: number = 100,
   ): Promise<LockResult> {
-    // Graceful fallback when Redis unavailable
+    // FAL-CLOSED: When Redis is unavailable, we must NOT assume we have the lock.
+    // This protects against split-brain scenarios where multiple instances
+    // think they 'safely' own the resource because the lock server is down.
     if (!this.isRedisAvailable()) {
-      this.logger.debug(
-        `Redis unavailable, skipping distributed lock for ${resource}`,
+      this.logger.error(
+        `Redis unavailable - failing lock acquisition for ${resource} (Safety First)`,
       );
       return {
-        acquired: true, // Allow operation to proceed (single-instance mode)
+        acquired: false, // FAIL CLOSED
         lockId: null,
-        releaseLock: async () => {}, // No-op release
+        releaseLock: async () => {},
       };
     }
 

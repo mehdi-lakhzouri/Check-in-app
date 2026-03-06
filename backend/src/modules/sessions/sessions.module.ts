@@ -4,7 +4,13 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { BullModule } from '@nestjs/bull';
 import { Session, SessionSchema } from './schemas';
 import { SessionRepository } from './repositories';
-import { SessionsService, SessionSchedulerService } from './services';
+import {
+  SessionsService,
+  SessionSchedulerService,
+  SessionCapacityService,
+  SessionCacheService,
+  SessionStatsService,
+} from './services';
 import { SessionsController } from './controllers';
 import { RegistrationsModule } from '../registrations/registrations.module';
 import { CheckInsModule } from '../checkins/checkins.module';
@@ -28,6 +34,12 @@ import {
             host: configService.get<string>('REDIS_HOST', 'localhost'),
             port: configService.get<number>('REDIS_PORT', 6379),
             ...(password ? { password } : {}),
+            maxRetriesPerRequest: 3,
+            retryStrategy: (times: number) => {
+              // Infinite retries for queue connection too
+              const delay = Math.min(times * 100, 5000);
+              return delay;
+            },
           },
           defaultJobOptions: {
             removeOnComplete: 100,
@@ -46,12 +58,18 @@ import {
     SessionRepository,
     SessionSchedulerService,
     SessionSchedulerProcessor,
+    SessionCapacityService,
+    SessionCacheService,
+    SessionStatsService,
   ],
   exports: [
     SessionsService,
     SessionRepository,
     SessionSchedulerService,
     SessionSchedulerProcessor,
+    SessionCapacityService,
+    SessionCacheService,
+    SessionStatsService,
   ],
 })
 export class SessionsModule {}

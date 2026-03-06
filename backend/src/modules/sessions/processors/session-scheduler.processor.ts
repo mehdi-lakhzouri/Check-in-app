@@ -7,11 +7,13 @@ import {
 } from '@nestjs/bull';
 import * as Bull from 'bull';
 import { InjectModel } from '@nestjs/mongoose';
+import { Inject, forwardRef } from '@nestjs/common';
 import { Model } from 'mongoose';
 import { ConfigService } from '@nestjs/config';
 import { Session, SessionDocument, SessionStatus } from '../schemas';
 import { SessionLifecycleUpdate } from '../services/session-scheduler.service';
 import { PinoLoggerService } from '../../../common/logger';
+import { CheckInsService } from '../../checkins/services/checkins.service';
 
 export const SESSION_SCHEDULER_QUEUE = 'session-scheduler';
 
@@ -23,7 +25,14 @@ export interface AutoEndJobData {
   type: 'auto-end';
 }
 
-export type SessionSchedulerJobData = AutoOpenJobData | AutoEndJobData;
+export interface ReconcileJobData {
+  type: 'reconcile';
+}
+
+export type SessionSchedulerJobData =
+  | AutoOpenJobData
+  | AutoEndJobData
+  | ReconcileJobData;
 
 /**
  * Session Scheduler Processor
@@ -47,6 +56,8 @@ export class SessionSchedulerProcessor {
     @InjectModel(Session.name)
     private readonly sessionModel: Model<SessionDocument>,
     private readonly configService: ConfigService,
+    @Inject(forwardRef(() => CheckInsService))
+    private readonly checkInsService: CheckInsService,
   ) {
     this.logger = new PinoLoggerService();
     this.logger.setContext(SessionSchedulerProcessor.name);
@@ -116,7 +127,10 @@ export class SessionSchedulerProcessor {
     ) {
       return session.lateThresholdMinutes;
     }
-    return this.configService.get<number>('app.checkinLateThresholdMinutes', 10);
+    return this.configService.get<number>(
+      'app.checkinLateThresholdMinutes',
+      10,
+    );
   }
 
   @OnQueueActive()
@@ -149,10 +163,6 @@ export class SessionSchedulerProcessor {
   ): Promise<{ opened: number; sessions: string[] }> {
     this.logger.log('Processing auto-open-sessions job');
 
-    const globalAutoOpenMinutes = this.configService.get<number>(
-      'sessionScheduler.autoOpenMinutesBefore',
-      10,
-    );
     const now = new Date();
 
     // Find all SCHEDULED sessions that haven't ended yet
@@ -272,6 +282,26 @@ export class SessionSchedulerProcessor {
     }
 
     return { ended: endedSessions.length, sessions: endedSessions };
+  }
+
+  /**
+   * Process reconciliation job (Zombie Reservation Fix)
+   * This handles the P0 critical issue by fixing consistency drift.
+   */
+  @Process('reconcile-sessions')
+  async handleReconcile(
+    _job: Bull.Job<ReconcileJobData>,
+  ): Promise<{ fixed: number }> {
+    this.logger.log('Processing session reconciliation job (Zombie Fix)');
+
+    try {
+      const results = await this.checkInsService.reconcileAllSessionCounts();
+      const fixedCount = results.filter((r) => r.fixed).length;
+      return { fixed: fixedCount };
+    } catch (error) {
+      this.logger.error(`Reconciliation failed: ${error.message}`, error.stack);
+      throw error;
+    }
   }
 
   /**

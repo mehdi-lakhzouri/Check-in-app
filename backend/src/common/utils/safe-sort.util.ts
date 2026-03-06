@@ -14,11 +14,7 @@
 /**
  * Common sortable fields shared across entities
  */
-export const COMMON_SORT_FIELDS = [
-  'createdAt',
-  'updatedAt',
-  '_id',
-] as const;
+export const COMMON_SORT_FIELDS = ['createdAt', 'updatedAt', '_id'] as const;
 
 /**
  * Allowed sort fields for each entity type

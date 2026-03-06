@@ -192,8 +192,6 @@ export class RealtimeGateway
   server: Server;
 
   private readonly logger: PinoLoggerService;
-  private connectedClients: Map<string, { subscribedTo: Set<string> }> =
-    new Map();
 
   constructor(
     private readonly configService: ConfigService,
@@ -227,7 +225,6 @@ export class RealtimeGateway
 
   handleConnection(client: Socket) {
     this.logger.debug('Client connected', { clientId: client.id });
-    this.connectedClients.set(client.id, { subscribedTo: new Set() });
 
     // Send initial connection confirmation
     client.emit('connected', {
@@ -239,23 +236,14 @@ export class RealtimeGateway
 
   handleDisconnect(client: Socket) {
     this.logger.debug('Client disconnected', { clientId: client.id });
-    this.connectedClients.delete(client.id);
   }
-
-  // ============================================================================
-  // Subscription Handlers
-  // ============================================================================
 
   @SubscribeMessage('subscribe:ambassadors')
   async handleSubscribeAmbassadors(@ConnectedSocket() client: Socket) {
     this.logger.debug('Client subscribed to ambassadors', {
       clientId: client.id,
     });
-    const clientData = this.connectedClients.get(client.id);
-    if (clientData) {
-      clientData.subscribedTo.add('ambassadors');
-      void client.join('ambassadors');
-    }
+    void client.join('ambassadors');
 
     // Send initial ambassador data
     const leaderboard =
@@ -280,11 +268,7 @@ export class RealtimeGateway
     this.logger.debug('Client subscribed to travel grants', {
       clientId: client.id,
     });
-    const clientData = this.connectedClients.get(client.id);
-    if (clientData) {
-      clientData.subscribedTo.add('travel-grants');
-      void client.join('travel-grants');
-    }
+    void client.join('travel-grants');
 
     // Send initial travel grant data
     const [applications, stats] = await Promise.all([
@@ -303,11 +287,7 @@ export class RealtimeGateway
   @SubscribeMessage('subscribe:sessions')
   async handleSubscribeSessions(@ConnectedSocket() client: Socket) {
     this.logger.debug('Client subscribed to sessions', { clientId: client.id });
-    const clientData = this.connectedClients.get(client.id);
-    if (clientData) {
-      clientData.subscribedTo.add('sessions');
-      void client.join('sessions');
-    }
+    void client.join('sessions');
 
     // Send initial session data
     const sessions = await this.sessionsService.findAll({ limit: 100 });
@@ -359,11 +339,7 @@ export class RealtimeGateway
       clientId: client.id,
       channel: data.channel,
     });
-    const clientData = this.connectedClients.get(client.id);
-    if (clientData) {
-      clientData.subscribedTo.delete(data.channel);
-      void client.leave(data.channel);
-    }
+    void client.leave(data.channel);
   }
 
   // ============================================================================

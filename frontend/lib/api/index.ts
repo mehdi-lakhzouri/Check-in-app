@@ -8,3 +8,4 @@ export * from './services/sessions';
 export * from './services/participants';
 export * from './services/checkins';
 export * from './services/registrations';
+export * from './services/reports';

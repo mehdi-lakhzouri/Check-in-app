@@ -6,6 +6,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { ConfigService } from '@nestjs/config';
+import { RedisSingleflightService } from '../../../src/common/redis';
 import { ParticipantsService } from '../../../src/modules/participants/services/participants.service';
 import { ParticipantRepository } from '../../../src/modules/participants/repositories/participant.repository';
 import { CheckInsService } from '../../../src/modules/checkins/services/checkins.service';
@@ -14,13 +15,13 @@ import {
   EntityNotFoundException,
   EntityExistsException,
 } from '../../../src/common/exceptions';
+import { mockData, generateObjectId } from '../../utils/test-utils';
 import {
   createMockParticipantRepository,
   createMockConfigService,
   createMockCheckInsService,
   createMockRegistrationsService,
 } from '../../utils/mock-factories';
-import { mockData, generateObjectId } from '../../utils/test-utils';
 
 describe('ParticipantsService', () => {
   let service: ParticipantsService;
@@ -33,6 +34,10 @@ describe('ParticipantsService', () => {
     get: jest.fn(),
     set: jest.fn(),
     del: jest.fn(),
+  };
+
+  const mockSingleflight = {
+    execute: jest.fn().mockImplementation((key, factory) => factory()),
   };
 
   beforeEach(async () => {
@@ -63,6 +68,10 @@ describe('ParticipantsService', () => {
         {
           provide: RegistrationsService,
           useValue: registrationsService,
+        },
+        {
+          provide: RedisSingleflightService,
+          useValue: mockSingleflight,
         },
       ],
     }).compile();
@@ -334,11 +343,21 @@ describe('ParticipantsService', () => {
       const participantId = generateObjectId();
       const deletedParticipant = mockData.participant({ _id: participantId });
 
+      repository.findById.mockResolvedValue(deletedParticipant);
       repository.deleteById.mockResolvedValue(deletedParticipant);
+      checkInsService.removeByParticipant.mockResolvedValue(5);
+      registrationsService.removeByParticipant.mockResolvedValue(2);
+      checkInsService.removeAttemptsByParticipant.mockResolvedValue(3);
 
       const result = await service.remove(participantId);
 
-      expect(result).toEqual(deletedParticipant);
+      // The result should include the cascade information
+      expect(result._id).toEqual(deletedParticipant._id);
+      expect(result.cascade).toBeDefined();
+      expect(result.cascade?.deletedCheckIns).toBe(5);
+      expect(result.cascade?.deletedRegistrations).toBe(2);
+      expect(result.cascade?.deletedAttempts).toBe(3);
+      expect(repository.findById).toHaveBeenCalledWith(participantId);
       expect(repository.deleteById).toHaveBeenCalledWith(participantId);
     });
 

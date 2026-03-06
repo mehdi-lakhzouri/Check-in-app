@@ -1,28 +1,20 @@
-import { Module, Global } from '@nestjs/common';
+import { Module, Global, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { CacheModule } from '@nestjs/cache-manager';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { redisStore } from 'cache-manager-redis-yet';
 import { createClient, RedisClientType } from 'redis';
+import { DistributedLockService } from './distributed-lock.service';
+import { RedisSingleflightService } from './redis-singleflight.service';
+import { REDIS_CLIENT, REDIS_STATUS } from './redis.tokens';
+import type { RedisConnectionStatus } from './redis.tokens';
 
-export const REDIS_CLIENT = 'REDIS_CLIENT';
-export const REDIS_STATUS = 'REDIS_STATUS';
+// Re-export tokens for consumers
+export { REDIS_CLIENT, REDIS_STATUS } from './redis.tokens';
+export type { RedisConnectionStatus } from './redis.tokens';
 
 import { PinoLoggerService } from '../logger';
 const logger = new PinoLoggerService();
 logger.setContext('RedisModule');
-
-/**
- * Redis connection status tracker
- * Used by health checks and services to determine Redis availability
- */
-export interface RedisConnectionStatus {
-  cacheConnected: boolean;
-  clientConnected: boolean;
-  lastError: string | null;
-  lastErrorTime: Date | null;
-  reconnectAttempts: number;
-  usingFallback: boolean;
-}
 
 // Global status tracker - shared across the application
 const redisStatus: RedisConnectionStatus = {
@@ -54,13 +46,17 @@ class NullRedisClient {
   }
 
   async set(_key: string, _value: string): Promise<string> {
-    this.logger.verbose('NullRedisClient.set called - no-op');
-    return 'OK';
+    this.logger.error('NullRedisClient.set called - THROWING SAFETY ERROR');
+    throw new Error(
+      'Redis Unavailable: Cannot perform write operation (SAFETY)',
+    );
   }
 
   async del(_key: string): Promise<number> {
-    this.logger.verbose('NullRedisClient.del called - no-op');
-    return 0;
+    this.logger.error('NullRedisClient.del called - THROWING SAFETY ERROR');
+    throw new Error(
+      'Redis Unavailable: Cannot perform delete operation (SAFETY)',
+    );
   }
 
   async exists(_key: string): Promise<number> {
@@ -69,13 +65,17 @@ class NullRedisClient {
   }
 
   async incr(_key: string): Promise<number> {
-    this.logger.verbose('NullRedisClient.incr called - returning 0');
-    return 0;
+    this.logger.error('NullRedisClient.incr called - THROWING SAFETY ERROR');
+    throw new Error(
+      'Redis Unavailable: Cannot perform increment operation (SAFETY)',
+    );
   }
 
   async decr(_key: string): Promise<number> {
-    this.logger.verbose('NullRedisClient.decr called - returning 0');
-    return 0;
+    this.logger.error('NullRedisClient.decr called - THROWING SAFETY ERROR');
+    throw new Error(
+      'Redis Unavailable: Cannot perform decrement operation (SAFETY)',
+    );
   }
 
   async expire(_key: string, _seconds: number): Promise<boolean> {
@@ -176,12 +176,13 @@ function parseRedisNodes(
 @Global()
 @Module({
   imports: [
+    ConfigModule,
     CacheModule.registerAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => {
-        const host = configService.get<string>('redis.host', 'localhost');
-        const port = configService.get<number>('redis.port', 6379);
-        const password = configService.get<string>('redis.password');
+        const host = configService.get<string>('REDIS_HOST', 'localhost');
+        const port = configService.get<number>('REDIS_PORT', 6379);
+        const password = configService.get<string>('REDIS_PASSWORD');
 
         try {
           const store = await redisStore({
@@ -206,36 +207,29 @@ function parseRedisNodes(
                 );
                 return delay;
               },
-              connectTimeout: 5000, // Reduced timeout for faster fallback
+              connectTimeout: 5000,
             },
             ...(password ? { password } : {}),
+            ttl: 600,
           });
 
           redisStatus.cacheConnected = true;
           redisStatus.usingFallback = false;
-          logger.log('✅ Redis Cache store initialized');
+          redisStatus.lastError = null;
+
           return {
-            store,
-            ttl: 60000, // Default 1 minute TTL
+            store: store as any,
+            ttl: 600,
           };
         } catch (error) {
-          // GRACEFUL FALLBACK: Use in-memory cache instead of crashing
           logger.error(
-            `Failed to initialize Redis Cache store: ${error.message}`,
+            `Failed to initialize Redis store: ${error.message} - falling back to memory`,
           );
-          logger.warn('⚠️ Falling back to in-memory cache - LIMITED CAPACITY');
-
           redisStatus.cacheConnected = false;
           redisStatus.lastError = error.message;
           redisStatus.lastErrorTime = new Date();
           redisStatus.usingFallback = true;
-
-          // Return in-memory cache configuration
-          return {
-            store: 'memory',
-            ttl: 60000,
-            max: 1000, // Limit entries to prevent memory leak
-          };
+          return { ttl: 600 };
         }
       },
       inject: [ConfigService],
@@ -404,10 +398,26 @@ function parseRedisNodes(
       },
       inject: [ConfigService],
     },
+    DistributedLockService,
+    RedisSingleflightService,
   ],
-  exports: [CacheModule, REDIS_CLIENT, REDIS_STATUS],
+  exports: [
+    CacheModule,
+    REDIS_CLIENT,
+    REDIS_STATUS,
+    DistributedLockService,
+    RedisSingleflightService,
+  ],
 })
-export class RedisModule {}
+export class RedisModule implements OnModuleInit, OnModuleDestroy {
+  onModuleInit() {
+    logger.log('Redis Module initialized');
+  }
+
+  onModuleDestroy() {
+    logger.log('Redis Module destroyed');
+  }
+}
 
 // Re-export DistributedLockService for convenience
 export { DistributedLockService } from './distributed-lock.service';

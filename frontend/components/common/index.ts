@@ -8,9 +8,19 @@
 export { PageHeader } from './page-header';
 export type { PageHeaderProps } from './page-header';
 
+export { DataPageLayout } from './data-page-layout';
+export type { DataPageLayoutProps } from './data-page-layout';
+
 // Form Components
 export { SearchInput } from './search-input';
 export type { SearchInputProps } from './search-input';
+
+// Search & Filter Components
+export { SearchFilterBar } from './search-filter-bar';
+export type {
+  SearchFilterBarProps,
+  FilterDropdownConfig,
+} from './search-filter-bar';
 
 // Dialog Components
 export { DeleteConfirmDialog } from './delete-confirm-dialog';

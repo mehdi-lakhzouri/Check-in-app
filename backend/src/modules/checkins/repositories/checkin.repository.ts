@@ -54,7 +54,12 @@ export class CheckInRepository extends BaseRepository<CheckInDocument> {
     const skip = (page - 1) * limit;
 
     // Validate sort field to prevent Remote Property Injection (CodeQL: js/remote-property-injection)
-    const safeSort = createSafeSortObject(filterDto.sortBy, filterDto.sortOrder, 'checkIn', 'checkInTime');
+    const safeSort = createSafeSortObject(
+      filterDto.sortBy,
+      filterDto.sortOrder,
+      'checkIn',
+      'checkInTime',
+    );
 
     const [data, total] = await Promise.all([
       this.checkInModel

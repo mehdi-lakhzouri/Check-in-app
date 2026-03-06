@@ -121,6 +121,9 @@ export function SessionsTable({
   };
 
   const handleBulkDelete = useCallback(async (ids: string[]) => {
+    // Clear selection to close the dialog
+    setSelectedIds(new Set());
+    
     for (const id of ids) {
       try {
         await new Promise<void>((resolve, reject) => {
@@ -376,20 +379,6 @@ export function SessionsTable({
             selectable={true}
             selectedIds={selectedIds}
             onSelectionChange={setSelectedIds}
-            bulkDeleteEnabled={true}
-            onBulkDelete={handleBulkDelete}
-            deleteConfirmMessage={(count) => (
-              <>
-                <p>
-                  You are about to delete{' '}
-                  <strong className="text-foreground">{count}</strong>{' '}
-                  session{count !== 1 ? 's' : ''}.
-                </p>
-                <p className="text-destructive font-medium mt-2">
-                  This action cannot be undone. All check-ins and registrations associated with these sessions will also be affected.
-                </p>
-              </>
-            )}
             isLoading={false}
             emptyMessage="No sessions match your filters"
             emptyDescription="Try adjusting your search or filter criteria"
@@ -417,9 +406,16 @@ export function SessionsTable({
               <AlertTriangle className="h-5 w-5 text-destructive" aria-hidden="true" />
               Delete Session
             </AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete this session? This action cannot be undone.
-              All check-ins and registrations associated with this session will also be affected.
+            <AlertDialogDescription className="space-y-2">
+              <p>Are you sure you want to delete this session? <strong>This action cannot be undone.</strong></p>
+              <p className="text-sm text-muted-foreground">
+                The following related data will be <strong className="text-destructive">permanently deleted</strong>:
+              </p>
+              <ul className="text-sm text-muted-foreground list-disc pl-4 space-y-1">
+                <li>All check-ins for this session</li>
+                <li>All registrations for this session</li>
+                <li>All check-in attempts (audit logs) for this session</li>
+              </ul>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -444,6 +440,58 @@ export function SessionsTable({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+        )}
+      </AnimatePresence>
+
+      {/* Bulk Delete Confirmation Dialog */}
+      <AnimatePresence>
+        {selectedIds.size > 0 && (
+          <AlertDialog open={true} onOpenChange={() => setSelectedIds(new Set())}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle className="flex items-center gap-2">
+                  <AlertTriangle className="h-5 w-5 text-destructive" aria-hidden="true" />
+                  Delete {selectedIds.size} Session{selectedIds.size > 1 ? 's' : ''}
+                </AlertDialogTitle>
+                <AlertDialogDescription className="space-y-2">
+                  <p>Are you sure you want to delete <strong>{selectedIds.size} session{selectedIds.size > 1 ? 's' : ''}</strong>? <strong>This action cannot be undone.</strong></p>
+                  <p className="text-sm text-muted-foreground">
+                    For each session, the following related data will be <strong className="text-destructive">permanently deleted</strong>:
+                  </p>
+                  <ul className="text-sm text-muted-foreground list-disc pl-4 space-y-1">
+                    <li>All check-ins for the session</li>
+                    <li>All registrations for the session</li>
+                    <li>All check-in attempts (audit logs) for the session</li>
+                  </ul>
+                  <p className="text-sm font-medium text-destructive">
+                    Total impact: {selectedIds.size} session{selectedIds.size > 1 ? 's' : ''} and all their associated data will be permanently removed.
+                  </p>
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel onClick={() => setSelectedIds(new Set())}>
+                  Cancel
+                </AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => handleBulkDelete(Array.from(selectedIds))}
+                  disabled={deleteMutation.isPending}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  {deleteMutation.isPending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
+                      Deleting...
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 className="mr-2 h-4 w-4" aria-hidden="true" />
+                      Delete {selectedIds.size} Session{selectedIds.size > 1 ? 's' : ''}
+                    </>
+                  )}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         )}
       </AnimatePresence>
     </>

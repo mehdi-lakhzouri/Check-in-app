@@ -16,6 +16,7 @@ import {
   Shield,
   Award,
   Plane,
+  FileText,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -89,6 +90,11 @@ const navItems: NavItem[] = [
     title: 'Registrations',
     href: '/registrations',
     icon: ClipboardCheck,
+  },
+  {
+    title: 'Reports',
+    href: '/reports',
+    icon: FileText,
   },
 ];
 

@@ -44,12 +44,7 @@ export class RegistrationRepository extends BaseRepository<RegistrationDocument>
     filter: QueryFilter<RegistrationDocument>,
     pagination: RegistrationFilterDto,
   ): Promise<PaginatedResult<RegistrationDocument>> {
-    const {
-      page = 1,
-      limit = 10,
-      sortBy,
-      sortOrder,
-    } = pagination;
+    const { page = 1, limit = 10, sortBy, sortOrder } = pagination;
     const skip = (page - 1) * limit;
 
     // Validate sort field to prevent Remote Property Injection (CodeQL: js/remote-property-injection)

@@ -40,6 +40,7 @@ import {
   RegistrationStatus,
 } from '../modules/registrations/schemas';
 import databaseConfig from '../config/database.config';
+import { PinoLoggerService } from '../common/logger';
 
 // ============================================================================
 // Extended Seed Data Arrays
@@ -553,18 +554,22 @@ class Seeder {
   ) {}
 
   async clearAll(): Promise<void> {
-    console.log('🗑️  Clearing existing data...');
+    const logger = new PinoLoggerService();
+    logger.setContext('DatabaseSeeder');
+    logger.log('🗑️  Clearing existing data...');
     await Promise.all([
       this.participantModel.deleteMany({}),
       this.sessionModel.deleteMany({}),
       this.checkInModel.deleteMany({}),
       this.registrationModel.deleteMany({}),
     ]);
-    console.log('✅ All collections cleared');
+    logger.log('✅ All collections cleared');
   }
 
   async seedParticipants(): Promise<any[]> {
-    console.log('\n👥 Seeding Participants (200 records)...');
+    const logger = new PinoLoggerService();
+    logger.setContext('DatabaseSeeder');
+    logger.log('👥 Seeding Participants (200 records)...');
 
     const participants: any[] = [];
     let index = 0;
@@ -572,7 +577,7 @@ class Seeder {
     // =========================================================================
     // 40 Ambassadors with varying points and referrals
     // =========================================================================
-    console.log('   Creating 40 Ambassadors...');
+    logger.log('   Creating 40 Ambassadors...');
     for (let i = 0; i < 40; i++) {
       const firstName = randomElement(FIRST_NAMES);
       const lastName = randomElement(LAST_NAMES);
@@ -601,7 +606,7 @@ class Seeder {
     // =========================================================================
     // 60 Travel Grant Applicants (various states)
     // =========================================================================
-    console.log('   Creating 60 Travel Grant Applicants...');
+    logger.log('   Creating 60 Travel Grant Applicants...');
 
     // 20 Pending
     for (let i = 0; i < 20; i++) {
@@ -676,7 +681,7 @@ class Seeder {
     // =========================================================================
     // 100 Regular Participants
     // =========================================================================
-    console.log('   Creating 100 Regular Participants...');
+    logger.log('   Creating 100 Regular Participants...');
     for (let i = 0; i < 100; i++) {
       const firstName = randomElement(FIRST_NAMES);
       const lastName = randomElement(LAST_NAMES);

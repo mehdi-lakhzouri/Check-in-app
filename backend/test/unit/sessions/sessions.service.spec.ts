@@ -8,6 +8,9 @@ import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { ConfigService } from '@nestjs/config';
 import { SessionsService } from '../../../src/modules/sessions/services/sessions.service';
 import { SessionSchedulerService } from '../../../src/modules/sessions/services/session-scheduler.service';
+import { SessionCacheService } from '../../../src/modules/sessions/services/session-cache.service';
+import { SessionStatsService } from '../../../src/modules/sessions/services/session-stats.service';
+import { SessionCapacityService } from '../../../src/modules/sessions/services/session-capacity.service';
 import { SessionRepository } from '../../../src/modules/sessions/repositories/session.repository';
 import { REDIS_CLIENT } from '../../../src/common/redis';
 import {
@@ -17,6 +20,9 @@ import {
 import {
   createMockSessionRepository,
   createMockConfigService,
+  createMockSessionCapacityService,
+  createMockSessionCacheService,
+  createMockSessionStatsService,
 } from '../../utils/mock-factories';
 import { mockData, generateObjectId } from '../../utils/test-utils';
 
@@ -24,6 +30,7 @@ describe('SessionsService', () => {
   let service: SessionsService;
   let repository: ReturnType<typeof createMockSessionRepository>;
   let configService: ReturnType<typeof createMockConfigService>;
+  let statsService: ReturnType<typeof createMockSessionStatsService>;
 
   const mockCacheManager = {
     get: jest.fn(),
@@ -47,6 +54,9 @@ describe('SessionsService', () => {
   beforeEach(async () => {
     repository = createMockSessionRepository();
     configService = createMockConfigService();
+    const capacityService = createMockSessionCapacityService();
+    const cacheService = createMockSessionCacheService();
+    statsService = createMockSessionStatsService();
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -66,6 +76,18 @@ describe('SessionsService', () => {
         {
           provide: SessionSchedulerService,
           useValue: mockSchedulerService,
+        },
+        {
+          provide: SessionCacheService,
+          useValue: cacheService,
+        },
+        {
+          provide: SessionStatsService,
+          useValue: statsService,
+        },
+        {
+          provide: SessionCapacityService,
+          useValue: capacityService,
         },
         {
           provide: REDIS_CLIENT,
@@ -334,12 +356,12 @@ describe('SessionsService', () => {
         past: 5,
       };
 
-      repository.getSessionStats.mockResolvedValue(stats);
+      statsService.getStats.mockResolvedValue(stats);
 
       const result = await service.getStats();
 
       expect(result).toEqual(stats);
-      expect(repository.getSessionStats).toHaveBeenCalled();
+      expect(statsService.getStats).toHaveBeenCalled();
     });
   });
 
@@ -350,7 +372,10 @@ describe('SessionsService', () => {
 
       await service.incrementCheckInCount(sessionId);
 
-      expect(repository.incrementCheckInCount).toHaveBeenCalledWith(sessionId);
+      expect(repository.incrementCheckInCount).toHaveBeenCalledWith(
+        sessionId,
+        undefined,
+      );
     });
   });
 
@@ -361,7 +386,11 @@ describe('SessionsService', () => {
 
       await service.decrementCheckInCount(sessionId);
 
-      expect(repository.decrementCheckInCount).toHaveBeenCalledWith(sessionId);
+      expect(repository.decrementCheckInCount).toHaveBeenCalledWith(
+        sessionId,
+        expect.anything(),
+        undefined,
+      );
     });
   });
 });

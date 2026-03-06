@@ -4,6 +4,7 @@ import {
   UpdateQuery,
   PipelineStage,
   QueryFilter,
+  ClientSession,
 } from 'mongoose';
 import { PaginationDto, PaginatedResult } from '../dto';
 import { createSafeSortObject } from '../utils';
@@ -11,9 +12,13 @@ import { createSafeSortObject } from '../utils';
 export abstract class BaseRepository<T extends Document> {
   constructor(protected readonly model: Model<T>) {}
 
-  async create(data: Partial<T>): Promise<T> {
+  async create(data: Partial<T>, session?: ClientSession): Promise<T> {
     const entity = new this.model(data);
-    return entity.save();
+    return entity.save({ session });
+  }
+
+  async insertMany(data: Partial<T>[], session?: ClientSession): Promise<T[]> {
+    return this.model.insertMany(data, { session }) as unknown as Promise<T[]>;
   }
 
   async findById(id: string): Promise<T | null> {

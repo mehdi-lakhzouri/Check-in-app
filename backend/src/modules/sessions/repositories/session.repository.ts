@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, QueryFilter } from 'mongoose';
+import { Model, QueryFilter, ClientSession } from 'mongoose';
 import { BaseRepository } from '../../../common/repositories';
 import { Session, SessionDocument } from '../schemas';
 import { SessionFilterDto } from '../dto';
@@ -55,11 +55,20 @@ export class SessionRepository extends BaseRepository<SessionDocument> {
       .exec();
   }
 
-  async incrementCheckInCount(sessionId: string): Promise<void> {
-    await this.sessionModel.updateOne(
+  async incrementCheckInCount(
+    sessionId: string,
+    session?: ClientSession,
+  ): Promise<void> {
+    const query = this.sessionModel.updateOne(
       { _id: sessionId },
       { $inc: { checkInsCount: 1 } },
     );
+
+    if (session) {
+      query.session(session);
+    }
+
+    await query.exec();
   }
 
   /**
@@ -69,29 +78,32 @@ export class SessionRepository extends BaseRepository<SessionDocument> {
    */
   async incrementCheckInCountWithCapacity(
     sessionId: string,
+    session?: ClientSession,
   ): Promise<SessionDocument | null> {
     // Use findOneAndUpdate with conditions to atomically check capacity and increment
     // The condition ensures we only increment if:
     // 1. capacity is 0 (unlimited) OR
     // 2. capacity is not enforced OR
     // 3. checkInsCount is less than capacity
-    const result = await this.sessionModel
-      .findOneAndUpdate(
-        {
-          _id: sessionId,
-          $or: [
-            { capacity: 0 }, // Unlimited capacity
-            { capacity: { $exists: false } }, // No capacity set
-            { capacityEnforced: false }, // Capacity not enforced (overflow allowed)
-            { $expr: { $lt: ['$checkInsCount', '$capacity'] } }, // Under capacity
-          ],
-        },
-        { $inc: { checkInsCount: 1 } },
-        { new: true },
-      )
-      .exec();
+    const query = this.sessionModel.findOneAndUpdate(
+      {
+        _id: sessionId,
+        $or: [
+          { capacity: 0 }, // Unlimited capacity
+          { capacity: { $exists: false } }, // No capacity set
+          { capacityEnforced: false }, // Capacity not enforced (overflow allowed)
+          { $expr: { $lt: ['$checkInsCount', '$capacity'] } }, // Under capacity
+        ],
+      },
+      { $inc: { checkInsCount: 1 } },
+      { new: true },
+    );
 
-    return result;
+    if (session) {
+      query.session(session);
+    }
+
+    return query.exec();
   }
 
   /**
@@ -155,11 +167,21 @@ export class SessionRepository extends BaseRepository<SessionDocument> {
     );
   }
 
-  async decrementCheckInCount(sessionId: string): Promise<void> {
-    await this.sessionModel.updateOne(
+  async decrementCheckInCount(
+    sessionId: string,
+    amount: number = 1,
+    session?: ClientSession,
+  ): Promise<void> {
+    const query = this.sessionModel.updateOne(
       { _id: sessionId },
-      { $inc: { checkInsCount: -1 } },
+      { $inc: { checkInsCount: -amount } },
     );
+
+    if (session) {
+      query.session(session);
+    }
+
+    await query.exec();
   }
 
   async resetCheckInCount(sessionId: string): Promise<void> {

@@ -7,7 +7,7 @@ import {
   AppSettingsDocument,
   TimingSettings,
 } from './schemas/app-settings.schema';
-import { UpdateTimingSettingsDto, UpdateSessionTimingDto } from './dto';
+import { UpdateTimingSettingsDto } from './dto';
 import { PinoLoggerService } from '../../common/logger';
 
 /**

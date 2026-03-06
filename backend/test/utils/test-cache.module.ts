@@ -6,7 +6,11 @@
 
 import { Module, Global } from '@nestjs/common';
 import { CacheModule } from '@nestjs/cache-manager';
-import { REDIS_CLIENT, REDIS_STATUS } from '../../src/common/redis';
+import {
+  REDIS_CLIENT,
+  REDIS_STATUS,
+  RedisSingleflightService,
+} from '../../src/common/redis';
 
 /**
  * Fake Redis Status for testing
@@ -142,8 +146,16 @@ const mockRedisClient = new MockRedisClient();
       provide: REDIS_CLIENT,
       useValue: mockRedisClient,
     },
+    {
+      provide: RedisSingleflightService,
+      useValue: {
+        execute: async <T>(key: string, fn: () => Promise<T>): Promise<T> => {
+          return fn();
+        },
+      },
+    },
   ],
-  exports: [CacheModule, REDIS_STATUS, REDIS_CLIENT],
+  exports: [CacheModule, REDIS_STATUS, REDIS_CLIENT, RedisSingleflightService],
 })
 export class TestCacheModule {
   /**

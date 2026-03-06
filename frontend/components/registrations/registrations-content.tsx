@@ -427,7 +427,7 @@ export function RegistrationsContent() {
           organizationFilter={organizationFilter}
           setOrganizationFilter={setOrganizationFilter}
           dateRangePreset={dateRangePreset}
-          setDateRangePreset={setDateRangePreset}
+          setDateRangePreset={(val) => setDateRangePreset(val as DateRangePreset)}
           sessions={sessions}
           organizations={organizations}
         />
@@ -442,9 +442,34 @@ export function RegistrationsContent() {
                 <CardTitle>All Registrations</CardTitle>
                 <CardDescription>
                   {hasActiveFilters
-                    ? `${filteredRegistrations.length} of ${populatedRegistrations.length} shown`
-                    : `${populatedRegistrations.length} total`}
+                    ? `Showing ${filteredRegistrations.length} of ${populatedRegistrations.length} registrations`
+                    : `A list of all ${populatedRegistrations.length} registrations`}
                 </CardDescription>
+              </div>
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <span>Show</span>
+                <Select
+                  value={itemsPerPage.toString()}
+                  onValueChange={(value) => {
+                    setItemsPerPage(parseInt(value));
+                    setCurrentPage(1);
+                  }}
+                >
+                  <SelectTrigger className="h-8 w-[70px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {[5, 10, 25, 50, 100].map((option) => (
+                      <SelectItem key={option} value={option.toString()}>
+                        {option}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <span>per page</span>
+                <span className="text-muted-foreground/70">
+                  ({filteredRegistrations.length} total)
+                </span>
               </div>
             </div>
           </CardHeader>
@@ -465,7 +490,6 @@ export function RegistrationsContent() {
               itemsPerPage={itemsPerPage}
               totalItems={filteredRegistrations.length}
               onPageChange={setCurrentPage}
-              onItemsPerPageChange={setItemsPerPage}
             />
           </CardContent>
         </Card>

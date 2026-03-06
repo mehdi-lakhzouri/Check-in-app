@@ -6,6 +6,7 @@ import { ParticipantsService } from './services';
 import { ParticipantsController } from './controllers';
 import { CheckInsModule } from '../checkins';
 import { RegistrationsModule } from '../registrations';
+import { RedisModule } from '../../common/redis/redis.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { RegistrationsModule } from '../registrations';
     ]),
     forwardRef(() => CheckInsModule),
     forwardRef(() => RegistrationsModule),
+    RedisModule, // Required for RedisSingleflightService
   ],
   controllers: [ParticipantsController],
   providers: [ParticipantsService, ParticipantRepository],

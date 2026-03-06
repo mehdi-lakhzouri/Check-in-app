@@ -43,14 +43,15 @@ interface CacheWrapper<T> {
   cachedAt: number;
 }
 
+import { RedisSingleflightService } from '../../../common/redis';
+
+// ... (existing imports)
+
 @Injectable()
 export class ParticipantsService implements OnModuleInit {
   private readonly logger: PinoLoggerService;
   private readonly participantTtl: number;
   private readonly statsTtl: number;
-
-  // Singleflight pattern: track in-flight requests to prevent cache stampede
-  private readonly pendingRequests = new Map<string, Promise<any>>();
 
   constructor(
     private readonly participantRepository: ParticipantRepository,
@@ -61,6 +62,7 @@ export class ParticipantsService implements OnModuleInit {
     @Inject(CACHE_MANAGER)
     private readonly cacheManager: Cache,
     private readonly configService: ConfigService,
+    private readonly singleflight: RedisSingleflightService,
   ) {
     this.logger = new PinoLoggerService();
     this.logger.setContext(ParticipantsService.name);
@@ -77,28 +79,6 @@ export class ParticipantsService implements OnModuleInit {
 
   async onModuleInit(): Promise<void> {
     this.logger.log('ParticipantsService initialized with Redis caching');
-  }
-
-  /**
-   * Singleflight pattern: Coalesce concurrent requests for the same cache key
-   * Prevents cache stampede by ensuring only one request hits the database
-   */
-  private async withSingleflight<T>(
-    key: string,
-    factory: () => Promise<T>,
-  ): Promise<T> {
-    const pending = this.pendingRequests.get(key);
-    if (pending) {
-      this.logger.debug(`Singleflight: coalescing request for ${key}`);
-      return pending as Promise<T>;
-    }
-
-    const promise = factory().finally(() => {
-      this.pendingRequests.delete(key);
-    });
-
-    this.pendingRequests.set(key, promise);
-    return promise;
   }
 
   /**
@@ -394,25 +374,69 @@ export class ParticipantsService implements OnModuleInit {
     return participant;
   }
 
-  async remove(id: string): Promise<ParticipantDocument> {
-    this.logger.log(`Deleting participant: ${id}`);
+  /**
+   * Delete a participant with full cascade delete
+   *
+   * CASCADE DELETE ORDER (important for data integrity):
+   * 1. Delete all check-ins (and update session checkInCounts)
+   * 2. Delete all registrations
+   * 3. Delete all check-in attempts (audit trail)
+   * 4. Remove from ambassador referral lists
+   * 5. Recalculate ambassador points for affected ambassadors
+   * 6. Delete the participant
+   *
+   * @param id - Participant ID to delete
+   * @returns Deleted participant document with cascade summary
+   */
+  async remove(id: string): Promise<
+    ParticipantDocument & {
+      cascade?: {
+        deletedCheckIns: number;
+        deletedRegistrations: number;
+        deletedAttempts: number;
+      };
+    }
+  > {
+    this.logger.log(`Starting cascade delete for participant: ${id}`);
 
-    const participant = await this.participantRepository.deleteById(id);
-
+    // Verify participant exists before cascade
+    const participant = await this.participantRepository.findById(id);
     if (!participant) {
       throw new EntityNotFoundException('Participant', id);
     }
 
-    // Remove participant from all ambassador referral lists
+    // CASCADE DELETE Step 1: Delete all check-ins for this participant
+    // This also updates session checkInCounts
+    const deletedCheckIns = await this.checkInsService.removeByParticipant(id);
+    this.logger.log(
+      `Deleted ${deletedCheckIns} check-ins for participant: ${id}`,
+    );
+
+    // CASCADE DELETE Step 2: Delete all registrations for this participant
+    const deletedRegistrations =
+      await this.registrationsService.removeByParticipant(id);
+    this.logger.log(
+      `Deleted ${deletedRegistrations} registrations for participant: ${id}`,
+    );
+
+    // CASCADE DELETE Step 3: Delete all check-in attempts (audit trail)
+    const deletedAttempts =
+      await this.checkInsService.removeAttemptsByParticipant(id);
+    this.logger.log(
+      `Deleted ${deletedAttempts} check-in attempts for participant: ${id}`,
+    );
+
+    // CASCADE DELETE Step 4: Remove participant from all ambassador referral lists
     await this.participantRepository.removeParticipantFromAllReferrals(id);
     this.logger.log(
       `Removed participant ${id} from all ambassador referral lists`,
     );
 
-    // Recalculate points for all ambassadors who had this participant as referral
+    // CASCADE DELETE Step 5: Recalculate points for affected ambassadors
     const ambassadors = await this.participantRepository.findByStatus(
       ParticipantStatus.AMBASSADOR,
     );
+    let affectedAmbassadors = 0;
     for (const ambassador of ambassadors) {
       if (
         ambassador.referredParticipantIds.some(
@@ -420,14 +444,42 @@ export class ParticipantsService implements OnModuleInit {
         )
       ) {
         await this.calculateAmbassadorPoints(ambassador._id.toString());
+        affectedAmbassadors++;
       }
     }
+    if (affectedAmbassadors > 0) {
+      this.logger.log(
+        `Recalculated points for ${affectedAmbassadors} ambassadors`,
+      );
+    }
+
+    // CASCADE DELETE Step 6: Finally delete the participant
+    await this.participantRepository.deleteById(id);
 
     // Invalidate cache entries
     await this.invalidateParticipantCache(participant);
 
-    this.logger.log(`Participant deleted: ${id}`);
-    return participant;
+    this.logger.log(`Participant cascade delete complete: ${id}`, {
+      deletedCheckIns,
+      deletedRegistrations,
+      deletedAttempts,
+      affectedAmbassadors,
+    });
+
+    // Return participant with cascade summary
+    const result = participant.toObject() as ParticipantDocument & {
+      cascade?: {
+        deletedCheckIns: number;
+        deletedRegistrations: number;
+        deletedAttempts: number;
+      };
+    };
+    result.cascade = {
+      deletedCheckIns,
+      deletedRegistrations,
+      deletedAttempts,
+    };
+    return result;
   }
 
   async generateQrCode(): Promise<{ qrCode: string; qrCodeDataUrl: string }> {
@@ -539,40 +591,16 @@ export class ParticipantsService implements OnModuleInit {
       );
     }
 
-    // Use singleflight to prevent stampede
-    return this.withSingleflight(cacheKey, async () => {
-      // Double-check cache after acquiring "lock"
-      try {
-        const cachedAgain = await this.cacheManager.get<{
-          total: number;
-          active: number;
-          ambassadors: number;
-          travelGrant: number;
-        }>(cacheKey);
-
-        if (cachedAgain) {
-          return cachedAgain;
-        }
-      } catch (error) {
-        this.logger.warn(
-          `Cache re-read failed for participant stats: ${error.message}`,
-        );
-      }
-
-      // Cache miss - fetch from database
-      const stats = await this.participantRepository.getParticipantStats();
-
-      // Cache with error handling
-      try {
-        await this.cacheManager.set(cacheKey, stats, this.statsTtl);
-      } catch (cacheError) {
-        this.logger.warn(
-          `Cache write failed for participant stats: ${cacheError.message}`,
-        );
-      }
-
-      return stats;
-    });
+    // Use singleflight to prevent stampede (Global Redis Lock)
+    return this.singleflight.execute(
+      cacheKey,
+      async () => {
+        // Cache miss - fetch from database
+        const stats = await this.participantRepository.getParticipantStats();
+        return stats;
+      },
+      this.statsTtl,
+    );
   }
 
   /**
@@ -596,36 +624,15 @@ export class ParticipantsService implements OnModuleInit {
       );
     }
 
-    // Use singleflight to prevent stampede
-    return this.withSingleflight(cacheKey, async () => {
-      // Double-check cache after acquiring "lock"
-      try {
-        const cachedAgain =
-          await this.cacheManager.get<ParticipantDocument[]>(cacheKey);
-        if (cachedAgain) {
-          return cachedAgain;
-        }
-      } catch (error) {
-        this.logger.warn(
-          `Cache re-read failed for ambassador leaderboard: ${error.message}`,
-        );
-      }
-
-      // Cache miss - fetch from database
-      const leaderboard =
-        await this.participantRepository.getAmbassadorLeaderboard(limit);
-
-      // Cache with error handling
-      try {
-        await this.cacheManager.set(cacheKey, leaderboard, this.statsTtl);
-      } catch (cacheError) {
-        this.logger.warn(
-          `Cache write failed for ambassador leaderboard: ${cacheError.message}`,
-        );
-      }
-
-      return leaderboard;
-    });
+    // Use singleflight to prevent stampede (Global Redis Lock)
+    return this.singleflight.execute(
+      cacheKey,
+      async () => {
+        // Cache miss - fetch from database
+        return this.participantRepository.getAmbassadorLeaderboard(limit);
+      },
+      this.statsTtl,
+    );
   }
 
   async getAmbassadorActivity(id: string): Promise<{

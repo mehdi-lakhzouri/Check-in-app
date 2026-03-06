@@ -366,7 +366,7 @@ export function CheckInsContent() {
           sessionFilter={sessionFilter}
           setSessionFilter={setSessionFilter}
           dateFilter={dateFilter}
-          setDateFilter={setDateFilter}
+          setDateFilter={(val) => setDateFilter(val as DateFilter)}
           statusFilter={statusFilter}
           setStatusFilter={setStatusFilter}
           methodFilter={methodFilter}
@@ -379,8 +379,41 @@ export function CheckInsContent() {
       <motion.div variants={cardVariants}>
         <Card>
           <CardHeader>
-            <CardTitle>All Check-ins</CardTitle>
-            <CardDescription>A complete list of participant attendance records</CardDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>All Check-ins</CardTitle>
+                <CardDescription>
+                  {filteredCheckIns.length === populatedCheckIns.length
+                    ? `A list of all ${populatedCheckIns.length} check-ins`
+                    : `Showing ${filteredCheckIns.length} of ${populatedCheckIns.length} check-ins`}
+                </CardDescription>
+              </div>
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <span>Show</span>
+                <Select
+                  value={itemsPerPage.toString()}
+                  onValueChange={(value) => {
+                    setItemsPerPage(parseInt(value));
+                    setCurrentPage(1);
+                  }}
+                >
+                  <SelectTrigger className="h-8 w-[70px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {[5, 10, 25, 50, 100].map((option) => (
+                      <SelectItem key={option} value={option.toString()}>
+                        {option}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <span>per page</span>
+                <span className="text-muted-foreground/70">
+                  ({filteredCheckIns.length} total)
+                </span>
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
             <DataTable<PopulatedCheckIn>
@@ -394,7 +427,6 @@ export function CheckInsContent() {
               itemsPerPage={itemsPerPage}
               totalItems={filteredCheckIns.length}
               onPageChange={setCurrentPage}
-              onItemsPerPageChange={setItemsPerPage}
             />
           </CardContent>
         </Card>

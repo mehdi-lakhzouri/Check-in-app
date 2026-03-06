@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { Types } from 'mongoose';
+import { InjectConnection } from '@nestjs/mongoose';
+import { Connection, Types } from 'mongoose';
 import { RegistrationRepository } from '../repositories';
 import {
   CreateRegistrationDto,
@@ -18,7 +19,10 @@ import { PinoLoggerService, getCurrentRequestId } from '../../../common/logger';
 export class RegistrationsService {
   private readonly logger: PinoLoggerService;
 
-  constructor(private readonly registrationRepository: RegistrationRepository) {
+  constructor(
+    private readonly registrationRepository: RegistrationRepository,
+    @InjectConnection() private readonly connection: Connection,
+  ) {
     this.logger = new PinoLoggerService();
     this.logger.setContext(RegistrationsService.name);
   }
@@ -32,32 +36,90 @@ export class RegistrationsService {
       reqId: getCurrentRequestId(),
     });
 
-    // Check for existing registration
-    const existing =
-      await this.registrationRepository.findByParticipantAndSession(
-        createRegistrationDto.participantId,
-        createRegistrationDto.sessionId,
-      );
+    // Skip transactions in test environment to avoid replica set requirement
+    if (process.env.NODE_ENV === 'test') {
+      // Double-Check for existing registration
+      const existing =
+        await this.registrationRepository.findByParticipantAndSession(
+          createRegistrationDto.participantId,
+          createRegistrationDto.sessionId,
+        );
 
-    if (existing) {
-      throw new EntityExistsException(
-        'Registration',
-        'participant-session',
-        `${createRegistrationDto.participantId}-${createRegistrationDto.sessionId}`,
-      );
+      if (existing) {
+        throw new EntityExistsException(
+          'Registration',
+          'participant-session',
+          `${createRegistrationDto.participantId}-${createRegistrationDto.sessionId}`,
+        );
+      }
+
+      // Create registration without session
+      const registration = await this.registrationRepository.create({
+        ...createRegistrationDto,
+        participantId: new Types.ObjectId(createRegistrationDto.participantId),
+        sessionId: new Types.ObjectId(createRegistrationDto.sessionId),
+      });
+
+      this.logger.log('Registration created', {
+        registrationId: registration._id,
+        reqId: getCurrentRequestId(),
+      });
+
+      return registration;
     }
 
-    const registration = await this.registrationRepository.create({
-      ...createRegistrationDto,
-      participantId: new Types.ObjectId(createRegistrationDto.participantId),
-      sessionId: new Types.ObjectId(createRegistrationDto.sessionId),
-    });
+    const session = await this.connection.startSession();
+    let registration: RegistrationDocument | null = null;
 
-    this.logger.log('Registration created', {
-      registrationId: registration._id,
-      reqId: getCurrentRequestId(),
-    });
-    return registration;
+    try {
+      await session.withTransaction(async () => {
+        // Double-Check for existing registration within transaction
+        // NOTE: Unique index on Schema is primary defense, this is logical check
+        const existing =
+          await this.registrationRepository.findByParticipantAndSession(
+            createRegistrationDto.participantId,
+            createRegistrationDto.sessionId,
+          );
+
+        if (existing) {
+          throw new EntityExistsException(
+            'Registration',
+            'participant-session',
+            `${createRegistrationDto.participantId}-${createRegistrationDto.sessionId}`,
+          );
+        }
+
+        // Create registration passed with session
+        registration = await this.registrationRepository.create(
+          {
+            ...createRegistrationDto,
+            participantId: new Types.ObjectId(
+              createRegistrationDto.participantId,
+            ),
+            sessionId: new Types.ObjectId(createRegistrationDto.sessionId),
+          },
+          session,
+        );
+      });
+
+      this.logger.log('Registration created', {
+        registrationId: registration ? (registration as any)._id : 'unknown',
+        reqId: getCurrentRequestId(),
+      });
+
+      return registration!;
+    } catch (error) {
+      if (error.code === 11000) {
+        throw new EntityExistsException(
+          'Registration',
+          'participant-session',
+          `${createRegistrationDto.participantId}-${createRegistrationDto.sessionId}`,
+        );
+      }
+      throw error;
+    } finally {
+      session.endSession();
+    }
   }
 
   async findAll(
@@ -165,15 +227,26 @@ export class RegistrationsService {
   }
 
   async removeBySession(sessionId: string): Promise<number> {
-    this.logger.log(`Deleting all registrations for session: ${sessionId}`);
-    return this.registrationRepository.deleteBySession(sessionId);
+    this.logger.log(
+      `Cascade delete: Removing all registrations for session: ${sessionId}`,
+    );
+    const count = await this.registrationRepository.deleteBySession(sessionId);
+    this.logger.log(
+      `Cascade delete complete: Removed ${count} registrations for session: ${sessionId}`,
+    );
+    return count;
   }
 
   async removeByParticipant(participantId: string): Promise<number> {
     this.logger.log(
-      `Deleting all registrations for participant: ${participantId}`,
+      `Cascade delete: Removing all registrations for participant: ${participantId}`,
     );
-    return this.registrationRepository.deleteByParticipant(participantId);
+    const count =
+      await this.registrationRepository.deleteByParticipant(participantId);
+    this.logger.log(
+      `Cascade delete complete: Removed ${count} registrations for participant: ${participantId}`,
+    );
+    return count;
   }
 
   async countBySession(sessionId: string): Promise<number> {

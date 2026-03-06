@@ -49,7 +49,12 @@ export class CheckInAttemptRepository extends BaseRepository<CheckInAttemptDocum
     const skip = (page - 1) * limit;
 
     // Validate sort field to prevent Remote Property Injection (CodeQL: js/remote-property-injection)
-    const safeSort = createSafeSortObject(filterDto.sortBy, filterDto.sortOrder, 'checkInAttempt', 'attemptTime');
+    const safeSort = createSafeSortObject(
+      filterDto.sortBy,
+      filterDto.sortOrder,
+      'checkInAttempt',
+      'attemptTime',
+    );
 
     const [data, total] = await Promise.all([
       this.attemptModel
@@ -169,5 +174,25 @@ export class CheckInAttemptRepository extends BaseRepository<CheckInAttemptDocum
     }
 
     return stats;
+  }
+
+  /**
+   * Delete all check-in attempts for a session (cascade delete)
+   * @param sessionId - The session ID to delete attempts for
+   * @returns Number of deleted attempts
+   */
+  async deleteBySession(sessionId: string): Promise<number> {
+    return this.deleteMany({ sessionId: new Types.ObjectId(sessionId) });
+  }
+
+  /**
+   * Delete all check-in attempts for a participant (cascade delete)
+   * @param participantId - The participant ID to delete attempts for
+   * @returns Number of deleted attempts
+   */
+  async deleteByParticipant(participantId: string): Promise<number> {
+    return this.deleteMany({
+      participantId: new Types.ObjectId(participantId),
+    });
   }
 }

@@ -150,7 +150,11 @@ export class SessionsController {
 
   @Delete(':id')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Delete a session' })
+  @ApiOperation({
+    summary: 'Delete a session with cascade delete',
+    description:
+      'Deletes a session and all associated check-ins, registrations, and check-in attempts. This operation cannot be undone.',
+  })
   @ApiParam({
     name: 'id',
     description: 'Session ID',
@@ -159,11 +163,32 @@ export class SessionsController {
   @ApiStandardResponse(Session, 'Session deleted successfully')
   @ApiResponse({ status: 404, description: 'Session not found' })
   async remove(@Param('id', ParseMongoIdPipe) id: string) {
+    // CASCADE DELETE: Delete all related records before deleting the session
+    // Order matters: delete child records first, then the parent
+
+    // 1. Delete all check-ins for this session (also resets session checkInCount)
+    const deletedCheckIns = await this.checkInsService.removeBySession(id);
+
+    // 2. Delete all registrations for this session
+    const deletedRegistrations =
+      await this.registrationsService.removeBySession(id);
+
+    // 3. Delete all check-in attempts for this session (audit trail)
+    const deletedAttempts =
+      await this.checkInsService.removeAttemptsBySession(id);
+
+    // 4. Finally, delete the session itself
     const session = await this.sessionsService.remove(id);
+
     return {
       status: 'success',
       message: 'Session deleted successfully',
       data: session,
+      cascade: {
+        deletedCheckIns,
+        deletedRegistrations,
+        deletedAttempts,
+      },
     };
   }
 

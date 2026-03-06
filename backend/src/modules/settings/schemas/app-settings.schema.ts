@@ -45,11 +45,12 @@ export class TimingSettings {
   schedulerIntervalMs: number;
 }
 
-export const TimingSettingsSchema = SchemaFactory.createForClass(TimingSettings);
+export const TimingSettingsSchema =
+  SchemaFactory.createForClass(TimingSettings);
 
 /**
  * Application Settings Schema
- * 
+ *
  * Singleton document that stores configurable application settings.
  * These settings can be modified at runtime through the admin dashboard.
  * Values here take precedence over environment variables.

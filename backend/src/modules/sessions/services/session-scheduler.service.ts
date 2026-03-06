@@ -164,7 +164,23 @@ export class SessionSchedulerService implements OnModuleInit, OnModuleDestroy {
       },
     );
 
-    this.logger.log('Session scheduler jobs configured successfully');
+    // FIXED: Add P0 Reconciliation Job (Zombie Reservation Fix)
+    // Runs every minute to fix any capacity drift
+    await this.schedulerQueue.add(
+      'reconcile-sessions',
+      { type: 'reconcile' },
+      {
+        repeat: {
+          cron: '* * * * *', // Every minute
+        },
+        removeOnComplete: 20,
+        removeOnFail: 20,
+      },
+    );
+
+    this.logger.log(
+      'Session scheduler jobs configured successfully (including P0 reconciliation)',
+    );
 
     // Run initial jobs immediately
     await this.forceCycle();

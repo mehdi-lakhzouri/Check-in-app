@@ -22,6 +22,7 @@ import {
   FileText,
   Activity,
 } from 'lucide-react';
+import { BarChartComponent } from '@/components/ui/charts';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -762,44 +763,128 @@ export function AdminDashboardContent() {
 
         {/* Overview Tab */}
         <TabsContent value="overview" className="space-y-6 mt-0">
-          <motion.div variants={cardVariants}>
-            <StatsOverview
-              participantStats={participantStats}
-              travelGrantStats={travelGrantStats}
-              isLoading={isLoading}
+          <StatsOverview
+            participantStats={participantStats}
+            travelGrantStats={travelGrantStats}
+            isLoading={isLoading}
+          />
+
+          <div className="grid gap-6 md:grid-cols-2">
+            <BarChartComponent
+              title="Travel Grant Status"
+              description="Application status distribution"
+              data={[
+                { name: 'Pending', value: travelGrantStats?.pending ?? 0 },
+                { name: 'Approved', value: travelGrantStats?.approved ?? 0 },
+                { name: 'Rejected', value: travelGrantStats?.rejected ?? 0 },
+              ]}
+              index="name"
+              categories={['value']}
+              colors={['#f59e0b', '#16a34a', '#dc2626']}
+              valueFormatter={(val: number) => `${val}`}
             />
-          </motion.div>
+            <BarChartComponent
+              title="Participant Composition"
+              description="Breakdown by participant type"
+              data={[
+                { name: 'Active', value: participantStats?.active ?? 0 },
+                { name: 'Ambassadors', value: participantStats?.ambassadors ?? 0 },
+                { name: 'Grant Applicants', value: participantStats?.travelGrant ?? 0 },
+              ]}
+              index="name"
+              categories={['value']}
+              colors={['#2D3282', '#f59e0b', '#3a6ea5']}
+              valueFormatter={(val: number) => `${val}`}
+            />
+          </div>
 
           <div className="grid gap-6 lg:grid-cols-2">
-            <motion.div variants={cardVariants}>
-              <AmbassadorLeaderboard
-                data={leaderboard}
-                isLoading={isLoading}
-                onViewDetails={handleViewAmbassadorDetails}
-              />
-            </motion.div>
-
-            <motion.div variants={cardVariants}>
-              <TravelGrantSummary
-                stats={travelGrantStats}
-                isLoading={isLoading}
-                onViewAll={() => setActiveTab('detailed')}
-              />
-            </motion.div>
+            <AmbassadorLeaderboard
+              data={leaderboard}
+              isLoading={isLoading}
+              onViewDetails={handleViewAmbassadorDetails}
+            />
+            <TravelGrantSummary
+              stats={travelGrantStats}
+              isLoading={isLoading}
+              onViewAll={() => setActiveTab('detailed')}
+            />
           </div>
         </TabsContent>
 
         {/* Detailed View Tab */}
         <TabsContent value="detailed" className="space-y-6 mt-0">
-          <motion.div variants={cardVariants}>
-            <TravelGrantTable
-              data={applications}
-              isLoading={applicationsLoading}
-              onApprove={handleApproveApplication}
-              onReject={handleRejectApplication}
-              onViewDetails={handleViewApplicationDetails}
-            />
-          </motion.div>
+          {/* Stats Summary for Detailed View */}
+          <div className="grid gap-4 md:grid-cols-4">
+            <Card className="border-l-4 border-l-amber-500">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Pending</p>
+                    <p className="text-2xl font-bold">{travelGrantStats?.pending ?? 0}</p>
+                  </div>
+                  <Clock className="h-8 w-8 text-amber-500 opacity-50" />
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="border-l-4 border-l-green-500">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Approved</p>
+                    <p className="text-2xl font-bold">{travelGrantStats?.approved ?? 0}</p>
+                  </div>
+                  <CheckCircle2 className="h-8 w-8 text-green-500 opacity-50" />
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="border-l-4 border-l-red-500">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Rejected</p>
+                    <p className="text-2xl font-bold">{travelGrantStats?.rejected ?? 0}</p>
+                  </div>
+                  <XCircle className="h-8 w-8 text-red-500 opacity-50" />
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="border-l-4 border-l-blue-500">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Total Apps</p>
+                    <p className="text-2xl font-bold">{travelGrantStats?.total ?? 0}</p>
+                  </div>
+                  <Plane className="h-8 w-8 text-blue-500 opacity-50" />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Main Table */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Plane className="h-5 w-5" />
+                    Travel Grant Applications
+                  </CardTitle>
+                  <CardDescription>Review and manage all travel grant requests</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <TravelGrantTable
+                data={applications}
+                isLoading={applicationsLoading}
+                onApprove={handleApproveApplication}
+                onReject={handleRejectApplication}
+                onViewDetails={handleViewApplicationDetails}
+              />
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
 

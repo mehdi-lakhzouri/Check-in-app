@@ -412,7 +412,11 @@ export class ParticipantsController {
 
   @Delete(':id')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Delete a participant' })
+  @ApiOperation({
+    summary: 'Delete a participant with cascade delete',
+    description:
+      'Deletes a participant and all associated check-ins, registrations, and check-in attempts. Also removes from ambassador referral lists and recalculates ambassador points. This operation cannot be undone.',
+  })
   @ApiParam({
     name: 'id',
     description: 'Participant ID',
@@ -426,6 +430,7 @@ export class ParticipantsController {
       status: 'success',
       message: 'Participant deleted successfully',
       data: participant,
+      cascade: participant.cascade,
     };
   }
 

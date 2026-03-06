@@ -10,6 +10,7 @@ import {
   CheckInRepository,
   CheckInAttemptRepository,
 } from '../../../src/modules/checkins/repositories';
+import { getConnectionToken } from '@nestjs/mongoose';
 import { ParticipantsService } from '../../../src/modules/participants/services/participants.service';
 import { SessionsService } from '../../../src/modules/sessions/services/sessions.service';
 import { RegistrationsService } from '../../../src/modules/registrations/services/registrations.service';
@@ -34,8 +35,21 @@ describe('CheckInsService', () => {
   let attemptRepository: ReturnType<typeof createMockCheckInAttemptRepository>;
   let participantsService: ReturnType<typeof createMockParticipantsService>;
   let sessionsService: ReturnType<typeof createMockSessionsService>;
+
   let registrationsService: ReturnType<typeof createMockRegistrationsService>;
   let configService: ReturnType<typeof createMockConfigService>;
+
+  const mockSession = {
+    startTransaction: jest.fn(),
+    commitTransaction: jest.fn(),
+    abortTransaction: jest.fn(),
+    endSession: jest.fn(),
+    withTransaction: jest.fn().mockImplementation((cb) => cb()),
+  };
+
+  const mockConnection = {
+    startSession: jest.fn().mockResolvedValue(mockSession),
+  };
 
   beforeEach(async () => {
     repository = createMockCheckInRepository();
@@ -72,10 +86,21 @@ describe('CheckInsService', () => {
           provide: ConfigService,
           useValue: configService,
         },
+        {
+          provide: getConnectionToken(),
+          useValue: mockConnection,
+        },
       ],
     }).compile();
 
     service = module.get<CheckInsService>(CheckInsService);
+
+    // Default mock for registration check - most tests assume participant is registered
+    registrationsService.isParticipantRegistered.mockResolvedValue({
+      isRegistered: true,
+      status: 'confirmed',
+      registration: { _id: generateObjectId() },
+    });
   });
 
   afterEach(() => {
@@ -117,8 +142,10 @@ describe('CheckInsService', () => {
       const createDto = mockData.createCheckInDto(participantId, sessionId);
 
       const closedSession = mockData.session({ _id: sessionId, isOpen: false });
+      const participant = mockData.participant({ _id: participantId });
 
       sessionsService.findOne.mockResolvedValue(closedSession as any);
+      participantsService.findOne.mockResolvedValue(participant as any);
 
       await expect(service.create(createDto)).rejects.toThrow(
         ValidationException,
@@ -190,6 +217,7 @@ describe('CheckInsService', () => {
         expect.objectContaining({
           isLate: true,
         }),
+        undefined, // No transaction session in test environment
       );
     });
 
@@ -227,6 +255,7 @@ describe('CheckInsService', () => {
         expect.objectContaining({
           isLate: false,
         }),
+        undefined, // No transaction session in test environment
       );
     });
   });

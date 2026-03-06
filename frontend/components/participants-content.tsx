@@ -1759,8 +1759,17 @@ export function ParticipantsContent() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Participant</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete this participant? This action cannot be undone.
+            <AlertDialogDescription className="space-y-2">
+              <p>Are you sure you want to delete this participant? <strong>This action cannot be undone.</strong></p>
+              <p className="text-sm text-muted-foreground">
+                The following related data will be <strong className="text-destructive">permanently deleted</strong>:
+              </p>
+              <ul className="text-sm text-muted-foreground list-disc pl-4 space-y-1">
+                <li>All check-ins for this participant (across all sessions)</li>
+                <li>All registrations for this participant</li>
+                <li>All check-in attempts (audit logs) for this participant</li>
+                <li>Ambassador referral associations</li>
+              </ul>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

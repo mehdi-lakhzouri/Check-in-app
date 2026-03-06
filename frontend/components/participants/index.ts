@@ -13,6 +13,7 @@ export { participantApi } from './api';
 // Components
 export { createParticipantColumns } from './participant-columns';
 export { ParticipantProfileModal } from './participant-profile-modal';
+export { ParticipantsFilterBar } from './participants-filter-bar';
 
 // Main Content Component (re-exported from root)
 export { ParticipantsContent } from '../participants-content';

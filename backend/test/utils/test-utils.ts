@@ -10,6 +10,7 @@ import { RegistrationStatus } from '../../src/modules/registrations/schemas';
 import { CreateParticipantDto } from '../../src/modules/participants/dto';
 import { CreateCheckInDto } from '../../src/modules/checkins/dto';
 import { CreateRegistrationDto } from '../../src/modules/registrations/dto';
+import { createMockDocument } from './mock-factories';
 
 /**
  * Generate a valid MongoDB ObjectId
@@ -43,23 +44,24 @@ export const mockData = {
   /**
    * Generate a mock participant
    */
-  participant: (overrides: Record<string, any> = {}) => ({
-    _id: generateObjectId(),
-    name: 'John Doe',
-    email: `test-${Date.now()}@example.com`,
-    organization: 'Test Organization',
-    phone: '+1234567890',
-    qrCode: `QR-${Date.now().toString(36).toUpperCase()}`,
-    status: ParticipantStatus.REGULAR,
-    isActive: true,
-    ambassadorPoints: 0,
-    referredParticipantIds: [],
-    travelGrantApplied: false,
-    travelGrantApproved: false,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    ...overrides,
-  }),
+  participant: (overrides: Record<string, any> = {}) =>
+    createMockDocument({
+      _id: generateObjectId(),
+      name: 'John Doe',
+      email: `test-${Date.now()}@example.com`,
+      organization: 'Test Organization',
+      phone: '+1234567890',
+      qrCode: `QR-${Date.now().toString(36).toUpperCase()}`,
+      status: ParticipantStatus.REGULAR,
+      isActive: true,
+      ambassadorPoints: 0,
+      referredParticipantIds: [],
+      travelGrantApplied: false,
+      travelGrantApproved: false,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      ...overrides,
+    }),
 
   /**
    * Generate a mock check-in

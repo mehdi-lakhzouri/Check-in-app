@@ -5,6 +5,7 @@
 
 import { Test, TestingModule } from '@nestjs/testing';
 import { Types } from 'mongoose';
+import { getConnectionToken } from '@nestjs/mongoose';
 import { RegistrationsService } from '../../../src/modules/registrations/services/registrations.service';
 import { RegistrationRepository } from '../../../src/modules/registrations/repositories/registration.repository';
 import {
@@ -19,6 +20,18 @@ describe('RegistrationsService', () => {
   let service: RegistrationsService;
   let repository: ReturnType<typeof createMockRegistrationRepository>;
 
+  const mockSession = {
+    startTransaction: jest.fn(),
+    commitTransaction: jest.fn(),
+    abortTransaction: jest.fn(),
+    endSession: jest.fn(),
+    withTransaction: jest.fn().mockImplementation((cb) => cb()),
+  };
+
+  const mockConnection = {
+    startSession: jest.fn().mockResolvedValue(mockSession),
+  };
+
   beforeEach(async () => {
     repository = createMockRegistrationRepository();
 
@@ -28,6 +41,10 @@ describe('RegistrationsService', () => {
         {
           provide: RegistrationRepository,
           useValue: repository,
+        },
+        {
+          provide: getConnectionToken(),
+          useValue: mockConnection,
         },
       ],
     }).compile();
@@ -107,6 +124,7 @@ describe('RegistrationsService', () => {
         expect.objectContaining({
           participantId: expect.any(Types.ObjectId),
           sessionId: expect.any(Types.ObjectId),
+          status: 'confirmed',
         }),
       );
     });
